@@ -25,13 +25,13 @@ env:
     youtube
     discord
     telegram
-    refilter-domains
-    refilter-community-domains
+    refilter
+    refilter-community
     category-ban-ru
     category-nongov-ru
     torrent-trackers
     torrent-trackers-custom
-    antifilter-community-domains
+    antifilter-community
     google-ai
     russia-outside
     category-gov-ru
@@ -40,13 +40,13 @@ env:
     ru
     private
     category-ban-ru
-    cloudflare-all
-    cloudflare-ipv4
-    cloudflare-ipv6
-    discord-voice-ips
+    cloudflare
+    cloudflare4
+    cloudflare6
+    discord-voice
     telegram
-    refilter-ips
-    refilter-community-ips
+    refilter
+    refilter-community
 
 jobs:
   build:
