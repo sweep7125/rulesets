@@ -140,9 +140,9 @@ jobs:
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
-          dom_from_clean_to_xray_suffix _inputs/refilter-community-domains.src geosite/refilter-community-domains
-          dom_from_clean_to_xray_suffix _inputs/antifilter-community-domains.src geosite/antifilter-community-domains
-          dom_from_clean_to_xray_suffix _inputs/refilter-domains.src            geosite/refilter-domains
+          dom_from_clean_to_xray_suffix _inputs/refilter-community-domains.src geosite/refilter-community
+          dom_from_clean_to_xray_suffix _inputs/antifilter-community-domains.src geosite/antifilter-community
+          dom_from_clean_to_xray_suffix _inputs/refilter-domains.src            geosite/refilter
           dom_from_clean_to_xray_suffix _inputs/russia-inside.src               geosite/russia-inside
           dom_from_clean_to_xray_suffix _inputs/russia-outside.src              geosite/russia-outside
           dom_from_clean_to_xray_suffix _inputs/google-ai.src                   geosite/google-ai
@@ -156,9 +156,9 @@ jobs:
           tmp="$(mktemp)"
           {
             for f in \
-              geosite/refilter-domains \
-              geosite/refilter-community-domains \
-              geosite/antifilter-community-domains \
+              geosite/refilter \
+              geosite/refilter-community \
+              geosite/antifilter-community \
               geosite/russia-inside \
               geosite/google-ai \
               geosite/youtube \
@@ -210,8 +210,8 @@ jobs:
           ip_opt _inputs/cloudflare4.src            geoip/cloudflare-ipv4
           ip_opt _inputs/cloudflare6.src            geoip/cloudflare-ipv6
           ip_opt _inputs/cloudflare-all.src         geoip/cloudflare-all
-          ip_opt _inputs/refilter-ips.src           geoip/refilter-ips
-          ip_opt _inputs/refilter-community-ips.src geoip/refilter-community-ips
+          ip_opt _inputs/refilter-ips.src           geoip/refilter
+          ip_opt _inputs/refilter-community-ips.src geoip/refilter-community
 
       - name: Build derived geoip/category-ban-ru (intersection RU ∩ refilter)
         run: |
@@ -251,7 +251,7 @@ jobs:
               A6=[n for n in A if n.version==6]; B6=[n for n in B if n.version==6]
               return collapse(inter(A4,B4)+inter(A6,B6))
           ru = read_nets("geoip/ru.list") or read_nets("geoip/ru")
-          rf = read_nets("geoip/refilter-ips.list")+read_nets("geoip/refilter-community-ips.list")
+          rf = read_nets("geoip/refilter.list")+read_nets("geoip/refilter-community.list")
           out = intersect(ru, rf)
           os.makedirs("geoip", exist_ok=True)
           with open("geoip/category-ban-ru.list","w",encoding="utf-8") as f:
