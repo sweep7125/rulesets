@@ -72,37 +72,30 @@ jobs:
               with open(inp, "r", encoding="utf-8", errors="ignore") as f:
                   for raw in f:
                       t = raw.strip().replace('\r','')
-                      if not t or t.startswith('#') or t.startswith('//') or t.startswith('include:'): continue
+                      if not t or t.startswith('#') or t.startswith('//') or t.startswith('include:'):
+                          continue
                       if   t.startswith('full:'):    v = strip_anno(t[5:]);  dom.append(v) if v else None
                       elif t.startswith('keyword:'): v = strip_anno(t[8:]);  kw.append(v)  if v else None
                       elif t.startswith('regexp:'):  v = strip_anno(t[7:]);  rx.append(v)  if v else None
                       elif t.startswith('domain:'):  v = strip_anno(t[7:]);  suf.append(v) if v else None
                       else:                          v = strip_anno(t);      suf.append(v) if v else None
-              def uniq(xs):
-                  s=set(); r=[]; 
-                  for x in xs:
-                      if x not in s: s.add(x); r.append(x)
-                  return r
               rule = {}
-              if dom: rule["domain"] = uniq(dom)
-              if suf: rule["domain_suffix"] = uniq(suf)
-              if kw:  rule["domain_keyword"] = uniq(kw)
-              if rx:  rule["domain_regex"] = uniq(rx)
+              if dom: rule["domain"] = dom
+              if suf: rule["domain_suffix"] = suf
+              if kw:  rule["domain_keyword"] = kw
+              if rx:  rule["domain_regex"] = rx
               write_json(outp, rule)
+          
           def geoip_to_json(inp, outp):
               nets=[]
               with open(inp, "r", encoding="utf-8", errors="ignore") as f:
                   for raw in f:
                       t = raw.strip()
-                      if not t or t.startswith('#') or t.startswith('//'): continue
+                      if not t or t.startswith('#') or t.startswith('//'):
+                          continue
                       t = re.split(r'\s+#|\s+//', t, 1)[0].strip()
                       if t: nets.append(t)
-              def uniq(xs):
-                  s=set(); r=[]
-                  for x in xs:
-                      if x not in s: s.add(x); r.append(x)
-                  return r
-              rule = {"ip_cidr": uniq(nets)} if nets else {}
+              rule = {"ip_cidr": nets} if nets else {}
               write_json(outp, rule)
           if __name__ == "__main__":
               kind, inp, outp = sys.argv[1], sys.argv[2], sys.argv[3]
