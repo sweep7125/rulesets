@@ -27,30 +27,32 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Switch to branch mihomo-rulesets (create if missing)
+      - name: Switch to branch mihomo-rulesets (create if missing, keep only *.mrs)
         run: |
           set -Eeuo pipefail
           if git ls-remote --exit-code --heads origin refs/heads/mihomo-rulesets >/dev/null 2>&1; then
             git fetch --no-tags --depth=1 origin refs/heads/mihomo-rulesets:refs/remotes/origin/mihomo-rulesets
             git switch -c mihomo-rulesets --track origin/mihomo-rulesets || git switch mihomo-rulesets
-            git pull --ff-only
+            git pull --ff-only || true
           else
             git switch -c mihomo-rulesets
-            rm -rf .github || true
-            git add -A
-            git -c user.email="${COMMIT_USER_EMAIL}" -c user.name="${COMMIT_USER_NAME}" commit -m "Initialize branch without CI"
+            # пустая ветка (без CI)
+            find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+            git -c user.email="${COMMIT_USER_EMAIL}" -c user.name="${COMMIT_USER_NAME}" \
+              commit --allow-empty -m "Initialize empty rules branch"
             git push -u origin HEAD:mihomo-rulesets
           fi
 
-      - name: Prepare helpers from main
+      - name: Prepare helpers (use /tmp, keep repo clean)
         run: |
           set -Eeuo pipefail
-          mkdir -p .ci work/geosite work/geoip mihomo-ruleset
           git fetch --no-tags --depth=1 origin main
-          git show origin/main:.ci/optimize.py > .ci/optimize.py
-          cat > .ci/helpers.sh <<'SH'
+          git show origin/main:.ci/optimize.py > /tmp/optimize.py
+          chmod +x /tmp/optimize.py
+          cat > /tmp/helpers.sh <<'SH'
           set -Eeuo pipefail
-          OPT_PY="${GITHUB_WORKSPACE}/.ci/optimize.py"
+          OPT_PY="/tmp/optimize.py"
+          # Требуется поддержка --target to-mihomo в optimize.py
           dom_xray_to_mihomo() { python3 "$OPT_PY" domains "$1" "$2" --input-type xray --target to-mihomo --view mihomo; }
           SH
 
@@ -58,7 +60,8 @@ jobs:
         id: resolve
         run: |
           set -Eeuo pipefail
-          resp=$(curl -fsSL -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/MetaCubeX/mihomo/releases/latest")
+          resp=$(curl -fsSL -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" \
+                 "https://api.github.com/repos/MetaCubeX/mihomo/releases/latest")
           tag=$(jq -r '.tag_name' <<<"$resp")
           url=$(jq -r '.assets[] | select(.name | test("^mihomo-linux-amd64.*\\.deb$")) | .browser_download_url' <<<"$resp" | head -n1)
           echo "MIHOMO_TAG=$tag" >> "$GITHUB_ENV"
@@ -68,7 +71,8 @@ jobs:
         run: |
           set -Eeuo pipefail
           if [[ -z "${MIHOMO_DEB_URL:-}" || "${MIHOMO_DEB_URL}" == "null" ]]; then
-            resp=$(curl -fsSL -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/MetaCubeX/mihomo/releases/tags/${MIHOMO_TAG}")
+            resp=$(curl -fsSL -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" \
+                   "https://api.github.com/repos/MetaCubeX/mihomo/releases/tags/${MIHOMO_TAG}")
             MIHOMO_DEB_URL=$(jq -r '.assets[] | select(.name | test("^mihomo-linux-amd64.*\\.deb$")) | .browser_download_url' <<<"$resp" | head -n1)
           fi
           curl -fsSL -H "Authorization: token ${GITHUB_TOKEN}" -o /tmp/mihomo.deb "$MIHOMO_DEB_URL"
@@ -76,56 +80,56 @@ jobs:
           sudo apt-get install -y --fix-missing /tmp/mihomo.deb
           rm -f /tmp/mihomo.deb
 
-      - name: Fetch file lists from sources branch (root geosite/geoip)
-        id: lists
+      - name: Read file list from sources branch
+        id: srcfiles
         run: |
           set -Eeuo pipefail
           git fetch --no-tags --depth=1 origin sources
-          GEOSITE=$(git ls-tree -r --name-only origin/sources:geosite | sed 's|^geosite/||' | tr '\n' ' ')
-          GEOIP=$(git ls-tree -r --name-only origin/sources:geoip   | sed 's|^geoip/||'   | tr '\n' ' ')
+          GEOSITE=$(git ls-tree -r --name-only origin/sources:geosite | tr '\n' ' ')
+          GEOIP=$(git ls-tree -r --name-only origin/sources:geoip   | tr '\n' ' ')
           echo "GEOSITE=$GEOSITE" >> "$GITHUB_OUTPUT"
-          echo "GEOIP=$GEOIP" >> "$GITHUB_OUTPUT"
+          echo "GEOIP=$GEOIP"     >> "$GITHUB_OUTPUT"
 
-      - name: Clean output folder
+      - name: Build *.mrs to repository root (only .mrs artifacts)
         run: |
           set -Eeuo pipefail
-          rm -rf mihomo-ruleset
-          mkdir -p mihomo-ruleset
+          source /tmp/helpers.sh
+          mkdir -p /tmp/work
 
-      - name: Build MRS from geosite (XRAY → MIHOMO → .mrs)
-        run: |
-          set -Eeuo pipefail
-          source .ci/helpers.sh
-          for f in ${{ steps.lists.outputs.GEOSITE }}; do
-            [[ -z "$f" ]] && continue
-            git show "origin/sources:geosite/$f" > "work/geisite_$f.xray"
-            dom_xray_to_mihomo "work/geisite_$f.xray" "work/geisite_$f.mihomo"
+          # подчистим корень ветки: оставим только .git
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+
+          # GEOSITE -> Mihomo DOMAIN rules (.mrs) в КОРЕНЬ
+          for f in ${{ steps.srcfiles.outputs.GEOSITE }}; do
+            mkdir -p "/tmp/work/$(dirname "$f")"
+            git show "origin/sources:geosite/$f" > "/tmp/work/${f}.xray"
+            dom_xray_to_mihomo "/tmp/work/${f}.xray" "/tmp/work/${f}.mihomo.list"
             base="${f%.list}"
-            mihomo convert-ruleset domain text "work/geisite_$f.mihomo.list" "mihomo-ruleset/geosite-$base.mrs"
+            mihomo convert-ruleset domain text "/tmp/work/${f}.mihomo.list" "./geosite-${base}.mrs"
           done
 
-      - name: Build MRS from geoip (CIDR → .mrs)
-        run: |
-          set -Eeuo pipefail
-          for f in ${{ steps.lists.outputs.GEOIP }}; do
-            [[ -z "$f" ]] && continue
-            git show "origin/sources:geoip/$f" > "work/geoip_$f"
+          # GEOIP -> Mihomo IPCIDR rules (.mrs) в КОРЕНЬ (опционально)
+          for f in ${{ steps.srcfiles.outputs.GEOIP }}; do
+            mkdir -p "/tmp/work/$(dirname "$f")"
+            git show "origin/sources:geoip/$f" > "/tmp/work/${f}"
             base="${f%.list}"
-            mihomo convert-ruleset ipcidr text "work/geoip_$f" "mihomo-ruleset/geoip-$base.mrs"
+            mihomo convert-ruleset ipcidr text "/tmp/work/${f}" "./geoip-${base}.mrs"
           done
 
-      - name: Stamp date
-        run: echo "DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
+          # страховка: удалить всё, что не *.mrs
+          find . -mindepth 1 -maxdepth 1 -type d ! -name '.git' -exec rm -rf {} +
+          find . -mindepth 1 -maxdepth 1 -type f ! -name '*.mrs' -delete
 
-      - name: Commit MRS
+      - name: Commit *.mrs only
         run: |
           set -Eeuo pipefail
           git config --local user.email "${COMMIT_USER_EMAIL}"
           git config --local user.name  "${COMMIT_USER_NAME}"
-          git add -A mihomo-ruleset
+          git add -A
           if git diff --staged --quiet; then
             echo "No changes to commit"
             exit 0
           fi
-          git commit -m "Generate mihomo rulesets ${DATE} (mihomo ${MIHOMO_TAG})"
+          DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          git commit -m "Update Mihomo rules ${DATE}"
           git push || true
