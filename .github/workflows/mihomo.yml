@@ -76,13 +76,13 @@ jobs:
           sudo apt-get install -y --fix-missing /tmp/mihomo.deb
           rm -f /tmp/mihomo.deb
 
-      - name: Fetch file lists from sources branch
+      - name: Fetch file lists from sources branch (root geosite/geoip)
         id: lists
         run: |
           set -Eeuo pipefail
           git fetch --no-tags --depth=1 origin sources
-          GEOSITE=$(git ls-tree -r --name-only origin/sources:sources/geosite | sed 's|^sources/geosite/||' | tr '\n' ' ')
-          GEOIP=$(git ls-tree -r --name-only origin/sources:sources/geoip   | sed 's|^sources/geoip/||'   | tr '\n' ' ')
+          GEOSITE=$(git ls-tree -r --name-only origin/sources:geosite | sed 's|^geosite/||' | tr '\n' ' ')
+          GEOIP=$(git ls-tree -r --name-only origin/sources:geoip   | sed 's|^geoip/||'   | tr '\n' ' ')
           echo "GEOSITE=$GEOSITE" >> "$GITHUB_OUTPUT"
           echo "GEOIP=$GEOIP" >> "$GITHUB_OUTPUT"
 
@@ -98,10 +98,10 @@ jobs:
           source .ci/helpers.sh
           for f in ${{ steps.lists.outputs.GEOSITE }}; do
             [[ -z "$f" ]] && continue
-            git show "origin/sources:sources/geosite/$f" > "work/geosite/$f.xray"
-            dom_xray_to_mihomo "work/geosite/$f.xray" "work/geosite/$f.mihomo"
+            git show "origin/sources:geosite/$f" > "work/geisite_$f.xray"
+            dom_xray_to_mihomo "work/geisite_$f.xray" "work/geisite_$f.mihomo"
             base="${f%.list}"
-            mihomo convert-ruleset domain text "work/geosite/$f.mihomo.list" "mihomo-ruleset/geosite-$base.mrs"
+            mihomo convert-ruleset domain text "work/geisite_$f.mihomo.list" "mihomo-ruleset/geosite-$base.mrs"
           done
 
       - name: Build MRS from geoip (CIDR → .mrs)
@@ -109,9 +109,9 @@ jobs:
           set -Eeuo pipefail
           for f in ${{ steps.lists.outputs.GEOIP }}; do
             [[ -z "$f" ]] && continue
-            git show "origin/sources:sources/geoip/$f" > "work/geoip/$f"
+            git show "origin/sources:geoip/$f" > "work/geoip_$f"
             base="${f%.list}"
-            mihomo convert-ruleset ipcidr text "work/geoip/$f" "mihomo-ruleset/geoip-$base.mrs"
+            mihomo convert-ruleset ipcidr text "work/geoip_$f" "mihomo-ruleset/geoip-$base.mrs"
           done
 
       - name: Stamp date
