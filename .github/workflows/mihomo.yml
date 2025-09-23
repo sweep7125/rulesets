@@ -37,11 +37,11 @@ jobs:
           else
             git switch -c mihomo-rulesets
             find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
-            git -c user.email="${COMMIT_USER_EMAIL}" -c user.name="${COMMIT_USER_NAME}" commit --allow-empty -m init
+            git -c user.email="${COMMIT_USER_EMAIL}" -c user.name="${COMMIT_USER_NAME}" commit --allow-empty -m "Initialize empty rules branch"
             git push -u origin HEAD:mihomo-rulesets
           fi
 
-      - name: Prepare helpers
+      - name: Prepare helpers (use /tmp)
         run: |
           set -Eeuo pipefail
           git fetch --no-tags --depth=1 origin main
@@ -52,62 +52,52 @@ jobs:
           dom_xray_to_mihomo() { python3 "$OPT_PY" domains "$1" "$2" --input-type xray --target to-mihomo --view mihomo; }
           SH
 
-      - name: Fetch sources lists
+      - name: Install Mihomo (latest .deb)
         run: |
           set -Eeuo pipefail
-          git fetch --no-tags --depth=1 origin sources
+          url=$(
+            curl -fsSL -H "Authorization: bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" \
+              https://api.github.com/repos/MetaCubeX/mihomo/releases/latest \
+            | jq -r '.assets[] | select(.name | test("^mihomo-linux-amd64.*\\.deb$")) | .browser_download_url' \
+            | head -n1
+          )
+          curl -fsSL -H "Authorization: bearer ${GITHUB_TOKEN}" -o /tmp/mihomo.deb "$url"
+          sudo apt-get update
+          sudo apt-get install -y /tmp/mihomo.deb
+          rm -f /tmp/mihomo.deb
 
-      # ---- FIXED STEP ----
-      - name: Install Mihomo (download latest archive)
-        run: |
-          set -Eeuo pipefail
-          resp=$(curl -fsSL -H "Authorization: token ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" \
-                 "https://api.github.com/repos/MetaCubeX/mihomo/releases/latest")
-          url=$(jq -r '.assets[] | select(.name | test("^mihomo-linux-amd64.*\\.(zip|tar\\.gz)$")) | .browser_download_url' <<<"$resp" | head -n1)
-          mkdir -p /tmp/mihomo
-          case "$url" in
-            *.zip)
-              curl -fsSL "$url" -o /tmp/mihomo/mihomo.zip
-              unzip -q /tmp/mihomo/mihomo.zip -d /tmp/mihomo
-              ;;
-            *.tar.gz)
-              curl -fsSL "$url" -o /tmp/mihomo/mihomo.tgz
-              tar -xzf /tmp/mihomo/mihomo.tgz -C /tmp/mihomo
-              ;;
-            *)
-              echo "No suitable linux-amd64 archive asset found"; exit 1
-              ;;
-          esac
-          # Найти исполняемый бинарник mihomo (в архивах имя может отличаться)
-          MH=$(find /tmp/mihomo -type f -perm -111 -name 'mihomo*' | head -n1)
-          [[ -n "$MH" ]] || { echo "mihomo binary not found after extraction"; exit 1; }
-          chmod +x "$MH"
-          echo "MH=$MH" >> "$GITHUB_ENV"
-      # ---- /FIXED STEP ----
-
-      - name: Build *.mrs (to repo root)
+      - name: Build *.mrs to repository root (only .mrs artifacts)
         run: |
           set -Eeuo pipefail
           source /tmp/helpers.sh
           mkdir -p /tmp/work
+          git fetch --no-tags --depth=1 origin sources
+
+          # очистим корень ветки (оставим .git)
           find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
-          # GEOSITE -> DOMAIN rules
+
+          # GEOSITE -> DOMAIN rulesets
           while IFS= read -r f; do
-            [[ "$f" == *.list ]] || continue
+            [ -n "$f" ] || continue
             mkdir -p "/tmp/work/$(dirname "$f")"
             git show "origin/sources:geosite/$f" > "/tmp/work/${f}.xray"
             dom_xray_to_mihomo "/tmp/work/${f}.xray" "/tmp/work/${f}.mihomo.list"
-            bn="$(basename "$f" .list)"
-            "$MH" convert-ruleset domain text "/tmp/work/${f}.mihomo.list" "./geosite-${bn}.mrs"
-          done < <(git ls-tree -r --name-only origin/sources:geosite || true)
-          # GEOIP -> IPCIDR rules
+            bn="$(basename "$f")"; base="${bn%.list}"
+            mihomo convert-ruleset domain text "/tmp/work/${f}.mihomo.list" "./geosite-${base}.mrs"
+          done < <(git ls-tree -r --name-only origin/sources:geosite)
+
+          # GEOIP -> IPCIDR rulesets
           while IFS= read -r f; do
-            [[ "$f" == *.list ]] || continue
+            [ -n "$f" ] || continue
             mkdir -p "/tmp/work/$(dirname "$f")"
             git show "origin/sources:geoip/$f" > "/tmp/work/${f}"
-            bn="$(basename "$f" .list)"
-            "$MH" convert-ruleset ipcidr text "/tmp/work/${f}" "./geoip-${bn}.mrs"
-          done < <(git ls-tree -r --name-only origin/sources:geoip || true)
+            bn="$(basename "$f")"; base="${bn%.list}"
+            mihomo convert-ruleset ipcidr text "/tmp/work/${f}" "./geoip-${base}.mrs"
+          done < <(git ls-tree -r --name-only origin/sources:geoip)
+
+          # страховка: оставить только .mrs в корне
+          find . -mindepth 1 -maxdepth 1 -type d ! -name '.git' -exec rm -rf {} +
+          find . -mindepth 1 -maxdepth 1 -type f ! -name '*.mrs' -delete
 
       - name: Commit *.mrs only
         run: |
@@ -115,4 +105,6 @@ jobs:
           git config --local user.email "${COMMIT_USER_EMAIL}"
           git config --local user.name  "${COMMIT_USER_NAME}"
           git add -A
-          git diff --staged --quiet || { git commit -m "Update Mihomo rules $(date -u +'%Y-%m-%dT%H:%M:%SZ')"; git push || true; }
+          git diff --staged --quiet && exit 0
+          git commit -m "Update Mihomo rules $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          git push || true
