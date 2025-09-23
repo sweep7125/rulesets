@@ -17,6 +17,25 @@ env:
   COMMIT_USER_EMAIL: ${{ github.actor }}@users.noreply.github.com
   GOFLAGS: -buildvcs=false
   DEBIAN_FRONTEND: noninteractive
+  GEOSITE_INCLUDE: |
+    private
+    category-ru
+    reddit
+    spotify
+    youtube
+    discord
+    telegram
+    refilter-domains
+    refilter-community-domains
+    category-ban-ru
+    category-nongov-ru
+    torrent-trackers
+    torrent-trackers-custom
+    antifilter-community-domains
+    google-ai
+    russia-outside
+    category-gov-ru
+    russia-inside
 
 jobs:
   build:
@@ -47,7 +66,6 @@ jobs:
           mkdir -p /tmp/community/data /tmp/geoip /tmp/out
           git fetch --no-tags --depth=1 origin main
           git show origin/main:.ci/optimize.py > /tmp/optimize.py
-          git show origin/main:sections_out > /tmp/sections_out || true
           git show origin/main:config.json   > /tmp/config.json   || true
           cat > /tmp/helpers.sh <<'SH'
           set -Eeuo pipefail
@@ -56,47 +74,55 @@ jobs:
           SH
           chmod +x /tmp/optimize.py
 
-      - name: Pull geosite & geoip from sources (with sections_out filter, variant A)
+      - name: Pull geosite & geoip from sources (filter by $GEOSITE_INCLUDE)
         run: |
           set -Eeuo pipefail
           git fetch --no-tags --depth=1 origin sources
       
-          # geosite → community/data
-          rm -rf community/data && mkdir -p community/data
-          while IFS= read -r p; do
-            # p приходит относительно дерева geosite/, например: "reddit.list" или "dir/name.list"
-            rel="$p"
-            mkdir -p "community/data/$(dirname "$rel")"
-            git show "origin/sources:geosite/$p" > "community/data/$rel"
-          done < <(git ls-tree -r --name-only origin/sources:geosite || true)
-      
-          # Применяем sections_out только к geosite (учитываем имена с/без .list)
-          if [[ -s sections_out ]]; then
-            declare -A keep
-            while IFS= read -r line; do
-              line="${line//$'\r'/}"          # CRLF → LF
-              line="${line%%#*}"              # убрать комментарий после #
-              name="$(echo "$line" | xargs)"  # trim
-              [[ -z "$name" ]] && continue
-              keep["$name"]=1
-              keep["$name.list"]=1
-            done < sections_out
-      
-            find community/data -type f -print0 | while IFS= read -r -d '' path; do
-              rel="${path#community/data/}"
-              base="$(basename "$rel")"
-              [[ -n "${keep[$base]:-}" ]] || rm -f "$path"
-            done
+          # Сформируем множество для фильтрации geosite из переменной окружения
+          declare -A keep=()
+          if [[ -n "${GEOSITE_INCLUDE:-}" ]]; then
+            # Поддерживаем имена с/без .list, с путём и без него (basename)
+            while IFS= read -r raw; do
+              raw="${raw//$'\r'/}"; raw="${raw%%#*}"
+              item="$(echo "$raw" | xargs)"
+              [[ -z "$item" ]] && continue
+              keep["$item"]=1
+              [[ "$item" == *.list ]] || keep["$item.list"]=1
+              bn="${item##*/}"
+              keep["$bn"]=1
+              [[ "$bn" == *.list ]] || keep["$bn.list"]=1
+              if [[ "$bn" == *.list ]]; then
+                base="${bn%.list}"
+                keep["$base"]=1
+              fi
+            done <<< "${GEOSITE_INCLUDE}"
           fi
       
-          # geoip → geoip (без фильтрации sections_out)
-          rm -rf geoip && mkdir -p geoip
+          # geosite → /tmp/community/data (только выбранные файлы, если список задан)
+          rm -rf /tmp/community/data && mkdir -p /tmp/community/data
           while IFS= read -r p; do
-            rel="$p"  # относительный к дереву geoip/
-            mkdir -p "geoip/$(dirname "$rel")"
-            git show "origin/sources:geoip/$p" > "geoip/$rel"
+            rel="$p"                                # относительный путь внутри дерева geosite/
+            bn="${rel##*/}"                         # basename
+            base="${bn%.list}"
+      
+            if [[ ${#keep[@]} -gt 0 ]]; then
+              if [[ -z "${keep[$rel]:-}" && -z "${keep[$bn]:-}" && -z "${keep[$base]:-}" && -z "${keep[$base.list]:-}" ]]; then
+                continue
+              fi
+            fi
+      
+            mkdir -p "/tmp/community/data/$(dirname "$rel")"
+            git show "origin/sources:geosite/$rel" > "/tmp/community/data/$rel"
+          done < <(git ls-tree -r --name-only origin/sources:geosite || true)
+      
+          # geoip → /tmp/geoip (без фильтра по env; если нужно — по аналогии)
+          rm -rf /tmp/geoip && mkdir -p /tmp/geoip
+          while IFS= read -r p; do
+            rel="$p"
+            mkdir -p "/tmp/geoip/$(dirname "$rel")"
+            git show "origin/sources:geoip/$rel" > "/tmp/geoip/$rel"
           done < <(git ls-tree -r --name-only origin/sources:geoip || true)
-
 
       - name: Normalize /tmp/community/data (xray preserve; idempotent)
         run: |
