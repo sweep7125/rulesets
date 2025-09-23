@@ -36,6 +36,17 @@ env:
     russia-outside
     category-gov-ru
     russia-inside
+  GEOIP_INCLUDE: |
+    ru
+    private
+    category-ban-ru
+    cloudflare-all
+    cloudflare-ipv4
+    cloudflare-ipv6
+    discord-voice-ips
+    telegram
+    refilter-ips
+    refilter-community-ips
 
 jobs:
   build:
@@ -174,23 +185,59 @@ jobs:
           rm -rf /tmp/geoip-src
           git clone --depth=1 https://github.com/Loyalsoldier/geoip /tmp/geoip-src
 
-          # Сборка бинарника
           pushd /tmp/geoip-src >/dev/null
           go build ./
           popd >/dev/null
 
-          # ВАЖНО: запускаем из /tmp, чтобы относительные пути вида ./geoip/...
-          # указывали на папку /tmp/geoip, а не на бинарник ./geoip в /tmp/geoip-src
+          python3 - <<'PY'
+          import os, json, sys
+          inc = os.environ.get("GEOIP_INCLUDE","").strip()
+          if not inc:
+              print("GEOIP_INCLUDE пуст: нечего собирать", file=sys.stderr); sys.exit(1)
+
+          wanted = []
+          for line in inc.splitlines():
+              line = line.split('#',1)[0].strip()
+              if not line: continue
+              base = os.path.basename(line)
+              if base.endswith(".list"): base = base[:-5]
+              wanted.append(base)
+          wanted = sorted(set(wanted))
+
+          inputs, missing = [], []
+          for name in wanted:
+              p_noext = f"/tmp/geoip/{name}"
+              p_list  = p_noext + ".list"
+              if   os.path.isfile(p_list):
+                  inputs.append({"type":"text","action":"add","args":{"name":name,"uri":p_list}})
+              elif os.path.isfile(p_noext):
+                  inputs.append({"type":"text","action":"add","args":{"name":name,"uri":p_noext}})
+              else:
+                  missing.append(name)
+
+          if not inputs:
+              print("ERROR: ни один из запрошенных geoip-листов не найден: " + ", ".join(missing), file=sys.stderr)
+              sys.exit(1)
+          if missing:
+              print("WARN: отсутствуют списки: " + ", ".join(missing), file=sys.stderr)
+
+          cfg = {
+            "input": inputs,
+            "output": [{
+              "type": "v2rayGeoIPDat",
+              "action": "output",
+              "args": {"outputDir": "/tmp/out", "outputName": "geoip.dat"}
+            }]
+          }
+          os.makedirs("/tmp/out", exist_ok=True)
+          with open("/tmp/config.json","w") as f: json.dump(cfg, f, ensure_ascii=False, indent=2)
+          PY
+
+          echo "== using config.json ==" && cat /tmp/config.json
+
           pushd /tmp >/dev/null
           ./geoip-src/geoip convert -c /tmp/config.json
           popd >/dev/null
-
-          # Перенос результата
-          if [[ -f /tmp/geoip-src/output/geoip.dat ]]; then
-            mv /tmp/geoip-src/output/geoip.dat /tmp/out/geoip.dat
-          else
-            echo "WARN: geoip.dat not generated"
-          fi
           
       - name: Publish ONLY *.dat to repo root
         run: |
