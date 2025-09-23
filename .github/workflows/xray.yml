@@ -56,38 +56,47 @@ jobs:
           SH
           chmod +x /tmp/optimize.py
 
-      - name: Pull geosite/ and geoip/ from sources branch → /tmp
+      - name: Pull geosite & geoip from sources (with sections_out filter, variant A)
         run: |
           set -Eeuo pipefail
           git fetch --no-tags --depth=1 origin sources
-          # geosite → /tmp/community/data
+      
+          # geosite → community/data
+          rm -rf community/data && mkdir -p community/data
           while IFS= read -r p; do
-            rel="${p#geosite/}"
-            mkdir -p "/tmp/community/data/$(dirname "$rel")"
-            git show "origin/sources:$p" > "/tmp/community/data/$rel"
-          done < <(git ls-tree -r --name-only origin/sources:geosite)
-          # geoip → /tmp/geoip
-          while IFS= read -r p; do
-            rel="${p#geoip/}"
-            mkdir -p "/tmp/geoip/$(dirname "$rel")"
-            git show "origin/sources:$p" > "/tmp/geoip/$rel"
-          done < <(git ls-tree -r --name-only origin/sources:geoip)
-
-      - name: Filter /tmp/community/data by sections_out (apply only here)
-        run: |
-          set -Eeuo pipefail
-          if [[ -f /tmp/sections_out ]]; then
+            # p приходит относительно дерева geosite/, например: "reddit.list" или "dir/name.list"
+            rel="$p"
+            mkdir -p "community/data/$(dirname "$rel")"
+            git show "origin/sources:geosite/$p" > "community/data/$rel"
+          done < <(git ls-tree -r --name-only origin/sources:geosite || true)
+      
+          # Применяем sections_out только к geosite (учитываем имена с/без .list)
+          if [[ -s sections_out ]]; then
             declare -A keep
             while IFS= read -r line; do
-              line="${line//$'\r'/}"; line="${line%%#*}"
-              f="$(echo "$line" | xargs)"
-              [[ -n "$f" ]] && keep["$f"]=1
-            done < /tmp/sections_out
-            find /tmp/community/data -type f -print0 | while IFS= read -r -d '' path; do
-              rel="${path#/tmp/community/data/}"
-              [[ -n "${keep[$rel]:-}" ]] || rm -f "$path"
+              line="${line//$'\r'/}"          # CRLF → LF
+              line="${line%%#*}"              # убрать комментарий после #
+              name="$(echo "$line" | xargs)"  # trim
+              [[ -z "$name" ]] && continue
+              keep["$name"]=1
+              keep["$name.list"]=1
+            done < sections_out
+      
+            find community/data -type f -print0 | while IFS= read -r -d '' path; do
+              rel="${path#community/data/}"
+              base="$(basename "$rel")"
+              [[ -n "${keep[$base]:-}" ]] || rm -f "$path"
             done
           fi
+      
+          # geoip → geoip (без фильтрации sections_out)
+          rm -rf geoip && mkdir -p geoip
+          while IFS= read -r p; do
+            rel="$p"  # относительный к дереву geoip/
+            mkdir -p "geoip/$(dirname "$rel")"
+            git show "origin/sources:geoip/$p" > "geoip/$rel"
+          done < <(git ls-tree -r --name-only origin/sources:geoip || true)
+
 
       - name: Normalize /tmp/community/data (xray preserve; idempotent)
         run: |
