@@ -57,6 +57,7 @@ jobs:
           set -Eeuo pipefail
           git fetch --no-tags --depth=1 origin sources
 
+      # ---- FIXED STEP ----
       - name: Install Mihomo (download latest archive)
         run: |
           set -Eeuo pipefail
@@ -73,22 +74,23 @@ jobs:
               curl -fsSL "$url" -o /tmp/mihomo/mihomo.tgz
               tar -xzf /tmp/mihomo/mihomo.tgz -C /tmp/mihomo
               ;;
+            *)
+              echo "No suitable linux-amd64 archive asset found"; exit 1
+              ;;
           esac
-          chmod +x /tmp/mihomo/mihomo*/* 2>/dev/null || true
-          chmod +x /tmp/mihomo/mihomo 2>/dev/null || true
-          echo "/tmp/mihomo/mihomo" > /tmp/MH_BIN
-          if [[ ! -x /tmp/mihomo/mihomo ]]; then
-            MH=$(find /tmp/mihomo -type f -name mihomo -perm -111 | head -n1); ln -sf "$MH" /tmp/mihomo/mihomo
-          fi
+          # Найти исполняемый бинарник mihomo (в архивах имя может отличаться)
+          MH=$(find /tmp/mihomo -type f -perm -111 -name 'mihomo*' | head -n1)
+          [[ -n "$MH" ]] || { echo "mihomo binary not found after extraction"; exit 1; }
+          chmod +x "$MH"
+          echo "MH=$MH" >> "$GITHUB_ENV"
+      # ---- /FIXED STEP ----
 
       - name: Build *.mrs (to repo root)
         run: |
           set -Eeuo pipefail
           source /tmp/helpers.sh
-          MH=/tmp/mihomo/mihomo
           mkdir -p /tmp/work
           find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
-
           # GEOSITE -> DOMAIN rules
           while IFS= read -r f; do
             [[ "$f" == *.list ]] || continue
@@ -98,7 +100,6 @@ jobs:
             bn="$(basename "$f" .list)"
             "$MH" convert-ruleset domain text "/tmp/work/${f}.mihomo.list" "./geosite-${bn}.mrs"
           done < <(git ls-tree -r --name-only origin/sources:geosite || true)
-
           # GEOIP -> IPCIDR rules
           while IFS= read -r f; do
             [[ "$f" == *.list ]] || continue
