@@ -138,7 +138,7 @@ jobs:
           fetch-depth: 1
           filter: blob:none
 
-      - name: Decide whether to rebuild geosite.dat (hash: sources/geosite + builder + workflow file)
+      - name: Decide whether to rebuild geosite.dat
         id: decide
         run: |
           set -Eeuo pipefail
