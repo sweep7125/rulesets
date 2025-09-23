@@ -173,22 +173,25 @@ jobs:
           set -Eeuo pipefail
           rm -rf /tmp/geoip-src
           git clone --depth=1 https://github.com/Loyalsoldier/geoip /tmp/geoip-src
+
+          # Сборка бинарника
           pushd /tmp/geoip-src >/dev/null
           go build ./
           popd >/dev/null
-          if [[ -s /tmp/config.json ]]; then
-            pushd /tmp/geoip-src >/dev/null
-            ./geoip convert -c /tmp/config.json
-            popd >/dev/null
-            if [[ -f /tmp/geoip-src/output/geoip.dat ]]; then
-              mv /tmp/geoip-src/output/geoip.dat /tmp/out/geoip.dat
-            else
-              echo "WARN: geoip.dat not generated"
-            fi
-          else
-            echo "config.json missing; skipping geoip.dat build" >&2
-          fi
 
+          # ВАЖНО: запускаем из /tmp, чтобы относительные пути вида ./geoip/...
+          # указывали на папку /tmp/geoip, а не на бинарник ./geoip в /tmp/geoip-src
+          pushd /tmp >/dev/null
+          ./geoip-src/geoip convert -c /tmp/config.json
+          popd >/dev/null
+
+          # Перенос результата
+          if [[ -f /tmp/geoip-src/output/geoip.dat ]]; then
+            mv /tmp/geoip-src/output/geoip.dat /tmp/out/geoip.dat
+          else
+            echo "WARN: geoip.dat not generated"
+          fi
+          
       - name: Publish ONLY *.dat to repo root
         run: |
           set -Eeuo pipefail
