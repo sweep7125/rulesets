@@ -254,7 +254,7 @@ jobs:
           set -Eeuo pipefail
           git config --local user.email "${COMMIT_USER_EMAIL}"
           git config --local user.name  "${COMMIT_USER_NAME}"
-          git add -A
+          git add geosite.dat geosite.hash geoip.dat
           git diff --staged --quiet && exit 0
           git commit -m "Update xray geofiles $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           git push || true
