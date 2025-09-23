@@ -103,7 +103,7 @@ jobs:
           sparse-checkout-cone-mode: true
           filter: blob:none
 
-      - name: Build geosite/category-nongov-ru (category-ru minus include: category-gov-ru)
+      - name: Build geosite/category-nongov-ru (category-ru minus include:category-gov-ru)
         run: |
           set -Eeuo pipefail
           src="community/data/category-ru"
