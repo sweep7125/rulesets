@@ -74,28 +74,29 @@ jobs:
           set -Eeuo pipefail
           rm -rf /tmp/community/data /tmp/geoip /tmp/out
           mkdir -p /tmp/community/data /tmp/geoip /tmp/out
-          git fetch --no-tags --depth=1 origin sources
+          git fetch --no-tags --depth=1 origin sources main
 
       - name: Pull geosite & geoip from sources (filtered by env; content unchanged)
         run: |
           set -Eeuo pipefail
 
-          # Build keep sets from env (accept name, name.list, basename)
           declare -A keep_site=() keep_ip=()
+
           if [[ -n "${GEOSITE_INCLUDE:-}" ]]; then
             while IFS= read -r raw; do
-              raw="${raw//$'\r'/}"; raw="${raw%%#*}"; item="$(echo "$raw" | xargs)"
-              [[ -z "$item" ]] && continue
+              raw="${raw//$'\r'/}"; raw="${raw%%#*}"
+              item="$(echo "$raw" | xargs)"; [[ -z "$item" ]] && continue
               keep_site["$item"]=1
               [[ "$item" == *.list ]] || keep_site["$item.list"]=1
               bn="${item##*/}"; keep_site["$bn"]=1; [[ "$bn" == *.list ]] || keep_site["$bn.list"]=1
               [[ "$bn" == *.list ]] && keep_site["${bn%.list}"]=1 || true
             done <<< "${GEOSITE_INCLUDE}"
           fi
+
           if [[ -n "${GEOIP_INCLUDE:-}" ]]; then
             while IFS= read -r raw; do
-              raw="${raw//$'\r'/}"; raw="${raw%%#*}"; item="$(echo "$raw" | xargs)"
-              [[ -z "$item" ]] && continue
+              raw="${raw//$'\r'/}"; raw="${raw%%#*}"
+              item="$(echo "$raw" | xargs)"; [[ -z "$item" ]] && continue
               keep_ip["$item"]=1
               [[ "$item" == *.list ]] || keep_ip["$item.list"]=1
               bn="${item##*/}"; keep_ip["$bn"]=1; [[ "$bn" == *.list ]] || keep_ip["$bn.list"]=1
@@ -103,7 +104,6 @@ jobs:
             done <<< "${GEOIP_INCLUDE}"
           fi
 
-          # geosite -> copy as-is into /tmp/community/data
           while IFS= read -r rel; do
             bn="${rel##*/}"; base="${bn%.list}"
             if (( ${#keep_site[@]} > 0 )); then
@@ -113,7 +113,6 @@ jobs:
             git show "origin/sources:geosite/$rel" > "/tmp/community/data/$rel"
           done < <(git ls-tree -r --name-only origin/sources:geosite || true)
 
-          # geoip -> copy as-is into /tmp/geoip
           while IFS= read -r rel; do
             bn="${rel##*/}"; base="${bn%.list}"
             if (( ${#keep_ip[@]} > 0 )); then
@@ -139,7 +138,24 @@ jobs:
           fetch-depth: 1
           filter: blob:none
 
-      - name: Setup Go
+      - name: Decide whether to rebuild geosite.dat (hash: sources/geosite + builder + workflow file)
+        id: decide
+        run: |
+          set -Eeuo pipefail
+          GS_HASH="$(git ls-tree -r origin/sources:geosite 2>/dev/null | sha256sum | awk '{print $1}')"
+          BUILDER_HASH="$(git -C custom rev-parse HEAD)"
+          WF_HASH="$(git show origin/main:.github/workflows/xray.yml | sha256sum | awk '{print $1}')"
+          COMBINED="$(printf '%s\n%s\n%s\n' "$GS_HASH" "$BUILDER_HASH" "$WF_HASH" | sha256sum | awk '{print $1}')"
+          echo "GEOSITE_BUILD_HASH=$COMBINED" >> "$GITHUB_ENV"
+          OLD="$(cat geosite.hash 2>/dev/null || true)"
+          if [[ "$OLD" == "$COMBINED" ]]; then
+            echo "SKIP_GEOSITE=1" >> "$GITHUB_ENV"
+          else
+            echo "SKIP_GEOSITE=0" >> "$GITHUB_ENV"
+          fi
+
+      - name: Setup Go (for geosite build)
+        if: env.SKIP_GEOSITE != '1'
         uses: actions/setup-go@v5
         with:
           go-version-file: ./custom/go.mod
@@ -147,13 +163,14 @@ jobs:
           cache: true
 
       - name: Build geosite.dat (from original lists)
+        if: env.SKIP_GEOSITE != '1'
         run: |
           set -Eeuo pipefail
           pushd custom >/dev/null
           go run ./ -outputpath=/tmp/out -exportlists= -datapath=/tmp/community/data -togfwlist=category-ru
           popd >/dev/null
 
-      - name: Build geoip.dat (preserve include order; no dedup/sort)
+      - name: Build geoip.dat
         run: |
           set -Eeuo pipefail
           rm -rf /tmp/geoip-src
@@ -171,18 +188,15 @@ jobs:
             if not t: continue
             base = os.path.basename(t)
             if base.endswith(".list"): base = base[:-5]
-            wanted.append(base)  # keep order, no set/sort
-
+            wanted.append(base)
           inputs = []
           for name in wanted:
             p_noext = f"/tmp/geoip/{name}"
             p_list  = p_noext + ".list"
             if   os.path.isfile(p_list):  inputs.append({"type":"text","action":"add","args":{"name":name,"uri":p_list}})
             elif os.path.isfile(p_noext): inputs.append({"type":"text","action":"add","args":{"name":name,"uri":p_noext}})
-
           if not inputs:
-            raise SystemExit(0)  # nothing to build per include
-
+            raise SystemExit(0)
           cfg = {
             "input": inputs,
             "output": [{
@@ -200,19 +214,23 @@ jobs:
             /tmp/geoip-src/geoip convert -c /tmp/config.json
           fi
 
-      - name: Publish ONLY *.dat to repo root
+      - name: Publish artifacts (conditional geosite)
         run: |
           set -Eeuo pipefail
-          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
-          [[ -s /tmp/out/geosite.dat ]] && mv /tmp/out/geosite.dat ./geosite.dat
-          [[ -s /tmp/out/geoip.dat   ]] && mv /tmp/out/geoip.dat   ./geoip.dat
+          # publish geosite.dat and its hash only when rebuilt
+          if [[ "${SKIP_GEOSITE:-0}" != "1" && -s /tmp/out/geosite.dat ]]; then
+            mv /tmp/out/geosite.dat ./geosite.dat
+            printf '%s\n' "${GEOSITE_BUILD_HASH:-}" > ./geosite.hash
+          fi
+          # publish geoip.dat if built
+          [[ -s /tmp/out/geoip.dat ]] && mv /tmp/out/geoip.dat ./geoip.dat
 
-      - name: Commit only geosite.dat and geoip.dat
+      - name: Commit only changed files
         run: |
           set -Eeuo pipefail
           git config --local user.email "${COMMIT_USER_EMAIL}"
           git config --local user.name  "${COMMIT_USER_NAME}"
-          git add -A
+          git add geosite.dat geosite.hash geoip.dat 2>/dev/null || true
           git diff --staged --quiet && exit 0
           git commit -m "Update xray geofiles $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           git push || true
