@@ -1,0 +1,21 @@
+{
+  "version": 3,
+  "rules": [
+    {
+      "domain": [
+        "brokenstones.is",
+        "mma-tracker.org",
+        "0205.uptm.ch",
+        "forever.publictracker.xyz",
+        "ip.getcrazy.me",
+        "open.stealth.si",
+        "p4p.arenabg.com",
+        "tracker.dler.org",
+        "tracker.idocdn.com",
+        "tracker.opentrackr.org",
+        "tracker.tiny-vps.com",
+        "tracker.torrent.eu.org"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "version": 3,
+  "rules": [
+    {
+      "domain_suffix": [
+        "deepmind.com",
+        "deepmind.google",
+        "gemini.google",
+        "generativeai.google",
+        "jules.google",
+        "labs.google",
+        "notebooklm.google",
+        "ai.google.dev",
+        "aisandbox-pa.googleapis.com",
+        "aistudio.google.com",
+        "bard.google.com",
+        "clients6.google.com",
+        "geller-pa.googleapis.com",
+        "gemini.google.com",
+        "generativelanguage.googleapis.com",
+        "jules.google.com",
+        "makersuite.google.com",
+        "notebooklm.google.com",
+        "proactivebackend-pa.googleapis.com",
+        "stitch.withgoogle.com"
+      ]
+    }
+  ]
+}
