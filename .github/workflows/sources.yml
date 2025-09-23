@@ -47,7 +47,7 @@ jobs:
           git fetch --no-tags --depth=1 origin main
           git show origin/main:.ci/optimize.py > .ci/optimize.py
           git show origin/main:sections_in > sections_in || true
-          git show origin/main:config_get.json > config_get.json || true
+          git show origin/main:config_get.json > config_get.json 2>/dev/null || rm -f config_get.json
           cat > .ci/helpers.sh <<'SH'
           set -Eeuo pipefail
           OPT_PY="${GITHUB_WORKSPACE}/.ci/optimize.py"
