@@ -567,13 +567,14 @@ def main() -> None:
     p_dom.add_argument("src", help="Input clear-text file (any extension)")
     p_dom.add_argument("dst", help="Output .list path (extension .list will be enforced)")
     p_dom.add_argument("--input-type", choices=["hosts", "clean", "mihomo", "xray"], required=True, help="Input type: hosts|clean|mihomo|xray. For clean expected forms: .domain.com, domain.com, *.domain.com")
-    p_dom.add_argument("--target", choices=["suffix", "exact", "preserve"], required=True, help="clean/hosts: suffix|exact; mihomo: preserve; xray: preserve")
+    p_dom.add_argument("--target", choices=["suffix", "exact", "preserve", "to-mihomo"], required=True,
+    help="clean/hosts: suffix|exact; mihomo: preserve; xray: preserve|to-mihomo")
     p_dom.add_argument("--view", choices=["mihomo", "xray"], required=True, help="Output view. For preserve: mihomo→mihomo only, xray→xray only")
     p_dom.set_defaults(func=lambda a: cmd_domains(a.src, a.dst, a.input_type, a.target, a.view))
     p_ip = sub.add_parser("ips", help="Process IP/CIDR lists")
     p_ip.add_argument("src", help="Input clear-text file (any extension)")
     p_ip.add_argument("dst", help="Output .list path (extension .list will be enforced)")
-    p_ip.set_defaults(func=lambda a: cmd_ips(a, dst=a.dst))
+    p_ip.set_defaults(func=lambda a: cmd_ips(a.src, a.dst))
     args = p.parse_args()
     if args.mode == "ips":
         cmd_ips(args.src, args.dst)
