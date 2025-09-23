@@ -75,6 +75,22 @@ jobs:
           rm -rf sources/geosite sources/geoip
           mkdir -p sources/geosite sources/geoip
 
+      - name: Build geosite/category-nongov-ru by stripping include before flatten
+        run: |
+          set -Eeuo pipefail
+          src_ru="community/data/category-ru"
+          inc_re='^[[:space:]]*include:[[:space:]]*category-gov-ru([[:space:]]|$|#|@)'
+          if [[ -f "${src_ru}" ]]; then
+            tmp="$(mktemp)"
+            sed -E 's/\r$//' "${src_ru}" | grep -vE "${inc_re}" > "${tmp}"
+            python3 .ci/optimize.py domains "${tmp}" sources/geosite/category-nongov-ru \
+              --input-type xray --target preserve --view xray
+            rm -f "${tmp}"
+          else
+            echo "WARN: community/data/category-ru not found; skip category-nongov-ru" >&2
+          fi
+
+
       - name: Flatten sections_in → sources/geosite (XRAY, no include)
         if: success()
         run: |
