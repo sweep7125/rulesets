@@ -43,7 +43,7 @@ jobs:
       - name: Prepare helpers and inputs from main
         run: |
           set -Eeuo pipefail
-          mkdir -p .ci sources/geosite sources/geoip _inputs
+          mkdir -p .ci community _inputs
           git fetch --no-tags --depth=1 origin main
           git show origin/main:.ci/optimize.py > .ci/optimize.py
           git show origin/main:sections_in > sections_in || true
@@ -64,16 +64,17 @@ jobs:
           repository: v2fly/domain-list-community
           path: community
           fetch-depth: 1
+        # sparse-checkout для папки data
           sparse-checkout: |
             data
           sparse-checkout-cone-mode: true
           filter: blob:none
 
-      - name: Recreate sources folders
+      - name: Clean output folders in workspace (root geosite/geoip)
         run: |
           set -Eeuo pipefail
-          rm -rf sources/geosite sources/geoip
-          mkdir -p sources/geosite sources/geoip
+          rm -rf geosite geoip
+          mkdir -p geosite geoip
 
       - name: Build geosite/category-nongov-ru by stripping include before flatten
         run: |
@@ -82,32 +83,57 @@ jobs:
           tmp="community/data/.tmp-category-nongov-ru"
           inc_re='^[[:space:]]*include:[[:space:]]*category-gov-ru([[:space:]]|$|#|@)'
           if [[ -f "$src_ru" ]]; then
-            # 1) убираем только include:category-gov-ru, оставляя остальные include в том же base_dir
             sed -E 's/\r$//' "$src_ru" | grep -vE "$inc_re" > "$tmp"
-            # 2) flatten (preserve) уже с корректной рабочей директорией community/data
-            python3 .ci/optimize.py domains "$tmp" sources/geosite/category-nongov-ru \
+            # flatten в root/geosite
+            python3 .ci/optimize.py domains "$tmp" geosite/category-nongov-ru \
               --input-type xray --target preserve --view xray
-            # 3) уборка
             rm -f "$tmp" "$tmp.list"
           else
             echo "WARN: $src_ru not found; skip category-nongov-ru" >&2
           fi
 
-
-      - name: Flatten sections_in → sources/geosite (XRAY, no include)
-        if: success()
+      - name: Resolve keep-set from sections_in (recursive includes) and flatten → geosite/
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
-          if [[ -f sections_in ]]; then
-            while IFS= read -r s; do
-              s="${s%%#*}"; s="$(echo "$s" | xargs)"
-              [[ -z "$s" ]] && continue
-              src="community/data/$s"
-              [[ -f "$src" ]] || { echo "skip missing: $s"; continue; }
-              dom_xray_preserve "$src" "sources/geosite/$s"
-            done < sections_in
+          DATA_DIR="community/data"
+          INTEREST_FILE="sections_in"
+          declare -A keep processed
+          if [[ -f "$INTEREST_FILE" ]]; then
+            while IFS= read -r line; do
+              line="${line//$'\r'/}"; line="${line%%#*}"
+              f="$(echo "$line" | xargs)"
+              [[ -n "$f" ]] && keep["$f"]=1
+            done < "$INTEREST_FILE"
           fi
+          # Seed как в старом пайплайне
+          for seed in category-ru category-gov-ru private; do keep["$seed"]=1; done
+
+          changed=1
+          while [[ $changed -eq 1 ]]; do
+            changed=0
+            for file in "${!keep[@]}"; do
+              s="$(echo "$file" | xargs)"
+              [[ -n "${processed[$s]:-}" ]] && continue
+              processed["$s"]=1
+              p="$DATA_DIR/$s"
+              [[ -f "$p" ]] || continue
+              while IFS= read -r inc; do
+                inc="${inc//$'\r'/}"; inc="${inc#include:}"; inc="${inc%%#*}"; inc="$(echo "$inc" | xargs)"
+                [[ -z "$inc" ]] && continue
+                if [[ -z "${keep[$inc]:-}" ]]; then keep["$inc"]=1; changed=1; fi
+              done < <(grep '^include:' "$p" || true)
+            done
+          done
+
+          # Flatten только файлы из keep → root/geosite
+          for rel in "${!keep[@]}"; do
+            src="$DATA_DIR/$rel"
+            [[ -f "$src" ]] || { echo "skip missing: $rel"; continue; }
+            out="geosite/$rel"
+            mkdir -p "$(dirname "$out")"
+            dom_xray_preserve "$src" "$out"
+          done
 
       - name: Download external one-file DOMAIN sources (.src)
         run: |
@@ -131,19 +157,19 @@ jobs:
           done
           for pid in "${pids[@]}"; do wait "$pid"; done
 
-      - name: Normalize DOMAIN sources → XRAY lists in sources/geosite
+      - name: Normalize external DOMAIN sources → XRAY lists in geosite/
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
           convs=( \
-            "suffix _inputs/refilter-community-domains.src sources/geosite/refilter-community-domains" \
-            "suffix _inputs/antifilter-community-domains.src sources/geosite/antifilter-community-domains" \
-            "suffix _inputs/refilter-domains.src sources/geosite/refilter-domains" \
-            "suffix _inputs/russia-inside.src sources/geosite/russia-inside" \
-            "suffix _inputs/russia-outside.src sources/geosite/russia-outside" \
-            "suffix _inputs/google-ai.src sources/geosite/google-ai" \
-            "exact  _inputs/torrent-trackers.src sources/geosite/torrent-trackers" \
-            "exact  _inputs/torrent-trackers-custom.src sources/geosite/torrent-trackers-custom" \
+            "suffix _inputs/refilter-community-domains.src geosite/refilter-community-domains" \
+            "suffix _inputs/antifilter-community-domains.src geosite/antifilter-community-domains" \
+            "suffix _inputs/refilter-domains.src geosite/refilter-domains" \
+            "suffix _inputs/russia-inside.src geosite/russia-inside" \
+            "suffix _inputs/russia-outside.src geosite/russia-outside" \
+            "suffix _inputs/google-ai.src geosite/google-ai" \
+            "exact  _inputs/torrent-trackers.src geosite/torrent-trackers" \
+            "exact  _inputs/torrent-trackers-custom.src geosite/torrent-trackers-custom" \
           )
           for line in "${convs[@]}"; do
             read -r t i o <<<"$line"
@@ -161,13 +187,13 @@ jobs:
           tmp="$(mktemp)"
           {
             for f in \
-              "sources/geosite/refilter-domains" \
-              "sources/geosite/youtube" \
-              "sources/geosite/discord" \
-              "sources/geosite/antifilter-community-domains" \
-              "sources/geosite/russia-inside" \
-              "sources/geosite/google-ai" \
-              "sources/geosite/refilter-community-domains"
+              "geosite/refilter-domains" \
+              "geosite/youtube" \
+              "geosite/discord" \
+              "geosite/antifilter-community-domains" \
+              "geosite/russia-inside" \
+              "geosite/google-ai" \
+              "geosite/refilter-community-domains"
             do
               [[ -f "$f" || -f "$f.list" ]] || continue
               cat "$f" 2>/dev/null || true
@@ -177,7 +203,7 @@ jobs:
           } | grep -E '^(domain:|[^:[:space:]])' \
             | sed -E '/^(full:|keyword:|regexp:)/d; s/^domain://' \
             | grep -E "$t_regex" | sort -u > "$tmp"
-          printf '%s\n' "jut.su" "habr.com" "4pda.to" | cat - "$tmp" | sort -u > "sources/geosite/category-ban-ru.list"
+          printf '%s\n' "jut.su" "habr.com" "4pda.to" | cat - "$tmp" | sort -u > "geosite/category-ban-ru.list"
           rm -f "$tmp"
 
       - name: Download upstream geoip.dat & build base RU/PRIVATE
@@ -201,8 +227,8 @@ jobs:
             go build ./ 
             popd >/dev/null
             ./geoip-src/geoip convert -c ./config_get.json
-            python3 .ci/optimize.py ips extracted/ru.txt sources/geoip/ru
-            python3 .ci/optimize.py ips extracted/private.txt sources/geoip/private
+            python3 .ci/optimize.py ips extracted/ru.txt geosite/../geoip/ru
+            python3 .ci/optimize.py ips extracted/private.txt geosite/../geoip/private
             rm -rf extracted geoip-src _inputs/upstream-geoip.dat
           fi
 
@@ -227,17 +253,17 @@ jobs:
           for pid in "${pids[@]}"; do wait "$pid"; done
           { cat _inputs/cloudflare4.src; echo; cat _inputs/cloudflare6.src; } > _inputs/cloudflare-all.src
 
-      - name: Normalize IP sources → CIDR lists in sources/geoip
+      - name: Normalize IP sources → CIDR lists in geoip/
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
-          ip_opt _inputs/discord-voice-ips.src        sources/geoip/discord-voice-ips
-          ip_opt _inputs/telegram-ips.src             sources/geoip/telegram
-          ip_opt _inputs/cloudflare4.src              sources/geoip/cloudflare-ipv4
-          ip_opt _inputs/cloudflare6.src              sources/geoip/cloudflare-ipv6
-          ip_opt _inputs/cloudflare-all.src           sources/geoip/cloudflare-all
-          ip_opt _inputs/refilter-ips.src             sources/geoip/refilter-ips
-          ip_opt _inputs/refilter-community-ips.src   sources/geoip/refilter-community-ips
+          ip_opt _inputs/discord-voice-ips.src      geoip/discord-voice-ips
+          ip_opt _inputs/telegram-ips.src           geoip/telegram
+          ip_opt _inputs/cloudflare4.src            geoip/cloudflare-ipv4
+          ip_opt _inputs/cloudflare6.src            geoip/cloudflare-ipv6
+          ip_opt _inputs/cloudflare-all.src         geoip/cloudflare-all
+          ip_opt _inputs/refilter-ips.src           geoip/refilter-ips
+          ip_opt _inputs/refilter-community-ips.src geoip/refilter-community-ips
 
       - name: Build derived geoip/category-ban-ru (intersection RU ∩ refilter)
         run: |
@@ -255,9 +281,9 @@ jobs:
                       except: pass
               return out
           def collapse(nets):
+              from ipaddress import collapse_addresses
               v4=sorted([n for n in nets if n.version==4], key=lambda n:(int(n.network_address), int(n.broadcast_address)))
               v6=sorted([n for n in nets if n.version==6], key=lambda n:(int(n.network_address), int(n.broadcast_address)))
-              from ipaddress import collapse_addresses
               return list(collapse_addresses(v4))+list(collapse_addresses(v6))
           def intersect(A,B):
               A=collapse(A); B=collapse(B)
@@ -277,12 +303,11 @@ jobs:
               A4=[n for n in A if n.version==4]; B4=[n for n in B if n.version==4]
               A6=[n for n in A if n.version==6]; B6=[n for n in B if n.version==6]
               return collapse(inter(A4,B4)+inter(A6,B6))
-          ru  = read_nets("sources/geoip/ru.list")  or read_nets("sources/geoip/ru")
-          rf  = (read_nets("sources/geoip/refilter-ips.list")+
-                 read_nets("sources/geoip/refilter-community-ips.list"))
+          ru  = read_nets("geoip/ru.list")  or read_nets("geoip/ru")
+          rf  = (read_nets("geoip/refilter-ips.list")+ read_nets("geoip/refilter-community-ips.list"))
           out = intersect(ru, rf)
-          os.makedirs("sources/geoip", exist_ok=True)
-          with open("sources/geoip/category-ban-ru.list","w",encoding="utf-8") as f:
+          os.makedirs("geoip", exist_ok=True)
+          with open("geoip/category-ban-ru.list","w",encoding="utf-8") as f:
               for n in sorted(out,key=lambda n:(n.version,n.prefixlen,int(n.network_address))):
                   f.write(f"{n.network_address}/{n.prefixlen}\n")
           PY
@@ -290,15 +315,18 @@ jobs:
       - name: Stamp date
         run: echo "DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
 
-      - name: Commit sources/
+      - name: Commit ONLY geosite/ and geoip/ to sources branch
         run: |
           set -Eeuo pipefail
           git config --local user.email "${COMMIT_USER_EMAIL}"
           git config --local user.name  "${COMMIT_USER_NAME}"
-          git add -A sources sections_in config_get.json .ci/optimize.py || true
+          # убрать все уже отслеживаемые файлы из индекса, чтобы в ветке были только нужные папки
+          git ls-files -z | xargs -0 -r git rm -f --cached
+          # добавить только geosite и geoip
+          git add -f geosite geoip
           if git diff --staged --quiet; then
             echo "No changes to commit"
             exit 0
           fi
-          git commit -m "Update sources ${DATE}"
+          git commit -m "Update sources (geosite + geoip only) ${DATE}"
           git push || true
