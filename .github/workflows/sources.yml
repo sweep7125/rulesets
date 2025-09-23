@@ -79,15 +79,18 @@ jobs:
         run: |
           set -Eeuo pipefail
           src_ru="community/data/category-ru"
+          tmp="community/data/.tmp-category-nongov-ru"
           inc_re='^[[:space:]]*include:[[:space:]]*category-gov-ru([[:space:]]|$|#|@)'
-          if [[ -f "${src_ru}" ]]; then
-            tmp="$(mktemp)"
-            sed -E 's/\r$//' "${src_ru}" | grep -vE "${inc_re}" > "${tmp}"
-            python3 .ci/optimize.py domains "${tmp}" sources/geosite/category-nongov-ru \
+          if [[ -f "$src_ru" ]]; then
+            # 1) убираем только include:category-gov-ru, оставляя остальные include в том же base_dir
+            sed -E 's/\r$//' "$src_ru" | grep -vE "$inc_re" > "$tmp"
+            # 2) flatten (preserve) уже с корректной рабочей директорией community/data
+            python3 .ci/optimize.py domains "$tmp" sources/geosite/category-nongov-ru \
               --input-type xray --target preserve --view xray
-            rm -f "${tmp}"
+            # 3) уборка
+            rm -f "$tmp" "$tmp.list"
           else
-            echo "WARN: community/data/category-ru not found; skip category-nongov-ru" >&2
+            echo "WARN: $src_ru not found; skip category-nongov-ru" >&2
           fi
 
 
