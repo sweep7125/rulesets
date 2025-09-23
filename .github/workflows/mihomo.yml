@@ -41,17 +41,6 @@ jobs:
             git push -u origin HEAD:mihomo-rulesets
           fi
 
-      - name: Prepare helpers (use /tmp)
-        run: |
-          set -Eeuo pipefail
-          git fetch --no-tags --depth=1 origin main
-          git show origin/main:.ci/optimize.py > /tmp/optimize.py
-          cat > /tmp/helpers.sh <<'SH'
-          set -Eeuo pipefail
-          OPT_PY="/tmp/optimize.py"
-          dom_xray_to_mihomo() { python3 "$OPT_PY" domains "$1" "$2" --input-type xray --target to-mihomo --view mihomo; }
-          SH
-
       - name: Install Mihomo (latest .deb)
         run: |
           set -Eeuo pipefail
@@ -66,36 +55,65 @@ jobs:
           sudo apt-get install -y /tmp/mihomo.deb
           rm -f /tmp/mihomo.deb
 
-      - name: Build *.mrs to repository root (only .mrs artifacts)
+      - name: Build *.mrs to repository root (no optimizer; preserve order; only requested transforms)
         run: |
           set -Eeuo pipefail
-          source /tmp/helpers.sh
           mkdir -p /tmp/work
           git fetch --no-tags --depth=1 origin sources
 
-          # очистим корень ветки (оставим .git)
           find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
 
-          # GEOSITE -> DOMAIN rulesets
-          while IFS= read -r f; do
-            [ -n "$f" ] || continue
-            mkdir -p "/tmp/work/$(dirname "$f")"
-            git show "origin/sources:geosite/$f" > "/tmp/work/${f}.xray"
-            dom_xray_to_mihomo "/tmp/work/${f}.xray" "/tmp/work/${f}.mihomo.list"
-            bn="$(basename "$f")"; base="${bn%.list}"
-            mihomo convert-ruleset domain text "/tmp/work/${f}.mihomo.list" "./geosite-${base}.mrs"
-          done < <(git ls-tree -r --name-only origin/sources:geosite)
+          geosite_list=$(git ls-tree -r --name-only origin/sources:geosite || true)
+          if [[ -n "$geosite_list" ]]; then
+            while IFS= read -r f; do
+              [[ -n "$f" ]] || continue
+              in="/tmp/work/${f}.src"
+              out="/tmp/work/${f}.mihomo.list"
+              mkdir -p "/tmp/work/$(dirname "$f")"
+              git show "origin/sources:geosite/$f" > "$in"
 
-          # GEOIP -> IPCIDR rulesets
-          while IFS= read -r f; do
-            [ -n "$f" ] || continue
-            mkdir -p "/tmp/work/$(dirname "$f")"
-            git show "origin/sources:geoip/$f" > "/tmp/work/${f}"
-            bn="$(basename "$f")"; base="${bn%.list}"
-            mihomo convert-ruleset ipcidr text "/tmp/work/${f}" "./geoip-${base}.mrs"
-          done < <(git ls-tree -r --name-only origin/sources:geoip)
+              # Только: drop include/keyword/regexp; domain:/no-prefix -> +.<host>; full: -> exact (просто убрать префикс).
+              awk '
+                function trim(s){ sub(/^[ \t]+/,"",s); sub(/[ \t]+$/,"",s); return s }
+                {
+                  gsub(/\r/,"")                      # нормализуем CRLF, это не меняет смысл файла
+                  s=$0; s=trim(s)
+                  if(s ~ /^include:/) next
+                  if(s ~ /^keyword:/) next
+                  if(s ~ /^regexp:/)  next
 
-          # страховка: оставить только .mrs в корне
+                  if(s ~ /^full:/){
+                    sub(/^full:/,"",s); print s; next
+                  }
+                  if(s ~ /^domain:/){
+                    sub(/^domain:/,"",s)
+                    sub(/^\./,"",s)                  # убираем ведущую точку, если была
+                    print "+." s; next
+                  }
+                  if(s ~ /^$/){ print s; next }      # пустые строки сохраняем как есть
+                  # без префикса -> суффикс
+                  sub(/^\./,"",s)
+                  print "+." s
+                }
+              ' "$in" > "$out"
+
+              bn="$(basename "$f")"; base="${bn%.list}"
+              mihomo convert-ruleset domain text "$out" "./geosite-${base}.mrs"
+            done <<< "$geosite_list"
+          fi
+
+          geoip_list=$(git ls-tree -r --name-only origin/sources:geoip || true)
+          if [[ -n "$geoip_list" ]]; then
+            while IFS= read -r f; do
+              [[ -n "$f" ]] || continue
+              in="/tmp/work/${f}"
+              mkdir -p "/tmp/work/$(dirname "$f")"
+              git show "origin/sources:geoip/$f" > "$in"
+              bn="$(basename "$f")"; base="${bn%.list}"
+              mihomo convert-ruleset ipcidr text "$in" "./geoip-${base}.mrs"
+            done <<< "$geoip_list"
+          fi
+
           find . -mindepth 1 -maxdepth 1 -type d ! -name '.git' -exec rm -rf {} +
           find . -mindepth 1 -maxdepth 1 -type f ! -name '*.mrs' -delete
 
