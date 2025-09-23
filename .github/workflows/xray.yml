@@ -66,96 +66,84 @@ jobs:
             git pull --ff-only || true
           else
             git switch -c xray-rulesets
-            git -c user.email="${{ env.COMMIT_USER_EMAIL }}" -c user.name="${{ env.COMMIT_USER_NAME }}" \
-              commit --allow-empty -m "Initialize xray-rulesets"
+            git -c user.email="${{ env.COMMIT_USER_EMAIL }}" -c user.name="${{ env.COMMIT_USER_NAME }}" commit --allow-empty -m "Initialize xray-rulesets"
             git push -u origin HEAD:xray-rulesets
           fi
 
-      - name: Prepare helpers and files from main (use /tmp)
+      - name: Prepare helpers (use /tmp)
         run: |
           set -Eeuo pipefail
           mkdir -p /tmp/community/data /tmp/geoip /tmp/out
           git fetch --no-tags --depth=1 origin main
           git show origin/main:.ci/optimize.py > /tmp/optimize.py
-          git show origin/main:config.json   > /tmp/config.json   || true
           cat > /tmp/helpers.sh <<'SH'
           set -Eeuo pipefail
           OPT_PY="/tmp/optimize.py"
           dom_xray_preserve() { python3 "$OPT_PY" domains "$1" "$2" --input-type xray --target preserve --view xray; }
           SH
-          chmod +x /tmp/optimize.py
 
-      - name: Pull geosite & geoip from sources (filter by $GEOSITE_INCLUDE)
+      - name: Pull geosite & geoip from sources (filtered by env)
         run: |
           set -Eeuo pipefail
           git fetch --no-tags --depth=1 origin sources
-      
-          # Сформируем множество для фильтрации geosite из переменной окружения
-          declare -A keep=()
+
+          # build keep sets from envs
+          declare -A keep_site=() keep_ip=()
           if [[ -n "${GEOSITE_INCLUDE:-}" ]]; then
-            # Поддерживаем имена с/без .list, с путём и без него (basename)
             while IFS= read -r raw; do
-              raw="${raw//$'\r'/}"; raw="${raw%%#*}"
-              item="$(echo "$raw" | xargs)"
-              [[ -z "$item" ]] && continue
-              keep["$item"]=1
-              [[ "$item" == *.list ]] || keep["$item.list"]=1
-              bn="${item##*/}"
-              keep["$bn"]=1
-              [[ "$bn" == *.list ]] || keep["$bn.list"]=1
-              if [[ "$bn" == *.list ]]; then
-                base="${bn%.list}"
-                keep["$base"]=1
-              fi
+              raw="${raw//$'\r'/}"; raw="${raw%%#*}"; item="$(echo "$raw" | xargs)"; [[ -z "$item" ]] && continue
+              keep_site["$item"]=1; [[ "$item" == *.list ]] || keep_site["$item.list"]=1
+              bn="${item##*/}"; keep_site["$bn"]=1; [[ "$bn" == *.list ]] || keep_site["$bn.list"]=1
+              [[ "$bn" == *.list ]] && keep_site["${bn%.list}"]=1 || true
             done <<< "${GEOSITE_INCLUDE}"
           fi
-      
-          # geosite → /tmp/community/data (только выбранные файлы, если список задан)
+          if [[ -n "${GEOIP_INCLUDE:-}" ]]; then
+            while IFS= read -r raw; do
+              raw="${raw//$'\r'/}"; raw="${raw%%#*}"; item="$(echo "$raw" | xargs)"; [[ -z "$item" ]] && continue
+              keep_ip["$item"]=1; [[ "$item" == *.list ]] || keep_ip["$item.list"]=1
+              bn="${item##*/}"; keep_ip["$bn"]=1; [[ "$bn" == *.list ]] || keep_ip["$bn.list"]=1
+              [[ "$bn" == *.list ]] && keep_ip["${bn%.list}"]=1 || true
+            done <<< "${GEOIP_INCLUDE}"
+          fi
+
+          # geosite → /tmp/community/data
           rm -rf /tmp/community/data && mkdir -p /tmp/community/data
           while IFS= read -r p; do
-            rel="$p"                                # относительный путь внутри дерева geosite/
-            bn="${rel##*/}"                         # basename
-            base="${bn%.list}"
-      
-            if [[ ${#keep[@]} -gt 0 ]]; then
-              if [[ -z "${keep[$rel]:-}" && -z "${keep[$bn]:-}" && -z "${keep[$base]:-}" && -z "${keep[$base.list]:-}" ]]; then
-                continue
-              fi
+            rel="$p"; bn="${rel##*/}"; base="${bn%.list}"
+            if (( ${#keep_site[@]} > 0 )); then
+              [[ -n "${keep_site[$rel]:-}${keep_site[$bn]:-}${keep_site[$base]:-}${keep_site[$base.list]:-}" ]] || continue
             fi
-      
             mkdir -p "/tmp/community/data/$(dirname "$rel")"
             git show "origin/sources:geosite/$rel" > "/tmp/community/data/$rel"
           done < <(git ls-tree -r --name-only origin/sources:geosite || true)
-      
-          # geoip → /tmp/geoip (без фильтра по env; если нужно — по аналогии)
+
+          # geoip → /tmp/geoip
           rm -rf /tmp/geoip && mkdir -p /tmp/geoip
           while IFS= read -r p; do
-            rel="$p"
+            rel="$p"; bn="${rel##*/}"; base="${bn%.list}"
+            if (( ${#keep_ip[@]} > 0 )); then
+              [[ -n "${keep_ip[$rel]:-}${keep_ip[$bn]:-}${keep_ip[$base]:-}${keep_ip[$base.list]:-}" ]] || continue
+            fi
             mkdir -p "/tmp/geoip/$(dirname "$rel")"
             git show "origin/sources:geoip/$rel" > "/tmp/geoip/$rel"
           done < <(git ls-tree -r --name-only origin/sources:geoip || true)
 
-      - name: Normalize /tmp/community/data (xray preserve; idempotent)
+      - name: Normalize /tmp/community/data (xray preserve)
         run: |
           set -Eeuo pipefail
           source /tmp/helpers.sh
           find /tmp/community/data -type f -print0 | while IFS= read -r -d '' f; do
-            tmp="$(mktemp --suffix=.list)"
-            dom_xray_preserve "$f" "$tmp"
-            mv "$tmp" "$f"
+            tmp="$(mktemp --suffix=.list)"; dom_xray_preserve "$f" "$tmp"; mv "$tmp" "$f"
           done
 
       - name: Make v2fly-style filenames (drop .list)
         run: |
           set -Eeuo pipefail
-          find /tmp/community/data -type f -name '*.list' -print0 \
-            | while IFS= read -r -d '' f; do
-                dir="$(dirname "$f")"
-                base="$(basename "$f" .list)"
-                mv -f "$f" "$dir/$base"
-              done
+          find /tmp/community/data -type f -name '*.list' -print0 | while IFS= read -r -d '' f; do
+            dir="$(dirname "$f")"; base="$(basename "$f" .list)"; mv -f "$f" "$dir/$base"
+          done
 
-      - name: Checkout Loyalsoldier/domain-list-custom (builder only)
+      - name: Checkout Loyalsoldier/domain-list-custom
         uses: actions/checkout@v5
         with:
           repository: Loyalsoldier/domain-list-custom
@@ -170,21 +158,19 @@ jobs:
           cache-dependency-path: ./custom/go.sum
           cache: true
 
-      - name: Build geosite.dat (output to /tmp/out)
+      - name: Build geosite.dat
         run: |
           set -Eeuo pipefail
           pushd custom >/dev/null
-          # exportlists выключен, берём нормализованные источники из /tmp/community/data
           go run ./ -outputpath=/tmp/out -exportlists= -datapath=/tmp/community/data -togfwlist=category-ru
           popd >/dev/null
-          test -s /tmp/out/geosite.dat || { echo "geosite.dat not generated" >&2; exit 1; }
+          test -s /tmp/out/geosite.dat
 
-      - name: Build geoip.dat from /tmp/geoip via Loyalsoldier/geoip (output to /tmp/out)
+      - name: Build geoip.dat
         run: |
           set -Eeuo pipefail
           rm -rf /tmp/geoip-src
           git clone --depth=1 https://github.com/Loyalsoldier/geoip /tmp/geoip-src
-
           pushd /tmp/geoip-src >/dev/null
           go build ./
           popd >/dev/null
@@ -192,9 +178,6 @@ jobs:
           python3 - <<'PY'
           import os, json, sys
           inc = os.environ.get("GEOIP_INCLUDE","").strip()
-          if not inc:
-              print("GEOIP_INCLUDE пуст: нечего собирать", file=sys.stderr); sys.exit(1)
-
           wanted = []
           for line in inc.splitlines():
               line = line.split('#',1)[0].strip()
@@ -204,7 +187,7 @@ jobs:
               wanted.append(base)
           wanted = sorted(set(wanted))
 
-          inputs, missing = [], []
+          inputs = []
           for name in wanted:
               p_noext = f"/tmp/geoip/{name}"
               p_list  = p_noext + ".list"
@@ -212,14 +195,9 @@ jobs:
                   inputs.append({"type":"text","action":"add","args":{"name":name,"uri":p_list}})
               elif os.path.isfile(p_noext):
                   inputs.append({"type":"text","action":"add","args":{"name":name,"uri":p_noext}})
-              else:
-                  missing.append(name)
 
           if not inputs:
-              print("ERROR: ни один из запрошенных geoip-листов не найден: " + ", ".join(missing), file=sys.stderr)
-              sys.exit(1)
-          if missing:
-              print("WARN: отсутствуют списки: " + ", ".join(missing), file=sys.stderr)
+              sys.exit("No geoip sources found per GEOIP_INCLUDE")
 
           cfg = {
             "input": inputs,
@@ -230,26 +208,18 @@ jobs:
             }]
           }
           os.makedirs("/tmp/out", exist_ok=True)
-          with open("/tmp/config.json","w") as f: json.dump(cfg, f, ensure_ascii=False, indent=2)
+          with open("/tmp/config.json","w") as f: json.dump(cfg, f, ensure_ascii=False)
           PY
-
-          echo "== using config.json ==" && cat /tmp/config.json
 
           pushd /tmp >/dev/null
           ./geoip-src/geoip convert -c /tmp/config.json
           popd >/dev/null
-          
+          test -s /tmp/out/geoip.dat
+
       - name: Publish ONLY *.dat to repo root
         run: |
           set -Eeuo pipefail
-          # должны быть сгенерированы хотя бы один .dat
-          if [[ ! -s /tmp/out/geosite.dat && ! -s /tmp/out/geoip.dat ]]; then
-            echo "No .dat files built — aborting publish" >&2
-            exit 1
-          fi
-          # подчистим корень ветки: оставим только .git
           find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
-          # перенесём .dat в корень
           [[ -s /tmp/out/geosite.dat ]] && mv /tmp/out/geosite.dat ./geosite.dat
           [[ -s /tmp/out/geoip.dat   ]] && mv /tmp/out/geoip.dat   ./geoip.dat
           ls -l *.dat || true
@@ -260,10 +230,6 @@ jobs:
           git config --local user.email "${COMMIT_USER_EMAIL}"
           git config --local user.name  "${COMMIT_USER_NAME}"
           git add -A
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
-          DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          git commit -m "Update xray geofiles ${DATE}"
+          if git diff --staged --quiet; then exit 0; fi
+          git commit -m "Update xray geofiles $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           git push || true
