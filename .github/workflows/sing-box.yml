@@ -1,0 +1,136 @@
+name: Generate sing-box rulesets from sources
+
+on:
+  schedule:
+    - cron: "15 0 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: singbox-from-sources
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  COMMIT_USER_NAME: ${{ github.actor }}
+  COMMIT_USER_EMAIL: ${{ github.actor }}@users.noreply.github.com
+  DEBIAN_FRONTEND: noninteractive
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Switch to branch sing-box-rulesets
+        run: |
+          set -Eeuo pipefail
+          if git ls-remote --exit-code --heads origin refs/heads/sing-box-rulesets >/dev/null 2>&1; then
+            git fetch --no-tags --depth=1 origin refs/heads/sing-box-rulesets:refs/remotes/origin/sing-box-rulesets
+            git switch -c sing-box-rulesets --track origin/sing-box-rulesets || git switch sing-box-rulesets
+            git pull --ff-only || true
+          else
+            git switch -c sing-box-rulesets
+            find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+            git -c user.email="${COMMIT_USER_EMAIL}" -c user.name="${COMMIT_USER_NAME}" commit --allow-empty -m "Initialize sing-box rules branch"
+            git push -u origin HEAD:sing-box-rulesets
+          fi
+
+      - name: Install sing-box
+        run: |
+          set -Eeuo pipefail
+          curl -fsSL https://sing-box.app/install.sh | sh
+
+      - name: Read file list from sources branch
+        id: srcfiles
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags --depth=1 origin sources
+          GEOSITE="$(git ls-tree -r --name-only origin/sources:geosite | tr '\n' ' ')"
+          GEOIP="$(git ls-tree -r --name-only origin/sources:geoip   | tr '\n' ' ')"
+          echo "GEOSITE=$GEOSITE" >> "$GITHUB_OUTPUT"
+          echo "GEOIP=$GEOIP"     >> "$GITHUB_OUTPUT"
+
+      - name: Build sing-box JSON (v3) and SRS
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/work
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+
+          # geosite -> JSON/SRS
+          for f in ${{ steps.srcfiles.outputs.GEOSITE }}; do
+            mkdir -p "/tmp/work/$(dirname "$f")"
+            git show "origin/sources:geosite/$f" > "/tmp/work/${f}"
+            base="${f%.list}"
+            safe="${base//\//-}"
+            out_json="./geosite-${safe}.json"
+            out_srs="./geosite-${safe}.srs"
+            IN="/tmp/work/${f}" OUT="$out_json" python3 - <<'PY'
+import os, json
+src=os.environ["IN"]; dst=os.environ["OUT"]
+dom=[]; suf=[]; kw=[]; reg=[]
+with open(src,'r',encoding='utf-8',errors='ignore') as f:
+    for raw in f:
+        s=raw.strip()
+        if not s or s.startswith('#'):
+            continue
+        if s.startswith('full:'):
+            dom.append(s[5:].strip())
+        elif s.startswith('domain:'):
+            suf.append(s[7:].strip())
+        elif s.startswith('keyword:'):
+            kw.append(s[8:].strip())
+        elif s.startswith('regexp:'):
+            reg.append(s[7:].strip())
+        else:
+            suf.append(s)
+rule={}
+if dom: rule["domain"]=dom
+if suf: rule["domain_suffix"]=suf
+if kw:  rule["domain_keyword"]=kw
+if reg: rule["domain_regex"]=reg
+data={"version":3,"rules":([rule] if rule else [])}
+with open(dst,'w',encoding='utf-8') as o:
+    json.dump(data,o,ensure_ascii=False,indent=2)
+PY
+            sing-box rule-set compile --output "$out_srs" "$out_json"
+          done
+
+          # geoip -> JSON/SRS
+          for f in ${{ steps.srcfiles.outputs.GEOIP }}; do
+            mkdir -p "/tmp/work/$(dirname "$f")"
+            git show "origin/sources:geoip/$f" > "/tmp/work/${f}"
+            base="${f%.list}"
+            safe="${base//\//-}"
+            out_json="./geoip-${safe}.json"
+            out_srs="./geoip-${safe}.srs"
+            IN="/tmp/work/${f}" OUT="$out_json" python3 - <<'PY'
+import os, json
+src=os.environ["IN"]; dst=os.environ["OUT"]
+cidr=[]
+with open(src,'r',encoding='utf-8',errors='ignore') as f:
+    for raw in f:
+        s=raw.strip()
+        if not s or s.startswith('#'):
+            continue
+        cidr.append(s)
+data={"version":3,"rules":([{"ip_cidr":cidr}] if cidr else [])}
+with open(dst,'w',encoding='utf-8') as o:
+    json.dump(data,o,ensure_ascii=False,indent=2)
+PY
+            sing-box rule-set compile --output "$out_srs" "$out_json"
+          done
+
+      - name: Commit *.json and *.srs
+        run: |
+          set -Eeuo pipefail
+          git config --local user.email "${COMMIT_USER_EMAIL}"
+          git config --local user.name  "${COMMIT_USER_NAME}"
+          git add -A
+          git diff --staged --quiet && exit 0
+          git commit -m "Update sing-box rule-sets $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          git push || true
