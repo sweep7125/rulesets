@@ -78,12 +78,13 @@ jobs:
       - name: Build geosite/category-nongov-ru by stripping include before flatten
         run: |
           set -Eeuo pipefail
+          source .ci/helpers.sh
           src_ru="community/data/category-ru"
           tmp="community/data/.tmp-category-nongov-ru"
           inc_re='^[[:space:]]*include:[[:space:]]*category-gov-ru([[:space:]]|$|#|@)'
           if [[ -f "$src_ru" ]]; then
             sed -E 's/\r$//' "$src_ru" | grep -vE "$inc_re" > "$tmp"
-            python3 .ci/optimize.py domains "$tmp" geosite/category-nongov-ru --input-type xray --target preserve --view xray
+            dom_xray_preserve "$tmp" geosite/category-nongov-ru
             rm -f "$tmp" "$tmp.list"
           fi
 
@@ -175,9 +176,11 @@ jobs:
           { printf '%s\n' "jut.su" "habr.com" "4pda.to"; cat "$tmp"; } | sort -u > "geosite/category-ban-ru.list"
           rm -f "$tmp"
 
-      - name: Build geosite/rules-lite (dedup + optimize)
+      - name: Build geosite/rules-lite (dedup + optimize, preserve)
         run: |
           set -Eeuo pipefail
+          source .ci/helpers.sh
+
           tmp="$(mktemp)"
           {
             for f in \
@@ -191,10 +194,8 @@ jobs:
               echo
             done
           } > "$tmp"
-      
-          python3 .ci/optimize.py domains "$tmp" geosite/rules-lite \
-            --input-type xray --target suffix --view xray
-      
+
+          dom_xray_preserve "$tmp" geosite/rules-lite
           rm -f "$tmp" "$tmp.list"
 
 
