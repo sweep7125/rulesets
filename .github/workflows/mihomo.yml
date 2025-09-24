@@ -41,7 +41,45 @@ jobs:
             git push -u origin HEAD:mihomo-rulesets
           fi
 
+      - name: Compute build hash & decide build
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags --depth=1 origin sources || true
+          GEOSITE_SUBSET_HASH="$(
+            {
+              git ls-tree -r --name-only origin/sources:geosite || true
+            } | awk 'NF' | while IFS= read -r rel; do
+              h="$(git show "origin/sources:geosite/$rel" | sha256sum | cut -d" " -f1 || echo)"
+              printf '%s  %s\n' "$h" "$rel"
+            done | LC_ALL=C sort | sha256sum | cut -d' ' -f1
+          )"
+          GEOIP_SUBSET_HASH="$(
+            {
+              git ls-tree -r --name-only origin/sources:geoip || true
+            } | awk 'NF' | while IFS= read -r rel; do
+              h="$(git show "origin/sources:geoip/$rel" | sha256sum | cut -d" " -f1 || echo)"
+              printf '%s  %s\n' "$h" "$rel"
+            done | LC_ALL=C sort | sha256sum | cut -d' ' -f1
+          )"
+          MIHOMO_TAG="$(
+            curl -fsSL -H "Authorization: bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" \
+              https://api.github.com/repos/MetaCubeX/mihomo/releases/latest \
+            | jq -r '.tag_name // empty'
+          )"
+          [[ -n "$MIHOMO_TAG" ]] || MIHOMO_TAG=unknown
+          git fetch --no-tags --depth=1 origin main || true
+          WORKFLOW_HASH="$(git show origin/main:.github/workflows/mihomo.yml 2>/dev/null | sha256sum | cut -d' ' -f1 || echo none)"
+          MRS_BUILD_HASH="$(printf '%s\n%s\n%s\n%s\n' "$GEOSITE_SUBSET_HASH" "$GEOIP_SUBSET_HASH" "$MIHOMO_TAG" "$WORKFLOW_HASH" | sha256sum | cut -d' ' -f1)"
+          echo "MRS_BUILD_HASH=$MRS_BUILD_HASH" >> "$GITHUB_ENV"
+          PREV_HASH="$(cat mrs.hash 2>/dev/null || true)"
+          if [[ "$MRS_BUILD_HASH" != "$PREV_HASH" ]]; then
+            echo "MRS_NEEDS_BUILD=1" >> "$GITHUB_ENV"
+          else
+            echo "MRS_NEEDS_BUILD=0" >> "$GITHUB_ENV"
+          fi
+
       - name: Install Mihomo (latest .deb)
+        if: env.MRS_NEEDS_BUILD == '1'
         run: |
           set -Eeuo pipefail
           url=$(
@@ -56,13 +94,12 @@ jobs:
           rm -f /tmp/mihomo.deb
 
       - name: Build *.mrs to repository root (no optimizer; preserve order; only requested transforms)
+        if: env.MRS_NEEDS_BUILD == '1'
         run: |
           set -Eeuo pipefail
           mkdir -p /tmp/work
           git fetch --no-tags --depth=1 origin sources
-
-          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
-
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name 'mrs.hash' -exec rm -rf {} +
           geosite_list=$(git ls-tree -r --name-only origin/sources:geosite || true)
           if [[ -n "$geosite_list" ]]; then
             while IFS= read -r f; do
@@ -71,37 +108,24 @@ jobs:
               out="/tmp/work/${f}.mihomo.list"
               mkdir -p "/tmp/work/$(dirname "$f")"
               git show "origin/sources:geosite/$f" > "$in"
-
-              # Только: drop include/keyword/regexp; domain:/no-prefix -> +.<host>; full: -> exact (просто убрать префикс).
               awk '
                 function trim(s){ sub(/^[ \t]+/,"",s); sub(/[ \t]+$/,"",s); return s }
                 {
-                  gsub(/\r/,"")                      # нормализуем CRLF, это не меняет смысл файла
+                  gsub(/\r/,"")
                   s=$0; s=trim(s)
                   if(s ~ /^include:/) next
                   if(s ~ /^keyword:/) next
                   if(s ~ /^regexp:/)  next
-
-                  if(s ~ /^full:/){
-                    sub(/^full:/,"",s); print s; next
-                  }
-                  if(s ~ /^domain:/){
-                    sub(/^domain:/,"",s)
-                    sub(/^\./,"",s)                  # убираем ведущую точку, если была
-                    print "+." s; next
-                  }
-                  if(s ~ /^$/){ print s; next }      # пустые строки сохраняем как есть
-                  # без префикса -> суффикс
-                  sub(/^\./,"",s)
-                  print "+." s
+                  if(s ~ /^full:/){ sub(/^full:/,"",s); print s; next }
+                  if(s ~ /^domain:/){ sub(/^domain:/,"",s); sub(/^\./,"",s); print "+." s; next }
+                  if(s ~ /^$/){ print s; next }
+                  sub(/^\./,"",s); print "+." s
                 }
               ' "$in" > "$out"
-
               bn="$(basename "$f")"; base="${bn%.list}"
               mihomo convert-ruleset domain text "$out" "./geosite-${base}.mrs"
             done <<< "$geosite_list"
           fi
-
           geoip_list=$(git ls-tree -r --name-only origin/sources:geoip || true)
           if [[ -n "$geoip_list" ]]; then
             while IFS= read -r f; do
@@ -113,9 +137,9 @@ jobs:
               mihomo convert-ruleset ipcidr text "$in" "./geoip-${base}.mrs"
             done <<< "$geoip_list"
           fi
-
           find . -mindepth 1 -maxdepth 1 -type d ! -name '.git' -exec rm -rf {} +
-          find . -mindepth 1 -maxdepth 1 -type f ! -name '*.mrs' -delete
+          find . -mindepth 1 -maxdepth 1 -type f ! -name '*.mrs' ! -name 'mrs.hash' -delete
+          printf '%s' "${MRS_BUILD_HASH}" > ./mrs.hash
 
       - name: Commit *.mrs only
         run: |
