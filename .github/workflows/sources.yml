@@ -176,7 +176,7 @@ jobs:
           { printf '%s\n' "jut.su" "habr.com" "4pda.to"; cat "$tmp"; } | sort -u > "geosite/category-ban-ru.list"
           rm -f "$tmp"
 
-      - name: Build geosite/rules-lite (dedup + optimize, preserve)
+      - name: Build geosite/router (dedup + optimize, preserve)
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
@@ -195,7 +195,7 @@ jobs:
             done
           } > "$tmp"
 
-          dom_xray_preserve "$tmp" geosite/rules-lite
+          dom_xray_preserve "$tmp" geosite/router
           rm -f "$tmp" "$tmp.list"
 
 
@@ -282,6 +282,25 @@ jobs:
               for n in sorted(out,key=lambda n:(n.version,n.prefixlen,int(n.network_address))):
                   f.write(f"{n.network_address}/{n.prefixlen}\n")
           PY
+
+      - name: Build geoip/router (dedup + optimize)
+        run: |
+          set -Eeuo pipefail
+          source .ci/helpers.sh
+
+          tmp="$(mktemp)"
+          {
+            for f in \
+              geoip/discord-voice
+            do
+              [[ -f "$f" || -f "$f.list" ]] || continue
+              cat "$f" 2>/dev/null || true
+              cat "$f.list" 2>/dev/null || true
+              echo
+            done
+          } > "$tmp"
+          ip_opt "$tmp" geoip/router
+          rm -f "$tmp" "$tmp.list"
 
       - name: Commit ONLY geosite/ and geoip/ to sources branch
         run: |
