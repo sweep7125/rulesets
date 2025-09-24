@@ -175,6 +175,29 @@ jobs:
           { printf '%s\n' "jut.su" "habr.com" "4pda.to"; cat "$tmp"; } | sort -u > "geosite/category-ban-ru.list"
           rm -f "$tmp"
 
+            - name: Build geosite/rules-lite (dedup + optimize)
+              run: |
+                set -Eeuo pipefail
+                tmp="$(mktemp)"
+                {
+                  for f in \
+                    geosite/russia-inside \
+                    geosite/antifilter-community \
+                    geosite/google-ai
+                  do
+                    [[ -f "$f" || -f "$f.list" ]] || continue
+                    cat "$f" 2>/dev/null || true
+                    cat "$f.list" 2>/dev/null || true
+                    echo
+                  done
+                } > "$tmp"
+      
+                python3 .ci/optimize.py domains "$tmp" geosite/rules-lite \
+                  --input-type xray --target suffix --view xray
+      
+                rm -f "$tmp" "$tmp.list"
+
+
       - name: Download upstream geoip.dat & build base RU/PRIVATE (optional)
         run: |
           set -Eeuo pipefail
