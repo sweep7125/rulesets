@@ -16,6 +16,7 @@ env:
   COMMIT_USER_NAME: ${{ github.actor }}
   COMMIT_USER_EMAIL: ${{ github.actor }}@users.noreply.github.com
   DEBIAN_FRONTEND: noninteractive
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   build:
@@ -40,6 +41,43 @@ jobs:
             git push -u origin HEAD:sing-box-rulesets
           fi
 
+      - name: Compute build hash & decide build
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags --depth=1 origin sources || true
+          GEOSITE_SUBSET_HASH="$(
+            {
+              git ls-tree -r --name-only origin/sources:geosite || true
+            } | awk 'NF' | while IFS= read -r rel; do
+              h="$(git show "origin/sources:geosite/$rel" | sha256sum | cut -d' ' -f1 || echo)"
+              printf '%s  %s\n' "$h" "$rel"
+            done | LC_ALL=C sort | sha256sum | cut -d' ' -f1
+          )"
+          GEOIP_SUBSET_HASH="$(
+            {
+              git ls-tree -r --name-only origin/sources:geoip || true
+            } | awk 'NF' | while IFS= read -r rel; do
+              h="$(git show "origin/sources:geoip/$rel" | sha256sum | cut -d' ' -f1 || echo)"
+              printf '%s  %s\n' "$h" "$rel"
+            done | LC_ALL=C sort | sha256sum | cut -d' ' -f1
+          )"
+          SINGBOX_TAG="$(
+            curl -fsSL -H "Authorization: bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" \
+              https://api.github.com/repos/SagerNet/sing-box/releases/latest \
+            | jq -r '.tag_name // empty'
+          )"
+          [[ -n "$SINGBOX_TAG" ]] || SINGBOX_TAG=unknown
+          git fetch --no-tags --depth=1 origin main || true
+          WORKFLOW_HASH="$(git show origin/main:.github/workflows/sing-box.yml 2>/dev/null | sha256sum | cut -d' ' -f1 || echo none)"
+          SRS_BUILD_HASH="$(printf '%s\n%s\n%s\n%s\n' "$GEOSITE_SUBSET_HASH" "$GEOIP_SUBSET_HASH" "$SINGBOX_TAG" "$WORKFLOW_HASH" | sha256sum | cut -d' ' -f1)"
+          echo "SRS_BUILD_HASH=$SRS_BUILD_HASH" >> "$GITHUB_ENV"
+          PREV_HASH="$(cat srs.hash 2>/dev/null || true)"
+          if [[ "$SRS_BUILD_HASH" != "$PREV_HASH" ]]; then
+            echo "SRS_NEEDS_BUILD=1" >> "$GITHUB_ENV"
+          else
+            echo "SRS_NEEDS_BUILD=0" >> "$GITHUB_ENV"
+          fi
+
       - name: Read file list from sources
         id: src
         run: |
@@ -51,11 +89,13 @@ jobs:
           echo "GEOIP=$GEOIP"     >> "$GITHUB_OUTPUT"
 
       - name: Install sing-box
+        if: env.SRS_NEEDS_BUILD == '1'
         run: |
           set -Eeuo pipefail
           curl -fsSL https://sing-box.app/install.sh | sh
 
       - name: Prepare converter (temp-only JSON)
+        if: env.SRS_NEEDS_BUILD == '1'
         run: |
           set -Eeuo pipefail
           cat > /tmp/sb_convert.py <<'PY'
@@ -85,7 +125,6 @@ jobs:
               if kw:  rule["domain_keyword"] = kw
               if rx:  rule["domain_regex"] = rx
               write_json(outp, rule)
-          
           def geoip_to_json(inp, outp):
               nets=[]
               with open(inp, "r", encoding="utf-8", errors="ignore") as f:
@@ -103,11 +142,11 @@ jobs:
           PY
 
       - name: Build *.srs to repository root (no JSON in repo)
+        if: env.SRS_NEEDS_BUILD == '1'
         run: |
           set -Eeuo pipefail
           mkdir -p /tmp/src /tmp/json
-          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
-          # geosite -> srs
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name 'srs.hash' -exec rm -rf {} +
           for f in ${{ steps.src.outputs.GEOSITE }}; do
             git show "origin/sources:geosite/$f" > "/tmp/src/${f}"
             base="${f%.list}"; safe="${base//\//-}"
@@ -115,7 +154,6 @@ jobs:
             python3 /tmp/sb_convert.py geosite "/tmp/src/${f}" "$tmp_json"
             sing-box rule-set compile --output "geosite-${safe}.srs" "$tmp_json"
           done
-          # geoip -> srs
           for f in ${{ steps.src.outputs.GEOIP }}; do
             git show "origin/sources:geoip/$f" > "/tmp/src/${f}"
             base="${f%.list}"; safe="${base//\//-}"
@@ -124,13 +162,14 @@ jobs:
             sing-box rule-set compile --output "geoip-${safe}.srs" "$tmp_json"
           done
           rm -rf /tmp/json /tmp/src
+          printf '%s' "${SRS_BUILD_HASH}" > ./srs.hash
 
       - name: Commit *.srs only
         run: |
           set -Eeuo pipefail
           git config --local user.email "${COMMIT_USER_EMAIL}"
           git config --local user.name  "${COMMIT_USER_NAME}"
-          find . -mindepth 1 -maxdepth 1 -type f ! -name '*.srs' -delete
+          find . -mindepth 1 -maxdepth 1 -type f ! -name '*.srs' ! -name 'srs.hash' -delete
           git add -A
           git diff --staged --quiet && exit 0
           git commit -m "Update sing-box rulesets (*.srs) $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
