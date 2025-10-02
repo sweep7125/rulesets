@@ -32,6 +32,7 @@ env:
     russia-inside
   GEOIP_INCLUDE: |
     ru
+    ru-bundle
     private
     category-ban-ru
     discord-voice
