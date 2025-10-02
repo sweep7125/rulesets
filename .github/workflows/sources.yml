@@ -17,6 +17,7 @@ env:
   COMMIT_USER_EMAIL: ${{ github.actor }}@users.noreply.github.com
   GOFLAGS: -buildvcs=false
   DEBIAN_FRONTEND: noninteractive
+  TLD_RU_REGEX: '\.(ru|su|yandex|psk|xn--80adxhks|xn--80asehdb|xn--80aswg|xn--c1avg|xn--d1acj3b|xn--p1acf|xn--p1ai)$'
 
 jobs:
   build:
@@ -56,6 +57,22 @@ jobs:
           dom_from_clean_to_xray_exact()  { python3 "$OPT_PY" domains "$1" "$2" --input-type clean --target exact    --view xray; }
           ip_opt() { python3 "$OPT_PY" ips "$1" "$2"; }
           get() { curl -fsSL --compressed --connect-timeout 10 --max-time 120 "$1" -o "$2"; }
+          collect_geosite_stream() {
+            for f in \
+              geosite/refilter \
+              geosite/refilter-community \
+              geosite/antifilter-community \
+              geosite/russia-inside \
+              geosite/google-ai \
+              geosite/youtube \
+              geosite/discord
+            do
+              [[ -f "$f" || -f "$f.list" ]] || continue
+              cat "$f" 2>/dev/null || true
+              cat "$f.list" 2>/dev/null || true
+              echo
+            done
+          }
           SH
 
       - name: Checkout v2fly/domain-list-community (data only)
@@ -150,37 +167,26 @@ jobs:
           dom_from_clean_to_xray_exact  _inputs/torrent-trackers.src            geosite/torrent-trackers
           dom_from_clean_to_xray_exact  _inputs/torrent-trackers-custom.src     geosite/torrent-trackers-custom
 
-      - name: Build derived geosite/category-ban-ru (XRAY)
+      - name: Build derived geosite lists (category-ban-ru + refilter-no-ru)
         run: |
           set -Eeuo pipefail
-          t_regex='\.(ru|su|yandex|psk|xn--80adxhks|xn--80asehdb|xn--80aswg|xn--c1avg|xn--d1acj3b|xn--p1acf|xn--p1ai)$'
+          source .ci/helpers.sh
           tmp="$(mktemp)"
-          {
-            for f in \
-              geosite/refilter \
-              geosite/refilter-community \
-              geosite/antifilter-community \
-              geosite/russia-inside \
-              geosite/google-ai \
-              geosite/youtube \
-              geosite/discord
-            do
-              [[ -f "$f" || -f "$f.list" ]] || continue
-              cat "$f" 2>/dev/null || true
-              cat "$f.list" 2>/dev/null || true
-              echo
-            done
-          } | grep -E '^(domain:|[^:[:space:]])' \
-            | sed -E '/^(full:|keyword:|regexp:)/d; s/^domain://' \
-            | grep -E "$t_regex" | sort -u > "$tmp"
-          { printf '%s\n' "jut.su" "habr.com" "4pda.to"; cat "$tmp"; } | sort -u > "geosite/category-ban-ru.list"
-          rm -f "$tmp"
+          collect_geosite_stream \
+          | grep -E '^(domain:|[^:[:space:]])' \
+          | sed -E '/^(full:|keyword:|regexp:)/d; s/^domain://' \
+          | LC_ALL=C sort -u > "$tmp"
+          { grep -E "${TLD_RU_REGEX}" "$tmp"; printf '%s\n' "jut.su" "habr.com" "4pda.to"; } \
+          | LC_ALL=C sort -u > "geosite/category-ban-ru.list"
+          grep -vE "${TLD_RU_REGEX}" "$tmp" | LC_ALL=C sort -u > "geosite/refilter-no-ru.list"
+          dom_from_clean_to_xray_suffix geosite/refilter-no-ru.list geosite/refilter-no-ru
+          rm -f "$tmp" "$tmp.list"
+
 
       - name: Build geosite/router (dedup + optimize, preserve)
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
-
           tmp="$(mktemp)"
           {
             for f in \
@@ -194,10 +200,8 @@ jobs:
               echo
             done
           } > "$tmp"
-
           dom_xray_preserve "$tmp" geosite/router
           rm -f "$tmp" "$tmp.list"
-
 
       - name: Download upstream geoip.dat & build base RU/PRIVATE (optional)
         run: |
@@ -237,11 +241,13 @@ jobs:
           ip_opt _inputs/refilter-ips.src           geoip/refilter
           ip_opt _inputs/refilter-community-ips.src geoip/refilter-community
 
-      - name: Build derived geoip/category-ban-ru (intersection RU ∩ refilter)
+      - name: Build derived geoip lists (category-ban-ru + refilter-no-ru)
         run: |
           set -Eeuo pipefail
           python3 - <<'PY'
           import os, ipaddress
+          from ipaddress import collapse_addresses, summarize_address_range, ip_address
+
           def read_nets(p):
               if not os.path.exists(p): return []
               out=[]
@@ -249,37 +255,73 @@ jobs:
                   for t in f:
                       t=t.strip()
                       if not t or t.startswith('#'): continue
-                      try: out.append(ipaddress.ip_network(t,strict=False))
+                      try: out.append(ipaddress.ip_network(t, strict=False))
                       except: pass
               return out
-          def collapse(nets):
-              from ipaddress import collapse_addresses
-              v4=[n for n in nets if n.version==4]; v6=[n for n in nets if n.version==6]
-              return list(collapse_addresses(v4))+list(collapse_addresses(v6))
-          def intersect(A,B):
-              from ipaddress import summarize_address_range, ip_address
-              A=collapse(A); B=collapse(B)
-              def inter(X,Y):
-                  i=j=0; out=[]
-                  while i<len(X) and j<len(Y):
-                      a,b=X[i],Y[j]
-                      if int(a.broadcast_address)<int(b.network_address): i+=1; continue
-                      if int(b.broadcast_address)<int(a.network_address): j+=1; continue
-                      lo=max(int(a.network_address),int(b.network_address))
-                      hi=min(int(a.broadcast_address),int(b.broadcast_address))
-                      out.extend(summarize_address_range(ip_address(lo),ip_address(hi)))
-                      if int(a.broadcast_address)<int(b.broadcast_address): i+=1
-                      else: j+=1
-                  return out
+
+          def collapse_both(nets):
+              v4=[n for n in nets if n.version==4]
+              v6=[n for n in nets if n.version==6]
+              return list(collapse_addresses(v4)) + list(collapse_addresses(v6))
+
+          def inter_linear(A, B):
+              out=[]; i=j=0
+              while i<len(A) and j<len(B):
+                  a,b=A[i],B[j]
+                  if int(a.broadcast_address)<int(b.network_address): i+=1; continue
+                  if int(b.broadcast_address)<int(a.network_address): j+=1; continue
+                  lo=max(int(a.network_address),int(b.network_address))
+                  hi=min(int(a.broadcast_address),int(b.broadcast_address))
+                  out.extend(summarize_address_range(ip_address(lo), ip_address(hi)))
+                  if int(a.broadcast_address)<int(b.broadcast_address): i+=1
+                  else: j+=1
+              return out
+
+          def diff_linear(A, B):
+              out=[]; i=j=0
+              while i < len(A):
+                  a=A[i]
+                  a_lo=int(a.network_address); a_hi=int(a.broadcast_address)
+                  cur=a_lo
+                  while j < len(B) and int(B[j].broadcast_address) < cur:
+                      j+=1
+                  k=j
+                  while k < len(B) and int(B[k].network_address) <= a_hi:
+                      b=B[k]
+                      b_lo=int(b.network_address); b_hi=int(b.broadcast_address)
+                      if b_lo > cur:
+                          out.extend(summarize_address_range(ip_address(cur), ip_address(min(a_hi, b_lo-1))))
+                      if b_hi + 1 > a_hi:
+                          cur=a_hi+1
+                          break
+                      else:
+                          cur=b_hi+1
+                      k+=1
+                  if cur <= a_hi:
+                      out.extend(summarize_address_range(ip_address(cur), ip_address(a_hi)))
+                  if k>j: j=k
+                  i+=1
+              return out
+
+          ru = read_nets("geoip/ru.list") or read_nets("geoip/ru")
+          rf = read_nets("geoip/refilter.list") + read_nets("geoip/refilter-community.list")
+
+          if ru:
+              A = collapse_both(rf); B = collapse_both(ru)
               A4=[n for n in A if n.version==4]; B4=[n for n in B if n.version==4]
               A6=[n for n in A if n.version==6]; B6=[n for n in B if n.version==6]
-              return collapse(inter(A4,B4)+inter(A6,B6))
-          ru = read_nets("geoip/ru.list") or read_nets("geoip/ru")
-          rf = read_nets("geoip/refilter.list")+read_nets("geoip/refilter-community.list")
-          out = intersect(ru, rf)
+              cat = collapse_both(inter_linear(A4,B4) + inter_linear(A6,B6))
+              dff = collapse_both(diff_linear(A4,B4) + diff_linear(A6,B6))
+          else:
+              cat = []
+              dff = collapse_both(rf)
+
           os.makedirs("geoip", exist_ok=True)
           with open("geoip/category-ban-ru.list","w",encoding="utf-8") as f:
-              for n in sorted(out,key=lambda n:(n.version,n.prefixlen,int(n.network_address))):
+              for n in sorted(cat, key=lambda n:(n.version, n.prefixlen, int(n.network_address))):
+                  f.write(f"{n.network_address}/{n.prefixlen}\n")
+          with open("geoip/refilter-no-ru.list","w",encoding="utf-8") as f:
+              for n in sorted(dff, key=lambda n:(n.version, n.prefixlen, int(n.network_address))):
                   f.write(f"{n.network_address}/{n.prefixlen}\n")
           PY
 
@@ -287,7 +329,6 @@ jobs:
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
-
           tmp="$(mktemp)"
           {
             for f in \
