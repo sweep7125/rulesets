@@ -176,7 +176,7 @@ jobs:
           { printf '%s\n' "jut.su" "habr.com" "4pda.to"; cat "$tmp"; } | sort -u > "geosite/category-ban-ru.list"
           rm -f "$tmp"
 
-            - name: Build derived geosite/refilter-no-ru (.list)
+      - name: Build derived geosite/refilter-no-ru (.list)
         run: |
           set -Eeuo pipefail
           t_regex='\.(ru|su|yandex|psk|xn--80adxhks|xn--80asehdb|xn--80aswg|xn--c1avg|xn--d1acj3b|xn--p1acf|xn--p1ai)$'
@@ -313,7 +313,7 @@ jobs:
                   f.write(f"{n.network_address}/{n.prefixlen}\n")
           PY
 
-            - name: Build derived geoip/refilter-no-ru (refilter minus RU)
+      - name: Build derived geoip/refilter-no-ru (refilter minus RU)
         run: |
           set -Eeuo pipefail
           python3 - <<'PY'
