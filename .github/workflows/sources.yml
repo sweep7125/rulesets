@@ -57,7 +57,7 @@ jobs:
           dom_from_clean_to_xray_exact()  { python3 "$OPT_PY" domains "$1" "$2" --input-type clean --target exact    --view xray; }
           ip_opt() { python3 "$OPT_PY" ips "$1" "$2"; }
           get() { curl -fsSL --compressed --connect-timeout 10 --max-time 120 "$1" -o "$2"; }
-          collect_geosite_stream() {
+          collect_geosite_stream_all() {
             for f in \
               geosite/refilter \
               geosite/refilter-community \
@@ -67,6 +67,14 @@ jobs:
               geosite/youtube \
               geosite/discord
             do
+              [[ -f "$f" || -f "$f.list" ]] || continue
+              cat "$f" 2>/dev/null || true
+              cat "$f.list" 2>/dev/null || true
+              echo
+            done
+          }
+          collect_refilter_only_stream() {
+            for f in geosite/refilter; do
               [[ -f "$f" || -f "$f.list" ]] || continue
               cat "$f" 2>/dev/null || true
               cat "$f.list" 2>/dev/null || true
@@ -171,17 +179,21 @@ jobs:
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
-          tmp="$(mktemp)"
-          collect_geosite_stream \
+          tmp_all="$(mktemp)"
+          collect_geosite_stream_all \
           | grep -E '^(domain:|[^:[:space:]])' \
           | sed -E '/^(full:|keyword:|regexp:)/d; s/^domain://' \
-          | LC_ALL=C sort -u > "$tmp"
-          { grep -E "${TLD_RU_REGEX}" "$tmp"; printf '%s\n' "jut.su" "habr.com" "4pda.to"; } \
+          | LC_ALL=C sort -u > "$tmp_all"
+          { grep -E "${TLD_RU_REGEX}" "$tmp_all"; printf '%s\n' "jut.su" "habr.com" "4pda.to"; } \
           | LC_ALL=C sort -u > "geosite/category-ban-ru.list"
-          grep -vE "${TLD_RU_REGEX}" "$tmp" | LC_ALL=C sort -u > "geosite/refilter-no-ru.list"
+          tmp_refilter="$(mktemp)"
+          collect_refilter_only_stream \
+          | grep -E '^(domain:|[^:[:space:]])' \
+          | sed -E '/^(full:|keyword:|regexp:)/d; s/^domain://' \
+          | LC_ALL=C sort -u > "$tmp_refilter"
+          grep -vE "${TLD_RU_REGEX}" "$tmp_refilter" | LC_ALL=C sort -u > "geosite/refilter-no-ru.list"
           dom_from_clean_to_xray_suffix geosite/refilter-no-ru.list geosite/refilter-no-ru
-          rm -f "$tmp" "$tmp.list"
-
+          rm -f "$tmp_all" "$tmp_refilter"
 
       - name: Build geosite/router (dedup + optimize, preserve)
         run: |
@@ -241,7 +253,7 @@ jobs:
           ip_opt _inputs/refilter-ips.src           geoip/refilter
           ip_opt _inputs/refilter-community-ips.src geoip/refilter-community
 
-      - name: Build derived geoip lists (category-ban-ru + refilter-no-ru)
+      - name: Build derived geoip lists (category-ban-ru + refilter-no-russia)
         run: |
           set -Eeuo pipefail
           python3 - <<'PY'
@@ -304,23 +316,28 @@ jobs:
               return out
 
           ru = read_nets("geoip/ru.list") or read_nets("geoip/ru")
-          rf = read_nets("geoip/refilter.list") + read_nets("geoip/refilter-community.list")
+          rf_ref = read_nets("geoip/refilter.list")
+          rf_all = rf_ref + read_nets("geoip/refilter-community.list")
 
           if ru:
-              A = collapse_both(rf); B = collapse_both(ru)
-              A4=[n for n in A if n.version==4]; B4=[n for n in B if n.version==4]
-              A6=[n for n in A if n.version==6]; B6=[n for n in B if n.version==6]
+              A_all = collapse_both(rf_all)
+              B_ru  = collapse_both(ru)
+              A4=[n for n in A_all if n.version==4]; B4=[n for n in B_ru if n.version==4]
+              A6=[n for n in A_all if n.version==6]; B6=[n for n in B_ru if n.version==6]
               cat = collapse_both(inter_linear(A4,B4) + inter_linear(A6,B6))
-              dff = collapse_both(diff_linear(A4,B4) + diff_linear(A6,B6))
+
+              A_ref = collapse_both(rf_ref)
+              A4r=[n for n in A_ref if n.version==4]; A6r=[n for n in A_ref if n.version==6]
+              dff = collapse_both(diff_linear(A4r,B4) + diff_linear(A6r,B6))
           else:
               cat = []
-              dff = collapse_both(rf)
+              dff = collapse_both(rf_ref)
 
           os.makedirs("geoip", exist_ok=True)
           with open("geoip/category-ban-ru.list","w",encoding="utf-8") as f:
               for n in sorted(cat, key=lambda n:(n.version, n.prefixlen, int(n.network_address))):
                   f.write(f"{n.network_address}/{n.prefixlen}\n")
-          with open("geoip/refilter-no-ru.list","w",encoding="utf-8") as f:
+          with open("geoip/refilter-no-russia.list","w",encoding="utf-8") as f:
               for n in sorted(dff, key=lambda n:(n.version, n.prefixlen, int(n.network_address))):
                   f.write(f"{n.network_address}/{n.prefixlen}\n")
           PY
