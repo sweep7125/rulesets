@@ -176,36 +176,6 @@ jobs:
           { printf '%s\n' "jut.su" "habr.com" "4pda.to"; cat "$tmp"; } | sort -u > "geosite/category-ban-ru.list"
           rm -f "$tmp"
 
-      - name: Build derived geosite/refilter-no-ru (.list)
-        run: |
-          set -Eeuo pipefail
-          t_regex='\.(ru|su|yandex|psk|xn--80adxhks|xn--80asehdb|xn--80aswg|xn--c1avg|xn--d1acj3b|xn--p1acf|xn--p1ai)$'
-          {
-            for f in \
-              geosite/refilter \
-              geosite/refilter-community \
-              geosite/antifilter-community \
-              geosite/russia-inside \
-              geosite/google-ai \
-              geosite/youtube \
-              geosite/discord
-            do
-              [[ -f "$f" || -f "$f.list" ]] || continue
-              cat "$f" 2>/dev/null || true
-              cat "$f.list" 2>/dev/null || true
-              echo
-            done
-          } | grep -E '^(domain:|[^:[:space:]])' \
-            | sed -E '/^(full:|keyword:|regexp:)/d; s/^domain://' \
-            | grep -vE "$t_regex" \
-            | sort -u > "geosite/refilter-no-ru.list"
-
-      - name: Normalize geosite/refilter-no-ru.list → XRAY
-        run: |
-          set -Eeuo pipefail
-          source .ci/helpers.sh
-          dom_from_clean_to_xray_suffix geosite/refilter-no-ru.list geosite/refilter-no-ru
-
       - name: Build geosite/router (dedup + optimize, preserve)
         run: |
           set -Eeuo pipefail
@@ -310,70 +280,6 @@ jobs:
           os.makedirs("geoip", exist_ok=True)
           with open("geoip/category-ban-ru.list","w",encoding="utf-8") as f:
               for n in sorted(out,key=lambda n:(n.version,n.prefixlen,int(n.network_address))):
-                  f.write(f"{n.network_address}/{n.prefixlen}\n")
-          PY
-
-      - name: Build derived geoip/refilter-no-ru (refilter minus RU)
-        run: |
-          set -Eeuo pipefail
-          python3 - <<'PY'
-          import os, ipaddress
-
-          def read_nets(p):
-              if not os.path.exists(p): return []
-              out=[]
-              with open(p,'r',encoding='utf-8',errors='ignore') as f:
-                  for t in f:
-                      t=t.strip()
-                      if not t or t.startswith('#'): continue
-                      try: out.append(ipaddress.ip_network(t,strict=False))
-                      except: pass
-              return out
-
-          def collapse(nets):
-              from ipaddress import collapse_addresses
-              v4=[n for n in nets if n.version==4]
-              v6=[n for n in nets if n.version==6]
-              return list(collapse_addresses(v4)) + list(collapse_addresses(v6))
-
-          def minus(a, b):
-              # вернуть части сети a, которые НЕ покрывает b
-              if a.version != b.version or not a.overlaps(b):
-                  return [a]
-              a_lo = int(a.network_address); a_hi = int(a.broadcast_address)
-              b_lo = int(b.network_address); b_hi = int(b.broadcast_address)
-              # b полностью покрывает a
-              if b_lo <= a_lo and b_hi >= a_hi:
-                  return []
-              # частичное пересечение — делим a на 2 подсети и рекурсивно вычитаем
-              res=[]
-              for sub in a.subnets(prefixlen_diff=1):
-                  res.extend(minus(sub, b))
-              return res
-
-          def subtract(A, B):
-              # A \ union(B)
-              A = collapse(A); B = collapse(B)
-              out=[]
-              for a in A:
-                  parts=[a]
-                  for b in B:
-                      new=[]
-                      for p in parts:
-                          new.extend(minus(p, b))
-                      parts=new
-                      if not parts:
-                          break
-                  out.extend(parts)
-              return collapse(out)
-
-          ru = read_nets("geoip/ru.list") or read_nets("geoip/ru")
-          rf = read_nets("geoip/refilter.list") + read_nets("geoip/refilter-community.list")
-
-          out = subtract(rf, ru)
-          os.makedirs("geoip", exist_ok=True)
-          with open("geoip/refilter-no-ru.list","w",encoding="utf-8") as f:
-              for n in sorted(out, key=lambda n:(n.version, n.prefixlen, int(n.network_address))):
                   f.write(f"{n.network_address}/{n.prefixlen}\n")
           PY
 
