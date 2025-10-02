@@ -261,6 +261,7 @@ jobs:
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/ipsum.lst" _inputs/refilter-ips.src
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community_ips.lst" _inputs/refilter-community-ips.src
           { cat _inputs/cloudflare4.src; echo; cat _inputs/cloudflare6.src; } > _inputs/cloudflare-all.src
+          { cat _inputs/refilter-ips.src; echo; cat _inputs/discord-voice-ips.src; } > _inputs/ru-bundle.src
 
       - name: Normalize IP sources → CIDR lists in geoip/
         run: |
@@ -273,6 +274,7 @@ jobs:
           ip_opt _inputs/cloudflare-all.src         geoip/cloudflare
           ip_opt _inputs/refilter-ips.src           geoip/refilter
           ip_opt _inputs/refilter-community-ips.src geoip/refilter-community
+          ip_opt _inputs/ru-bundle.src geoip/ru-bundle
 
       - name: Build derived geoip lists (category-ban-ru + refilter-no-russia)
         run: |
