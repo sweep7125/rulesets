@@ -215,6 +215,27 @@ jobs:
           dom_xray_preserve "$tmp" geosite/router
           rm -f "$tmp" "$tmp.list"
 
+      - name: Build geosite/ru-bundle (dedup + optimize, preserve)
+        run: |
+          set -Eeuo pipefail
+          source .ci/helpers.sh
+          tmp="$(mktemp)"
+          {
+            for f in \
+              geosite/russia-inside \
+              geosite/antifilter-community \
+              geosite/google-ai \
+              geosite/refilter
+            do
+              [[ -f "$f" || -f "$f.list" ]] || continue
+              cat "$f" 2>/dev/null || true
+              cat "$f.list" 2>/dev/null || true
+              echo
+            done
+          } > "$tmp"
+          dom_xray_preserve "$tmp" geosite/ru-bundle
+          rm -f "$tmp" "$tmp.list"
+
       - name: Download upstream geoip.dat & build base RU/PRIVATE (optional)
         run: |
           set -Eeuo pipefail
