@@ -135,7 +135,7 @@ jobs:
           while [[ $changed -eq 1 ]]; do
             changed=0
             for file in "${!keep[@]}"; do
-              s="$(echo "$file | xargs")"; [[ -n "${processed[$s]:-}" ]] && continue
+              s="$(echo "$file" | xargs)"; [[ -n "${processed[$s]:-}" ]] && continue
               processed["$s"]=1
               p="$DATA_DIR/$s"; [[ -f "$p" ]] || continue
               while IFS= read -r inc; do
