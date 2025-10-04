@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, os, sys, re, unicodedata
-from typing import List, Tuple, Set, Dict, Iterable, Optional
+import sys, os, re, argparse, unicodedata
+from typing import Iterable, Iterator, List, Tuple, Set
 
-def read_lines(path: str):
+def read_lines(path: str) -> Iterator[str]:
     with open(path, "r", encoding="utf-8", errors="ignore") as f:
         for ln in f:
             yield ln
 
-def clean_stream(lines: Iterable[str]):
+def clean_stream(lines: Iterable[str]) -> Iterator[str]:
     for raw in lines:
         t = raw.rstrip("\r\n")
         i = t.find("#")
@@ -35,7 +35,8 @@ def _idn_to_ascii(t: str) -> str:
 def _is_valid_hostname_ascii(puny: str) -> bool:
     if not puny or len(puny) > 253:
         return False
-    for lbl in puny.split("."):
+    parts = puny.split(".")
+    for lbl in parts:
         if not (1 <= len(lbl) <= 63):
             return False
         if _LDH_LABEL_RE.fullmatch(lbl) is None:
@@ -49,7 +50,12 @@ def normalize_domain_base(s: str) -> str:
     if not t:
         return t
     puny = _idn_to_ascii(t)
-    return puny if _is_valid_hostname_ascii(puny) else ""
+    if not _is_valid_hostname_ascii(puny):
+        return ""
+    return puny
+
+def label_count(d: str) -> int:
+    return d.count(".") + 1 if d else 0
 
 def take_until_attr(text: str) -> str:
     parts = text.strip().split()
@@ -60,196 +66,167 @@ def take_until_attr(text: str) -> str:
         keep.append(tok)
     return " ".join(keep).strip()
 
-def _resolve_candidate(path: str) -> Optional[str]:
-    candidates = [path]
-    if not path.endswith(".list"):
-        candidates.append(path + ".list")
-    for p in candidates:
-        if os.path.exists(p):
-            return p
-    return None
-
-def _resolve_or_die(path: str) -> str:
-    rp = _resolve_candidate(path)
-    if rp:
-        return rp
-    cand = [path] + ([] if path.endswith(".list") else [path + ".list"])
-    print(f"file not found: tried {', '.join(cand)}", file=sys.stderr)
-    sys.exit(2)
+def resolve_file_or_list(path: str) -> str:
+    p = os.path.abspath(path)
+    if os.path.exists(p):
+        return p
+    p_list = p + ".list"
+    if os.path.exists(p_list):
+        return p_list
+    print(f"file not found: {path}", file=sys.stderr); sys.exit(2)
 
 def parse_xray_file_recursive(path: str, visited: Set[str]) -> Tuple[Set[str], Set[str]]:
-    real_path = _resolve_or_die(path)
-    abspath = os.path.abspath(real_path)
+    abspath = os.path.abspath(path)
     if abspath in visited:
         return set(), set()
+    if not os.path.exists(abspath):
+        print(f"include not found: {path}", file=sys.stderr); sys.exit(2)
     visited.add(abspath)
-
     base_dir = os.path.dirname(abspath)
-    suffix_bases: Set[str] = set()
-    full_bases: Set[str] = set()
-
+    suf: Set[str] = set()
+    ful: Set[str] = set()
     for line in clean_stream(read_lines(abspath)):
         if line.startswith("include:"):
             inc = take_until_attr(line[len("include:"):])
             inc_path = os.path.join(base_dir, inc)
             s2, f2 = parse_xray_file_recursive(inc_path, visited)
-            suffix_bases |= s2
-            full_bases |= f2
-            continue
+            suf |= s2; ful |= f2; continue
         if line.startswith("keyword:") or line.startswith("regexp:"):
             continue
         if line.startswith("full:"):
             val = take_until_attr(line[len("full:"):])
             base = normalize_domain_base(val)
             if base:
-                full_bases.add(base)
+                ful.add(base)
             continue
         if line.startswith("domain:"):
             val = take_until_attr(line[len("domain:"):])
             base = normalize_domain_base(val)
             if base:
-                suffix_bases.add(base)
+                suf.add(base)
             continue
         bare = take_until_attr(line)
         base = normalize_domain_base(bare)
         if base:
-            suffix_bases.add(base)
-    return suffix_bases, full_bases
+            suf.add(base)
+    return suf, ful
 
-class _TrieNode:
-    def __init__(self):
-        self.children: Dict[str, "_TrieNode"] = {}
-        self.suffix: bool = False
-        self.full: bool = False
+def load_union_from_group(group: List[str]) -> Tuple[Set[str], Set[str]]:
+    suf: Set[str] = set()
+    ful: Set[str] = set()
+    for p in group:
+        p_res = resolve_file_or_list(p)
+        s, f = parse_xray_file_recursive(p_res, set())
+        suf |= s; ful |= f
+    return suf, ful
 
-def _labels_rev(base: str) -> List[str]:
-    return base.split(".")[::-1] if base else []
+def iter_suffix_chain(name: str):
+    cur = name
+    yield cur
+    while True:
+        i = cur.find(".")
+        if i == -1:
+            return
+        cur = cur[i+1:]
+        yield cur
 
-def _trie_insert(root: _TrieNode, base: str, flag: str) -> None:
-    node = root
-    for lab in _labels_rev(base):
-        node = node.children.setdefault(lab, _TrieNode())
-    if flag == "suffix":
-        node.suffix = True
-    elif flag == "full":
-        node.full = True
-
-def _prune(node: _TrieNode, has_suffix_above: bool = False) -> None:
-    if has_suffix_above:
-        node.suffix = False
-        node.full = False
-        for ch in node.children.values():
-            _prune(ch, True)
-        return
-    if node.suffix and node.full:
-        node.full = False
-    next_has_suffix = has_suffix_above or node.suffix
-    for ch in node.children.values():
-        _prune(ch, next_has_suffix)
-
-def _trie_collect(node: _TrieNode, path_rev: List[str], out_suffix: Set[str], out_full: Set[str]) -> None:
-    base = ".".join(path_rev[::-1]) if path_rev else ""
-    if node.suffix and base:
-        out_suffix.add(base)
-    if node.full and base:
-        out_full.add(base)
-    for lab, ch in node.children.items():
-        _trie_collect(ch, path_rev + [lab], out_suffix, out_full)
-
-def optimize_suffix_full(entries: Iterable[Tuple[str, str]]) -> Tuple[Set[str], Set[str]]:
-    root = _TrieNode()
-    for t, b in entries:
-        if b:
-            _trie_insert(root, b, t)
-    _prune(root, False)
-    S: Set[str] = set()
-    E: Set[str] = set()
-    _trie_collect(root, [], S, E)
-    return S, E
-
-def is_under(a: str, b: str) -> bool:
-    if a == b:
+def group_covers_full(group_suf: Set[str], group_ful: Set[str], fqdn: str) -> bool:
+    if fqdn in group_ful:
         return True
-    return a.endswith("." + b)
+    for tail in iter_suffix_chain(fqdn):
+        if tail in group_suf:
+            return True
+    return False
 
-def intersect_pair(A_suffix: Set[str], A_full: Set[str],
-                   B_suffix: Set[str], B_full: Set[str]) -> Tuple[Set[str], Set[str]]:
-    out_suf: Set[str] = set()
-    out_full: Set[str] = set()
+def group_covers_suffix(group_suf: Set[str], suffix: str) -> bool:
+    for tail in iter_suffix_chain(suffix):
+        if tail in group_suf:
+            return True
+    return False
 
-    As, Bs = (A_suffix, B_suffix) if len(A_suffix) <= len(B_suffix) else (B_suffix, A_suffix)
-    for sr in As:
-        for sc in Bs:
-            if is_under(sr, sc):
-                out_suf.add(sr)
-            elif is_under(sc, sr):
-                out_suf.add(sc)
-
-    for fr in A_full:
-        if fr in B_full or any(is_under(fr, sc) for sc in B_suffix):
-            out_full.add(fr)
-    for fc in B_full:
-        if fc in A_full or any(is_under(fc, sr) for sr in A_suffix):
-            out_full.add(fc)
-
-    return optimize_suffix_full([("suffix", s) for s in out_suf] + [("full", e) for e in out_full])
-
-def intersect_many(groups: List[Tuple[Set[str], Set[str]]]) -> Tuple[Set[str], Set[str]]:
-    if not groups:
+def intersect_groups(sets: List[Tuple[Set[str], Set[str]]]) -> Tuple[Set[str], Set[str]]:
+    if not sets:
         return set(), set()
-    S, E = groups[0]
-    for s2, e2 in groups[1:]:
-        if not S and not E:
-            break
-        S, E = intersect_pair(S, E, s2, e2)
-    return S, E
+    all_suf: Set[str] = set().union(*(s for s, _ in sets))
+    all_ful: Set[str] = set().union(*(f for _, f in sets))
+    out_suf: Set[str] = set()
+    out_ful: Set[str] = set()
+    for f in all_ful:
+        ok = True
+        for sset, fset in sets:
+            if not group_covers_full(sset, fset, f):
+                ok = False; break
+        if ok:
+            out_ful.add(f)
+    for s in all_suf:
+        ok = True
+        for sset, _ in sets:
+            if not group_covers_suffix(sset, s):
+                ok = False; break
+        if ok:
+            out_suf.add(s)
+    return out_suf, out_ful
 
-def render_xray(suffixes: Set[str], fulls: Set[str]) -> List[str]:
-    items = [("full", b) for b in fulls] + [("domain", b) for b in suffixes]
-    rank = {"full": 0, "domain": 1}
-    def label_count(d: str) -> int:
-        return d.count(".") + 1 if d else 0
-    items.sort(key=lambda t: (rank[t[0]], label_count(t[1]), t[1]))
-    out: List[str] = []
-    for k, b in items:
-        if k == "full":
-            out.append(f"full:{b}")
+def diff_simple(A: Tuple[Set[str], Set[str]], B: Tuple[Set[str], Set[str]]) -> Tuple[Set[str], Set[str]]:
+    A_suf, A_ful = A
+    B_suf, B_ful = B
+    keep_suf: Set[str] = set()
+    keep_ful: Set[str] = set()
+    for f in A_ful:
+        if not group_covers_full(B_suf, B_ful, f):
+            keep_ful.add(f)
+    for s in A_suf:
+        if not group_covers_suffix(B_suf, s):
+            keep_suf.add(s)
+    return keep_suf, keep_ful
+
+def emit_xray_lines(suf: Set[str], ful: Set[str]) -> List[str]:
+    items: List[Tuple[int, int, str]] = []
+    for f in ful:
+        items.append((0, label_count(f), f"full:{f}"))
+    for s in suf:
+        items.append((1, label_count(s), s))
+    items.sort(key=lambda t: (t[0], t[1], t[2]))
+    return [x for _, _, x in items]
+
+def parse_sets_args(raw_sets: List[str]) -> List[List[str]]:
+    groups: List[List[str]] = []
+    for arg in raw_sets:
+        parts = [p.strip() for p in arg.split(",") if p.strip()]
+        if parts:
+            groups.append(parts)
+    return groups
+
+def main() -> None:
+    ap = argparse.ArgumentParser(prog="domainset_ops", description="XRAY domain set operations")
+    ap.add_argument("--mode", choices=["intersect", "diff-simple"], required=True)
+    ap.add_argument("--set", dest="sets", action="append", required=True, help="comma-separated list of XRAY files per group (.list or without)")
+    ap.add_argument("--out", required=True, help="output file path")
+    a = ap.parse_args()
+
+    groups = parse_sets_args(a.sets)
+    if a.mode == "intersect":
+        if len(groups) < 2:
+            print("intersect requires at least two --set groups", file=sys.stderr); sys.exit(2)
+        loaded = [load_union_from_group(g) for g in groups]
+        suf, ful = intersect_groups(loaded)
+        lines = emit_xray_lines(suf, ful)
+    else:
+        if len(groups) < 2:
+            print("diff-simple requires at least two --set groups (A then B...)", file=sys.stderr); sys.exit(2)
+        A = load_union_from_group(groups[0])
+        B_groups = [load_union_from_group(g) for g in groups[1:]]
+        if len(B_groups) == 1:
+            B = B_groups[0]
         else:
-            out.append(b)
-    return out
+            B = (set().union(*(s for s, _ in B_groups)), set().union(*(f for _, f in B_groups)))
+        suf, ful = diff_simple(A, B)
+        lines = emit_xray_lines(suf, ful)
 
-def read_group(arg: str) -> Tuple[Set[str], Set[str]]:
-    suffix: Set[str] = set()
-    full: Set[str] = set()
-    visited: Set[str] = set()
-    for p in [s.strip() for s in arg.split(",") if s.strip()]:
-        real = _resolve_or_die(p)
-        s2, f2 = parse_xray_file_recursive(real, visited)
-        suffix |= s2
-        full |= f2
-    S, E = optimize_suffix_full([("suffix", s) for s in suffix] + [("full", e) for e in full])
-    return S, E
-
-def main():
-    ap = argparse.ArgumentParser(description="Domain set ops (XRAY). Intersection across groups.")
-    ap.add_argument("--mode", choices=["intersect"], required=True)
-    ap.add_argument("--set", action="append", default=[], help="группа файлов через запятую (union внутри). Несколько --set для пересечения между группами")
-    ap.add_argument("--out", required=True, help="output .list (XRAY)")
-    args = ap.parse_args()
-
-    if args.mode != "intersect":
-        print("unsupported mode", file=sys.stderr)
-        sys.exit(2)
-    if len(args.set) < 2:
-        print("intersect requires at least two --set groups", file=sys.stderr)
-        sys.exit(2)
-
-    groups = [read_group(s) for s in args.set]
-    S, E = intersect_many(groups)
-    dst = args.out if args.out.endswith(".list") else args.out + ".list"
-    with open(dst, "w", encoding="utf-8") as f:
-        for line in render_xray(S, E):
-            f.write(line + "\n")
+    os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
+    with open(a.out, "w", encoding="utf-8") as f:
+        for ln in lines:
+            f.write(ln + "\n")
 
 if __name__ == "__main__":
     main()
