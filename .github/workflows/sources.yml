@@ -294,7 +294,7 @@ jobs:
             --mode diff \
             --A geoip/refilter \
             --B geoip/ru \
-            --out geoip/refilter-no-russia.list
+            --out geoip/refilter-no-ru.list
           python3 .ci/ipset_ops.py \
             --mode diff \
             --A geoip/ru \
