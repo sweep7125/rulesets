@@ -17,7 +17,6 @@ env:
   COMMIT_USER_EMAIL: ${{ github.actor }}@users.noreply.github.com
   GOFLAGS: -buildvcs=false
   DEBIAN_FRONTEND: noninteractive
-  TLD_RU_REGEX: '\.(ru|su|yandex|psk|xn--80adxhks|xn--80asehdb|xn--80aswg|xn--c1avg|xn--d1acj3b|xn--p1acf|xn--p1ai)$'
 
 jobs:
   build:
@@ -183,10 +182,11 @@ jobs:
           dom_from_clean_to_xray_exact  _inputs/torrent-trackers.src            geosite/torrent-trackers
           dom_from_clean_to_xray_exact  _inputs/torrent-trackers-custom.src     geosite/torrent-trackers-custom
 
-      - name: Build derived geosite lists (category-ban-ru from category-ru + refilter-no-ru)
+      - name: Build derived geosite lists (category-ban-ru via category-ru; refilter-no-ru; ru-no-refilter)
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
+
           t_base="$(mktemp)"
           t="$t_base.list"
           python3 .ci/domainset_ops.py \
@@ -196,19 +196,30 @@ jobs:
             --out "$t"
           {
             cat "$t"
-            printf '%s\n' "full:jut.su" "full:habr.com" "full:4pda.to"
+            printf '%s\n' "jut.su" "habr.com" "4pda.to"
           } > "$t.add"
           dom_xray_preserve "$t.add" geosite/category-ban-ru
           rm -f "$t_base" "$t" "$t.add"
 
-          tmp_refilter="$(mktemp)"
-          collect_refilter_only_stream \
-          | grep -E '^(domain:|[^:[:space:]])' \
-          | sed -E '/^(full:|keyword:|regexp:)/d; s/^domain://' \
-          | LC_ALL=C sort -u > "$tmp_refilter"
-          grep -vE "${TLD_RU_REGEX}" "$tmp_refilter" | LC_ALL=C sort -u > "geosite/refilter-no-ru.list"
-          dom_from_clean_to_xray_suffix geosite/refilter-no-ru.list geosite/refilter-no-ru
-          rm -f "$tmp_refilter"
+          d_base="$(mktemp)"
+          d="$d_base.list"
+          python3 .ci/domainset_ops.py \
+            --mode diff-simple \
+            --A geosite/refilter \
+            --B geosite/category-ru \
+            --out "$d"
+          dom_xray_preserve "$d" geosite/refilter-no-ru
+          rm -f "$d_base" "$d"
+
+          r_base="$(mktemp)"
+          r="$r_base.list"
+          python3 .ci/domainset_ops.py \
+            --mode diff-simple \
+            --A geosite/category-ru \
+            --B geosite/refilter \
+            --out "$r"
+          dom_xray_preserve "$r" geosite/ru-no-refilter
+          rm -f "$r_base" "$r"
 
       - name: Build geosite/router (dedup + optimize, preserve)
         run: |
