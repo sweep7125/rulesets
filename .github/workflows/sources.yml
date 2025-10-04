@@ -182,7 +182,7 @@ jobs:
           dom_from_clean_to_xray_exact  _inputs/torrent-trackers.src            geosite/torrent-trackers
           dom_from_clean_to_xray_exact  _inputs/torrent-trackers-custom.src     geosite/torrent-trackers-custom
 
-      - name: Build derived geosite lists (category-ban-ru via category-ru; refilter-no-ru; ru-no-refilter)
+      - name: Build derived geosite lists (category-ban-ru via category-ru; refilter-no-ru)
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
@@ -218,22 +218,6 @@ jobs:
           { cat "$d_full"; cat geosite/.tmp-refilter-noru-suf 2>/dev/null || true; cat geosite/.tmp-refilter-noru-suf.list 2>/dev/null || true; } > "$tmp_in"
           dom_xray_preserve "$tmp_in" geosite/refilter-no-ru
           rm -f "$d_base" "$d" "$d_suf" "$d_full" "$tmp_in" geosite/.tmp-refilter-noru-suf geosite/.tmp-refilter-noru-suf.list
-          
-          r_base="$(mktemp)"; r="$r_base.list"
-          python3 .ci/domainset_ops.py \
-            --mode diff-simple \
-            --set geosite/category-ru \
-            --set geosite/refilter \
-            --out "$r"
-          r_suf="$r_base.suf"; r_full="$r_base.full"
-          grep -vE '^full:' "$r" > "$r_suf" || true
-          grep  -E '^full:' "$r" > "$r_full" || true
-          dom_from_clean_to_xray_suffix "$r_suf" geosite/.tmp-ru-norefilter-suf
-          tmp_in="$(mktemp)"
-          { cat "$r_full"; cat geosite/.tmp-ru-norefilter-suf 2>/dev/null || true; cat geosite/.tmp-ru-norefilter-suf.list 2>/dev/null || true; } > "$tmp_in"
-          dom_xray_preserve "$tmp_in" geosite/ru-no-refilter
-          rm -f "$r_base" "$r" "$r_suf" "$r_full" "$tmp_in" geosite/.tmp-ru-norefilter-suf geosite/.tmp-ru-norefilter-suf.list
-
 
       - name: Build geosite/router (dedup + optimize, preserve)
         run: |
