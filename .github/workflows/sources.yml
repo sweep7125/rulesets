@@ -191,7 +191,7 @@ jobs:
           tmp="$(mktemp)"
           python3 .ci/domainset_ops.py \
             --mode intersect \
-            --set geosite/refilter,geosite/refilter-community \
+            --set geosite/refilter,geosite/antifilter-community,geosite/refilter-community,geosite/russia-inside,geosite/google-ai,geosite/youtube \
             --set geosite/category-ru \
             --out "$tmp"
           { cat "$tmp"; printf '%s\n' jut.su habr.com 4pda.to; } > "$tmp.add"
@@ -294,7 +294,7 @@ jobs:
           set -Eeuo pipefail
           python3 .ci/ipset_ops.py \
             --mode intersect \
-            --set geoip/refilter,geoip/refilter-community \
+            --set geoip/refilter,geoip/refilter-community,geoip/discord-voice \
             --set geoip/ru \
             --out geoip/category-ban-ru.list
           python3 .ci/ipset_ops.py \
