@@ -199,7 +199,7 @@ def build_xray_output(suffixes: Set[str], fulls: Set[str], other_rules: Iterable
         if kind == "full":
             out.append(f"full:{val}")
         elif kind == "domain":
-            out.append(f"domain:{val}")
+            out.append(val)
         elif kind == "keyword":
             out.append(f"keyword:{val}")
         elif kind == "regexp":
