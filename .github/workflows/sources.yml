@@ -49,6 +49,8 @@ jobs:
           git show origin/main:.ci/optimize.py > .ci/optimize.py
           git show origin/main:.ci/ipset_ops.py > .ci/ipset_ops.py
           chmod +x .ci/ipset_ops.py
+          git show origin/main:.ci/domainset_ops.py > .ci/domainset_ops.py
+          chmod +x .ci/domainset_ops.py
           git show origin/main:sections_in > sections_in || true
           git show origin/main:config_get.json > config_get.json 2>/dev/null || rm -f config_get.json
           cat > .ci/helpers.sh <<'SH'
@@ -181,17 +183,24 @@ jobs:
           dom_from_clean_to_xray_exact  _inputs/torrent-trackers.src            geosite/torrent-trackers
           dom_from_clean_to_xray_exact  _inputs/torrent-trackers-custom.src     geosite/torrent-trackers-custom
 
-      - name: Build derived geosite lists (category-ban-ru + refilter-no-ru)
+      - name: Build derived geosite lists (category-ban-ru from category-ru + refilter-no-ru)
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
-          tmp_all="$(mktemp)"
-          collect_geosite_stream_all \
-          | grep -E '^(domain:|[^:[:space:]])' \
-          | sed -E '/^(full:|keyword:|regexp:)/d; s/^domain://' \
-          | LC_ALL=C sort -u > "$tmp_all"
-          { grep -E "${TLD_RU_REGEX}" "$tmp_all"; printf '%s\n' "jut.su" "habr.com" "4pda.to"; } \
-          | LC_ALL=C sort -u > "geosite/category-ban-ru.list"
+          t_base="$(mktemp)"
+          t="$t_base.list"
+          python3 .ci/domainset_ops.py \
+            --mode intersect \
+            --set geosite/refilter,geosite/refilter-community \
+            --set geosite/category-ru \
+            --out "$t"
+          {
+            cat "$t"
+            printf '%s\n' "full:jut.su" "full:habr.com" "full:4pda.to"
+          } > "$t.add"
+          dom_xray_preserve "$t.add" geosite/category-ban-ru
+          rm -f "$t_base" "$t" "$t.add"
+
           tmp_refilter="$(mktemp)"
           collect_refilter_only_stream \
           | grep -E '^(domain:|[^:[:space:]])' \
@@ -199,7 +208,7 @@ jobs:
           | LC_ALL=C sort -u > "$tmp_refilter"
           grep -vE "${TLD_RU_REGEX}" "$tmp_refilter" | LC_ALL=C sort -u > "geosite/refilter-no-ru.list"
           dom_from_clean_to_xray_suffix geosite/refilter-no-ru.list geosite/refilter-no-ru
-          rm -f "$tmp_all" "$tmp_refilter"
+          rm -f "$tmp_refilter"
 
       - name: Build geosite/router (dedup + optimize, preserve)
         run: |
