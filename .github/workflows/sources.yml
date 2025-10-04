@@ -47,6 +47,8 @@ jobs:
           mkdir -p .ci community _inputs
           git fetch --no-tags --depth=1 origin main
           git show origin/main:.ci/optimize.py > .ci/optimize.py
+          git show origin/main:.ci/ipset_ops.py > .ci/ipset_ops.py
+          chmod +x .ci/ipset_ops.py
           git show origin/main:sections_in > sections_in || true
           git show origin/main:config_get.json > config_get.json 2>/dev/null || rm -f config_get.json
           cat > .ci/helpers.sh <<'SH'
@@ -280,117 +282,25 @@ jobs:
           ip_opt _inputs/refilter-community-ips.src geoip/refilter-community
           ip_opt _inputs/ru-bundle.src geoip/ru-bundle
 
-      - name: Build derived geoip lists (category-ban-ru + refilter-no-russia + ru-no-refilter)
+      - name: Build derived geoip lists via ipset_ops.py
         run: |
           set -Eeuo pipefail
-          python3 - <<'PY'
-          import os, ipaddress
-          from ipaddress import collapse_addresses, summarize_address_range
-
-          def read_nets(p):
-              if not os.path.exists(p): return []
-              out=[]
-              with open(p,'r',encoding='utf-8',errors='ignore') as f:
-                  for t in f:
-                      t=t.strip()
-                      if not t or t.startswith('#'): continue
-                      try: out.append(ipaddress.ip_network(t, strict=False))
-                      except: pass
-              return out
-
-          def read_any(base):
-              return read_nets(base + ".list") or read_nets(base)
-
-          def normalize(nets):
-              v4=[n for n in nets if n.version==4]
-              v6=[n for n in nets if n.version==6]
-              return list(collapse_addresses(v4)) + list(collapse_addresses(v6))
-
-          def split_sorted_by_family(nets):
-              A4 = sorted([n for n in nets if n.version==4], key=lambda n:int(n.network_address))
-              A6 = sorted([n for n in nets if n.version==6], key=lambda n:int(n.network_address))
-              return A4, A6
-
-          def inter_linear(A, B):
-              out=[]; i=j=0
-              while i<len(A) and j<len(B):
-                  a,b=A[i],B[j]
-                  if int(a.broadcast_address)<int(b.network_address): i+=1; continue
-                  if int(b.broadcast_address)<int(a.network_address): j+=1; continue
-                  lo=max(int(a.network_address),int(b.network_address))
-                  hi=min(int(a.broadcast_address),int(b.broadcast_address))
-                  lo_addr = type(a.network_address)(lo)
-                  hi_addr = type(a.network_address)(hi)
-                  out.extend(summarize_address_range(lo_addr, hi_addr))
-                  if int(a.broadcast_address)<int(b.broadcast_address): i+=1
-                  else: j+=1
-              return out
-
-          def diff_linear(A, B):
-              out=[]; i=j=0
-              while i < len(A):
-                  a=A[i]
-                  a_lo=int(a.network_address); a_hi=int(a.broadcast_address)
-                  cur=a_lo
-                  while j < len(B) and int(B[j].broadcast_address) < cur:
-                      j+=1
-                  k=j
-                  while k < len(B) and int(B[k].network_address) <= a_hi:
-                      b=B[k]
-                      b_lo=int(b.network_address); b_hi=int(b.broadcast_address)
-                      if b_lo > cur:
-                          lo_addr = type(a.network_address)(cur)
-                          hi_addr = type(a.network_address)(min(a_hi, b_lo-1))
-                          out.extend(summarize_address_range(lo_addr, hi_addr))
-                      if b_hi + 1 > a_hi:
-                          cur=a_hi+1
-                          break
-                      else:
-                          cur=b_hi+1
-                      k+=1
-                  if cur <= a_hi:
-                      lo_addr = type(a.network_address)(cur)
-                      hi_addr = type(a.network_address)(a_hi)
-                      out.extend(summarize_address_range(lo_addr, hi_addr))
-                  if k>j: j=k
-                  i+=1
-              return out
-
-          def op_intersection(A, B):
-              A4,A6 = split_sorted_by_family(normalize(A))
-              B4,B6 = split_sorted_by_family(normalize(B))
-              return normalize(inter_linear(A4,B4) + inter_linear(A6,B6))
-
-          def op_difference(A, B):
-              A4,A6 = split_sorted_by_family(normalize(A))
-              B4,B6 = split_sorted_by_family(normalize(B))
-              return normalize(diff_linear(A4,B4) + diff_linear(A6,B6))
-
-          def write_list(path, nets):
-              os.makedirs(os.path.dirname(path), exist_ok=True)
-              nets_sorted = sorted(nets, key=lambda n:(n.version, n.prefixlen, int(n.network_address)))
-              with open(path,"w",encoding="utf-8") as f:
-                  for n in nets_sorted:
-                      f.write(f"{n.network_address}/{n.prefixlen}\n")
-
-          ru     = read_any("geoip/ru")
-          rf_ref = read_any("geoip/refilter")
-          rf_com = read_any("geoip/refilter-community")
-          rf_all = rf_ref + rf_com
-
-          if ru:
-              cat = op_intersection(rf_all, ru)
-              dff = op_difference(rf_ref, ru)
-              rnf = op_difference(ru, rf_ref)
-          else:
-              cat = []
-              dff = normalize(rf_ref)
-              rnf = []
-
-          write_list("geoip/category-ban-ru.list",   cat)
-          write_list("geoip/refilter-no-russia.list", dff)
-          write_list("geoip/ru-no-refilter.list",     rnf)
-          PY
+          python3 .ci/ipset_ops.py \
+            --mode intersect \
+            --set geoip/refilter,geoip/refilter-community \
+            --set geoip/ru \
+            --out geoip/category-ban-ru.list
+          python3 .ci/ipset_ops.py \
+            --mode diff \
+            --A geoip/refilter \
+            --B geoip/ru \
+            --out geoip/refilter-no-russia.list
+          python3 .ci/ipset_ops.py \
+            --mode diff \
+            --A geoip/ru \
+            --B geoip/refilter \
+            --out geoip/ru-no-refilter.list \
+            --fingerprint-out geoip/_ipset_ops.sha256
 
       - name: Build geoip/router (dedup + optimize)
         run: |
