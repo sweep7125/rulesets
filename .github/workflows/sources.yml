@@ -166,7 +166,7 @@ jobs:
           get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/outside-raw.lst" _inputs/russia-outside.src
           get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/google_ai.lst" _inputs/google-ai.src
           get "https://raw.githubusercontent.com/sakib-m/Pi-hole-Torrent-Blocklist/main/all-torrent-trackers.txt" _inputs/torrent-trackers.src
-          get "https://raw.githubusercontent.com/sakib-m/Pi-hole-Torrent-Blocklist/refs/heads/main/custom-tracker.txt" _inputs/torrent-trackers-custom.src
+          get "https://raw.githubusercontent.com/Pi-hole-Torrent-Blocklist/refs/heads/main/custom-tracker.txt" _inputs/torrent-trackers-custom.src
 
       - name: Normalize external DOMAIN sources → XRAY lists in geosite/
         run: |
@@ -233,7 +233,7 @@ jobs:
               geosite/google-ai \
               geosite/refilter
             do
-              [[ -f "$f" || -f "$f.list" ]] || continue
+              [[ -f "$f" || -f "$f.list" ]] || продолжить
               cat "$f" 2>/dev/null || true
               cat "$f.list" 2>/dev/null || true
               echo
@@ -299,8 +299,7 @@ jobs:
             --mode diff \
             --A geoip/ru \
             --B geoip/refilter \
-            --out geoip/ru-no-refilter.list \
-            --fingerprint-out geoip/_ipset_ops.sha256
+            --out geoip/ru-no-refilter.list
 
       - name: Build geoip/router (dedup + optimize)
         run: |
