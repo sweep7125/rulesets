@@ -182,42 +182,31 @@ jobs:
           dom_from_clean_to_xray_exact  _inputs/torrent-trackers.src            geosite/torrent-trackers
           dom_from_clean_to_xray_exact  _inputs/torrent-trackers-custom.src     geosite/torrent-trackers-custom
 
-      - name: Build derived geosite lists (category-ban-ru via category-ru; refilter-no-ru)
+      - name: Build derived geosite lists (ban-ru & refilter-no-ru)
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
-          t_base="$(mktemp)"; t="$t_base.list"
+      
+          # category-ban-ru = (refilter ∪ refilter-community) ∩ category-ru  +  ручные суффиксы
+          tmp="$(mktemp)"
           python3 .ci/domainset_ops.py \
             --mode intersect \
             --set geosite/refilter,geosite/refilter-community \
             --set geosite/category-ru \
-            --out "$t"
-          
-          t_suf="$t_base.suf"; t_full="$t_base.full"
-          grep -vE '^full:' "$t" > "$t_suf" || true
-          grep  -E '^full:' "$t" > "$t_full" || true
-          printf '%s\n' "jut.su" "habr.com" "4pda.to" >> "$t_suf"
-          
-          dom_from_clean_to_xray_suffix "$t_suf" geosite/.tmp-banru-suf
-          tmp_in="$(mktemp)"
-          { cat "$t_full"; cat geosite/.tmp-banru-suf 2>/dev/null || true; cat geosite/.tmp-banru-suf.list 2>/dev/null || true; } > "$tmp_in"
-          dom_xray_preserve "$tmp_in" geosite/category-ban-ru
-          rm -f "$t_base" "$t" "$t_suf" "$t_full" "$tmp_in" geosite/.tmp-banru-suf geosite/.tmp-banru-suf.list
-          
-          d_base="$(mktemp)"; d="$d_base.list"
+            --out "$tmp"
+          { cat "$tmp"; printf '%s\n' jut.su habr.com 4pda.to; } > "$tmp.add"
+          dom_xray_preserve "$tmp.add" geosite/category-ban-ru
+          rm -f "$tmp" "$tmp.add"
+      
+          # refilter-no-ru = refilter − category-ru
+          tmp="$(mktemp)"
           python3 .ci/domainset_ops.py \
             --mode diff-simple \
             --set geosite/refilter \
             --set geosite/category-ru \
-            --out "$d"
-          d_suf="$d_base.suf"; d_full="$d_base.full"
-          grep -vE '^full:' "$d" > "$d_suf" || true
-          grep  -E '^full:' "$d" > "$d_full" || true
-          dom_from_clean_to_xray_suffix "$d_suf" geosite/.tmp-refilter-noru-suf
-          tmp_in="$(mktemp)"
-          { cat "$d_full"; cat geosite/.tmp-refilter-noru-suf 2>/dev/null || true; cat geosite/.tmp-refilter-noru-suf.list 2>/dev/null || true; } > "$tmp_in"
-          dom_xray_preserve "$tmp_in" geosite/refilter-no-ru
-          rm -f "$d_base" "$d" "$d_suf" "$d_full" "$tmp_in" geosite/.tmp-refilter-noru-suf geosite/.tmp-refilter-noru-suf.list
+            --out "$tmp"
+          dom_xray_preserve "$tmp" geosite/refilter-no-ru
+          rm -f "$tmp"
 
       - name: Build geosite/router (dedup + optimize, preserve)
         run: |
