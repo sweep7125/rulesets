@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 import argparse, os, sys, re, unicodedata
-from typing import List, Tuple, Set, Dict, Iterable
+from typing import List, Tuple, Set, Dict, Iterable, Optional
 
 def read_lines(path: str):
     with open(path, "r", encoding="utf-8", errors="ignore") as f:
@@ -60,21 +60,39 @@ def take_until_attr(text: str) -> str:
         keep.append(tok)
     return " ".join(keep).strip()
 
+def _resolve_candidate(path: str) -> Optional[str]:
+    candidates = [path]
+    if not path.endswith(".list"):
+        candidates.append(path + ".list")
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    return None
+
+def _resolve_or_die(path: str) -> str:
+    rp = _resolve_candidate(path)
+    if rp:
+        return rp
+    cand = [path] + ([] if path.endswith(".list") else [path + ".list"])
+    print(f"file not found: tried {', '.join(cand)}", file=sys.stderr)
+    sys.exit(2)
+
 def parse_xray_file_recursive(path: str, visited: Set[str]) -> Tuple[Set[str], Set[str]]:
-    abspath = os.path.abspath(path)
+    real_path = _resolve_or_die(path)
+    abspath = os.path.abspath(real_path)
     if abspath in visited:
         return set(), set()
-    if not os.path.exists(abspath):
-        print(f"include not found: {path}", file=sys.stderr)
-        sys.exit(2)
     visited.add(abspath)
+
     base_dir = os.path.dirname(abspath)
     suffix_bases: Set[str] = set()
     full_bases: Set[str] = set()
+
     for line in clean_stream(read_lines(abspath)):
         if line.startswith("include:"):
             inc = take_until_attr(line[len("include:"):])
-            s2, f2 = parse_xray_file_recursive(os.path.join(base_dir, inc), visited)
+            inc_path = os.path.join(base_dir, inc)
+            s2, f2 = parse_xray_file_recursive(inc_path, visited)
             suffix_bases |= s2
             full_bases |= f2
             continue
@@ -170,7 +188,6 @@ def intersect_pair(A_suffix: Set[str], A_full: Set[str],
     for fr in A_full:
         if fr in B_full or any(is_under(fr, sc) for sc in B_suffix):
             out_full.add(fr)
-
     for fc in B_full:
         if fc in A_full or any(is_under(fc, sr) for sr in A_suffix):
             out_full.add(fc)
@@ -206,16 +223,17 @@ def read_group(arg: str) -> Tuple[Set[str], Set[str]]:
     full: Set[str] = set()
     visited: Set[str] = set()
     for p in [s.strip() for s in arg.split(",") if s.strip()]:
-        s, f = parse_xray_file_recursive(p, visited)
-        suffix |= s
-        full |= f
+        real = _resolve_or_die(p)
+        s2, f2 = parse_xray_file_recursive(real, visited)
+        suffix |= s2
+        full |= f2
     S, E = optimize_suffix_full([("suffix", s) for s in suffix] + [("full", e) for e in full])
     return S, E
 
 def main():
     ap = argparse.ArgumentParser(description="Domain set ops (XRAY). Intersection across groups.")
     ap.add_argument("--mode", choices=["intersect"], required=True)
-    ap.add_argument("--set", action="append", default=[], help="группа файлов через запятую (union внутри), несколько --set для пересечения между группами")
+    ap.add_argument("--set", action="append", default=[], help="группа файлов через запятую (union внутри). Несколько --set для пересечения между группами")
     ap.add_argument("--out", required=True, help="output .list (XRAY)")
     args = ap.parse_args()
 
