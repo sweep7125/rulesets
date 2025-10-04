@@ -186,7 +186,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
-
+          
           t_base="$(mktemp)"
           t="$t_base.list"
           python3 .ci/domainset_ops.py \
@@ -200,23 +200,23 @@ jobs:
           } > "$t.add"
           dom_xray_preserve "$t.add" geosite/category-ban-ru
           rm -f "$t_base" "$t" "$t.add"
-
+          
           d_base="$(mktemp)"
           d="$d_base.list"
           python3 .ci/domainset_ops.py \
             --mode diff-simple \
-            --A geosite/refilter \
-            --B geosite/category-ru \
+            --set geosite/refilter \
+            --set geosite/category-ru \
             --out "$d"
           dom_xray_preserve "$d" geosite/refilter-no-ru
           rm -f "$d_base" "$d"
-
+          
           r_base="$(mktemp)"
           r="$r_base.list"
           python3 .ci/domainset_ops.py \
             --mode diff-simple \
-            --A geosite/category-ru \
-            --B geosite/refilter \
+            --set geosite/category-ru \
+            --set geosite/refilter \
             --out "$r"
           dom_xray_preserve "$r" geosite/ru-no-refilter
           rm -f "$r_base" "$r"
