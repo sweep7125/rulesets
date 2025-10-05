@@ -20,12 +20,8 @@ env:
   GEOSITE_INCLUDE: |
     private
     category-ru
-    reddit
     ru-bundle
     category-ban-ru
-    category-nongov-ru
-    russia-outside
-    category-gov-ru
   GEOIP_INCLUDE: |
     ru
     ru-bundle
