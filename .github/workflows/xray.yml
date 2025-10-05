@@ -21,22 +21,16 @@ env:
     private
     category-ru
     reddit
-    refilter
     ru-bundle
     category-ban-ru
     category-nongov-ru
-    antifilter-community
-    google-ai
     russia-outside
     category-gov-ru
-    russia-inside
   GEOIP_INCLUDE: |
     ru
     ru-bundle
     private
     category-ban-ru
-    discord-voice
-    refilter
 
 jobs:
   build:
