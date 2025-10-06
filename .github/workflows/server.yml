@@ -24,8 +24,8 @@ env:
     category-gov-ru
     russia-outside
   GEOIP_INCLUDE: |
-    geoip:ru
-    geoip:private
+    ru
+    private
 
 jobs:
   build:
