@@ -1,4 +1,4 @@
-name: Generate xray (geosite + geoip) for server
+name: Generate for server
 
 on:
   schedule:
@@ -189,7 +189,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           pushd custom >/dev/null
-          go run ./ -outputpath=/tmp/out -exportlists= -datapath=/tmp/community/data
+          go run ./ -outputpath=/tmp/out -exportlists= -datapath=/tmp/community/data -togfwlist=category-gov-ru
           popd >/dev/null
           test -s /tmp/out/geosite.dat
 
