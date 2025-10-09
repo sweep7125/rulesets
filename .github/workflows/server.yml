@@ -20,7 +20,7 @@ env:
   GEOSITE_INCLUDE: |
     reddit
     private
-    category-nongov-ru
+    category-ru
     category-gov-ru
     russia-outside
   GEOIP_INCLUDE: |
