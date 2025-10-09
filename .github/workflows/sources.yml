@@ -107,18 +107,18 @@ jobs:
           rm -rf geosite geoip
           mkdir -p geosite geoip
 
-      - name: Build geosite/category-nongov-ru by stripping include before flatten
-        run: |
-          set -Eeuo pipefail
-          source .ci/helpers.sh
-          src_ru="community/data/category-ru"
-          tmp="community/data/.tmp-category-nongov-ru"
-          inc_re='^[[:space:]]*include:[[:space:]]*category-gov-ru([[:space:]]|$|#|@)'
-          if [[ -f "$src_ru" ]]; then
-            sed -E 's/\r$//' "$src_ru" | grep -vE "$inc_re" > "$tmp"
-            dom_xray_preserve "$tmp" geosite/category-nongov-ru
-            rm -f "$tmp" "$tmp.list"
-          fi
+      #- name: Build geosite/category-nongov-ru by stripping include before flatten
+      #  run: |
+      #    set -Eeuo pipefail
+      #    source .ci/helpers.sh
+      #    src_ru="community/data/category-ru"
+      #    tmp="community/data/.tmp-category-nongov-ru"
+      #    inc_re='^[[:space:]]*include:[[:space:]]*category-gov-ru([[:space:]]|$|#|@)'
+      #    if [[ -f "$src_ru" ]]; then
+      #      sed -E 's/\r$//' "$src_ru" | grep -vE "$inc_re" > "$tmp"
+      #      dom_xray_preserve "$tmp" geosite/category-nongov-ru
+      #      rm -f "$tmp" "$tmp.list"
+      #    fi
 
       - name: Resolve keep-set from sections_in (recursive includes) and flatten → geosite/
         run: |
@@ -166,8 +166,8 @@ jobs:
           get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-raw.lst" _inputs/russia-inside.src
           get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/outside-raw.lst" _inputs/russia-outside.src
           get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/google_ai.lst" _inputs/google-ai.src
-          get "https://raw.githubusercontent.com/sakib-m/Pi-hole-Torrent-Blocklist/main/all-torrent-trackers.txt" _inputs/torrent-trackers.src
-          get "https://raw.githubusercontent.com/sakib-m/Pi-hole-Torrent-Blocklist/main/custom-tracker.txt" _inputs/torrent-trackers-custom.src
+          #get "https://raw.githubusercontent.com/sakib-m/Pi-hole-Torrent-Blocklist/main/all-torrent-trackers.txt" _inputs/torrent-trackers.src
+          #get "https://raw.githubusercontent.com/sakib-m/Pi-hole-Torrent-Blocklist/main/custom-tracker.txt" _inputs/torrent-trackers-custom.src
 
       - name: Normalize external DOMAIN sources → XRAY lists in geosite/
         run: |
@@ -179,8 +179,8 @@ jobs:
           dom_from_clean_to_xray_suffix _inputs/russia-inside.src               geosite/russia-inside
           dom_from_clean_to_xray_suffix _inputs/russia-outside.src              geosite/russia-outside
           dom_from_clean_to_xray_suffix _inputs/google-ai.src                   geosite/google-ai
-          dom_from_clean_to_xray_exact  _inputs/torrent-trackers.src            geosite/torrent-trackers
-          dom_from_clean_to_xray_exact  _inputs/torrent-trackers-custom.src     geosite/torrent-trackers-custom
+          #dom_from_clean_to_xray_exact  _inputs/torrent-trackers.src            geosite/torrent-trackers
+          #dom_from_clean_to_xray_exact  _inputs/torrent-trackers-custom.src     geosite/torrent-trackers-custom
 
       - name: Build derived geosite lists (ban-ru & refilter-no-ru)
         run: |
@@ -274,7 +274,7 @@ jobs:
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/ipsum.lst" _inputs/refilter-ips.src
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community_ips.lst" _inputs/refilter-community-ips.src
           { cat _inputs/cloudflare4.src; echo; cat _inputs/cloudflare6.src; } > _inputs/cloudflare-all.src
-          { cat _inputs/refilter-ips.src; echo; cat _inputs/discord-voice-ips.src; } > _inputs/ru-bundle.src
+          { cat _inputs/refilter-ips.src; echo; cat _inputs/discord-voice-ips.src; echo; cat _inputs/cloudflare-all.src; } > _inputs/ru-bundle.src
 
       - name: Normalize IP sources → CIDR lists in geoip/
         run: |
@@ -302,11 +302,11 @@ jobs:
             --A geoip/refilter \
             --B geoip/ru \
             --out geoip/refilter-no-ru.list
-          python3 .ci/ipset_ops.py \
-            --mode diff \
-            --A geoip/ru \
-            --B geoip/refilter \
-            --out geoip/ru-no-refilter.list
+          #python3 .ci/ipset_ops.py \
+          #  --mode diff \
+          #  --A geoip/ru \
+          #  --B geoip/refilter \
+          #  --out geoip/ru-no-refilter.list
 
       - name: Build geoip/router (dedup + optimize)
         run: |
