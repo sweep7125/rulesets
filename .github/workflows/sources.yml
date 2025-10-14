@@ -199,14 +199,14 @@ jobs:
           rm -f "$tmp" "$tmp.add"
       
           # refilter-no-ru = refilter − category-ru
-          tmp="$(mktemp)"
-          python3 .ci/domainset_ops.py \
-            --mode diff-simple \
-            --set geosite/refilter \
-            --set geosite/category-ru \
-            --out "$tmp"
-          dom_xray_preserve "$tmp" geosite/refilter-no-ru
-          rm -f "$tmp"
+          #tmp="$(mktemp)"
+          #python3 .ci/domainset_ops.py \
+          #  --mode diff-simple \
+          #  --set geosite/refilter \
+          #  --set geosite/category-ru \
+          #  --out "$tmp"
+          #dom_xray_preserve "$tmp" geosite/refilter-no-ru
+          #rm -f "$tmp"
 
       - name: Build geosite/router (dedup + optimize, preserve)
         run: |
@@ -247,6 +247,26 @@ jobs:
             done
           } > "$tmp"
           dom_xray_preserve "$tmp" geosite/ru-bundle
+          rm -f "$tmp" "$tmp.list"
+
+      - name: Build geosite/block-out (dedup + optimize, preserve)
+        run: |
+          set -Eeuo pipefail
+          source .ci/helpers.sh
+          tmp="$(mktemp)"
+          {
+            for f in \
+              geosite/private \
+              geosite/category-gov-ru \
+              geosite/russia-outside
+            do
+              [[ -f "$f" || -f "$f.list" ]] || continue
+              cat "$f" 2>/dev/null || true
+              cat "$f.list" 2>/dev/null || true
+              echo
+            done
+          } > "$tmp"
+          dom_xray_preserve "$tmp" geosite/block-out
           rm -f "$tmp" "$tmp.list"
 
       - name: Download upstream geoip.dat & build base RU/PRIVATE (optional)
