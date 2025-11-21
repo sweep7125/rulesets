@@ -225,13 +225,12 @@ jobs:
               else:
                   continue
 
-              args = {"name": name, "uri": path, "onlyIPType": "ipv4"}
+              # args = {"name": name, "uri": path, "onlyIPType": "ipv4"}
 
-              # if name == "private":
-              #     # private остаётся dual-stack (IPv4 + IPv6)
-              #     args = {"name": name, "uri": path}
-              # else:
-              #     args = {"name": name, "uri": path, "onlyIPType": "ipv4"}
+              if name == "private":
+                  args = {"name": name, "uri": path}
+              else:
+                  args = {"name": name, "uri": path, "onlyIPType": "ipv4"}
 
               inputs.append({
                   "type": "text",
