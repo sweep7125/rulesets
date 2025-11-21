@@ -99,7 +99,11 @@ jobs:
           set -Eeuo pipefail
           mkdir -p /tmp/work
           git fetch --no-tags --depth=1 origin sources
+
+          # очистка рабочей директории, кроме .git и mrs.hash
           find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name 'mrs.hash' -exec rm -rf {} +
+
+          # ==== GEOSITE → geosite-*.mrs (как было) ====
           geosite_list=$(git ls-tree -r --name-only origin/sources:geosite || true)
           if [[ -n "$geosite_list" ]]; then
             while IFS= read -r f; do
@@ -126,17 +130,33 @@ jobs:
               mihomo convert-ruleset domain text "$out" "./geosite-${base}.mrs"
             done <<< "$geosite_list"
           fi
+
+          # ==== GEOIP → geoip-*.mrs (IPv6 режем везде, кроме private) ====
           geoip_list=$(git ls-tree -r --name-only origin/sources:geoip || true)
           if [[ -n "$geoip_list" ]]; then
             while IFS= read -r f; do
               [[ -n "$f" ]] || continue
+              in_raw="/tmp/work/${f}.raw"
               in="/tmp/work/${f}"
               mkdir -p "/tmp/work/$(dirname "$f")"
-              git show "origin/sources:geoip/$f" > "$in"
-              bn="$(basename "$f")"; base="${bn%.list}"
+
+              # оригинальный geoip-файл из ветки sources
+              git show "origin/sources:geoip/$f" > "$in_raw"
+
+              bn="$(basename "$f")"
+              base="${bn%.list}"
+
+              if [[ "$base" == "private" ]]; then
+                cp "$in_raw" "$in"
+              else
+                grep -v ':' "$in_raw" > "$in" || true
+              fi
+
               mihomo convert-ruleset ipcidr text "$in" "./geoip-${base}.mrs"
             done <<< "$geoip_list"
           fi
+
+          # оставить в корне только *.mrs и mrs.hash
           find . -mindepth 1 -maxdepth 1 -type d ! -name '.git' -exec rm -rf {} +
           find . -mindepth 1 -maxdepth 1 -type f ! -name '*.mrs' ! -name 'mrs.hash' -delete
           printf '%s' "${MRS_BUILD_HASH}" > ./mrs.hash
