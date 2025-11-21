@@ -295,7 +295,7 @@ jobs:
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community_ips.lst" _inputs/refilter-community-ips.src
           get "https://antifilter.download/list/ip.lst" _inputs/antifilter-ips.src
           #{ cat _inputs/cloudflare4.src; echo; cat _inputs/cloudflare6.src; } > _inputs/cloudflare-all.src
-          { cat _inputs/refilter-ips.src; echo; cat _inputs/discord-voice-ips.src; } > _inputs/ru-bundle.src
+          { cat _inputs/discord-voice-ips.src; } > _inputs/ru-bundle.src
 
       - name: Normalize IP sources → CIDR lists in geoip/
         run: |
