@@ -304,7 +304,7 @@ jobs:
           ip_opt _inputs/discord-voice-ips.src      geoip/discord-voice
           ip_opt _inputs/telegram-ips.src           geoip/telegram
           ip_opt _inputs/cloudflare4.src            geoip/cloudflare4
-          ip_opt _inputs/cloudflare6.src            geoip/cloudflare6
+          #ip_opt _inputs/cloudflare6.src            geoip/cloudflare6
           #ip_opt _inputs/cloudflare-all.src         geoip/cloudflare
           ip_opt _inputs/refilter-ips.src           geoip/refilter
           ip_opt _inputs/antifilter-ips.src           geoip/antifilter
