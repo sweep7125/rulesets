@@ -290,10 +290,11 @@ jobs:
           get "https://raw.githubusercontent.com/GhostRooter0953/discord-voice-ips/master/voice_domains/discord-voice-ip-list" _inputs/discord-voice-ips.src
           get "https://core.telegram.org/resources/cidr.txt" _inputs/telegram-ips.src
           get "https://www.cloudflare.com/ips-v4" _inputs/cloudflare4.src
-          get "https://www.cloudflare.com/ips-v6" _inputs/cloudflare6.src
+          #get "https://www.cloudflare.com/ips-v6" _inputs/cloudflare6.src
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/ipsum.lst" _inputs/refilter-ips.src
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community_ips.lst" _inputs/refilter-community-ips.src
-          { cat _inputs/cloudflare4.src; echo; cat _inputs/cloudflare6.src; } > _inputs/cloudflare-all.src
+          get "https://antifilter.download/list/ip.lst" _inputs/antifilter-ips.src
+          #{ cat _inputs/cloudflare4.src; echo; cat _inputs/cloudflare6.src; } > _inputs/cloudflare-all.src
           { cat _inputs/refilter-ips.src; echo; cat _inputs/discord-voice-ips.src; } > _inputs/ru-bundle.src
 
       - name: Normalize IP sources → CIDR lists in geoip/
@@ -304,8 +305,9 @@ jobs:
           ip_opt _inputs/telegram-ips.src           geoip/telegram
           ip_opt _inputs/cloudflare4.src            geoip/cloudflare4
           ip_opt _inputs/cloudflare6.src            geoip/cloudflare6
-          ip_opt _inputs/cloudflare-all.src         geoip/cloudflare
+          #ip_opt _inputs/cloudflare-all.src         geoip/cloudflare
           ip_opt _inputs/refilter-ips.src           geoip/refilter
+          ip_opt _inputs/antifilter-ips.src           geoip/antifilter
           ip_opt _inputs/refilter-community-ips.src geoip/refilter-community
           ip_opt _inputs/ru-bundle.src geoip/ru-bundle
 
@@ -314,14 +316,14 @@ jobs:
           set -Eeuo pipefail
           python3 .ci/ipset_ops.py \
             --mode intersect \
-            --set geoip/refilter,geoip/refilter-community,geoip/discord-voice \
+            --set geoip/antifilter,geoip/refilter-community,geoip/discord-voice \
             --set geoip/ru \
             --out geoip/category-ban-ru.list
-          python3 .ci/ipset_ops.py \
-            --mode diff \
-            --A geoip/refilter \
-            --B geoip/ru \
-            --out geoip/refilter-no-ru.list
+          #python3 .ci/ipset_ops.py \
+          #  --mode diff \
+          #  --A geoip/refilter \
+          #  --B geoip/ru \
+          #  --out geoip/refilter-no-ru.list
           #python3 .ci/ipset_ops.py \
           #  --mode diff \
           #  --A geoip/ru \
