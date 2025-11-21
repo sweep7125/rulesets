@@ -200,32 +200,63 @@ jobs:
           popd >/dev/null
           python3 - <<'PY'
           import os, json
-          inc = os.environ.get("GEOIP_INCLUDE","")
+
+          inc = os.environ.get("GEOIP_INCLUDE", "")
           wanted = []
           for line in inc.splitlines():
-            t = line.split('#',1)[0].strip()
-            if not t: continue
-            base = os.path.basename(t)
-            if base.endswith(".list"): base = base[:-5]
-            wanted.append(base)
+              t = line.split('#', 1)[0].strip()
+              if not t:
+                  continue
+              base = os.path.basename(t)
+              if base.endswith(".list"):
+                  base = base[:-5]
+              wanted.append(base)
+
           inputs = []
           for name in wanted:
-            p_noext = f"/tmp/geoip/{name}"
-            p_list  = p_noext + ".list"
-            if   os.path.isfile(p_list):  inputs.append({"type":"text","action":"add","args":{"name":name,"uri":p_list}})
-            elif os.path.isfile(p_noext): inputs.append({"type":"text","action":"add","args":{"name":name,"uri":p_noext}})
+              p_noext = f"/tmp/geoip/{name}"
+              p_list  = p_noext + ".list"
+
+              path = None
+              if os.path.isfile(p_list):
+                  path = p_list
+              elif os.path.isfile(p_noext):
+                  path = p_noext
+              else:
+                  continue
+
+              args = {"name": name, "uri": path, "onlyIPType": "ipv4"}
+
+              # if name == "private":
+              #     # private остаётся dual-stack (IPv4 + IPv6)
+              #     args = {"name": name, "uri": path}
+              # else:
+              #     args = {"name": name, "uri": path, "onlyIPType": "ipv4"}
+
+              inputs.append({
+                  "type": "text",
+                  "action": "add",
+                  "args": args
+              })
+
           if not inputs:
-            raise SystemExit(0)
+              raise SystemExit(0)
+
           cfg = {
-            "input": inputs,
-            "output": [{
-              "type": "v2rayGeoIPDat",
-              "action": "output",
-              "args": {"outputDir": "/tmp/out", "outputName": "geoip.dat"}
-            }]}
+              "input": inputs,
+              "output": [{
+                  "type": "v2rayGeoIPDat",
+                  "action": "output",
+                  "args": {
+                      "outputDir": "/tmp/out",
+                      "outputName": "geoip.dat"
+                  }
+              }]
+          }
+
           os.makedirs("/tmp/out", exist_ok=True)
-          with open("/tmp/config.json","w",encoding="utf-8") as f:
-            json.dump(cfg, f, ensure_ascii=False)
+          with open("/tmp/config.json", "w", encoding="utf-8") as f:
+              json.dump(cfg, f, ensure_ascii=False)
           PY
           if [[ -s /tmp/config.json ]]; then
             /tmp/geoip-src/geoip convert -c /tmp/config.json
