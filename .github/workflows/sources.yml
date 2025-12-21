@@ -294,6 +294,9 @@ jobs:
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/ipsum.lst" _inputs/refilter-ips.src
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community_ips.lst" _inputs/refilter-community-ips.src
           get "https://antifilter.download/list/ip.lst" _inputs/antifilter-ips.src
+          get "https://antifilter.network/download/ip.lst" _inputs/network-ips.src
+          get "https://antifilter.network/downloads/custom.lst" _inputs/network-community-ips.src
+          get "https://community.antifilter.download/list/community.lst" _inputs/antifilter-community-ips.src
           #{ cat _inputs/cloudflare4.src; echo; cat _inputs/cloudflare6.src; } > _inputs/cloudflare-all.src
           { cat _inputs/discord-voice-ips.src; } > _inputs/ru-bundle.src
 
@@ -308,7 +311,10 @@ jobs:
           #ip_opt _inputs/cloudflare-all.src         geoip/cloudflare
           ip_opt _inputs/refilter-ips.src           geoip/refilter
           ip_opt _inputs/antifilter-ips.src           geoip/antifilter
+          ip_opt _inputs/network-ips.src           geoip/network
           ip_opt _inputs/refilter-community-ips.src geoip/refilter-community
+          ip_opt _inputs/network-community-ips.src geoip/network-community
+          ip_opt _inputs/antifilter-community-ips.src geoip/antifilter-community
           ip_opt _inputs/ru-bundle.src geoip/ru-bundle
 
       - name: Build derived geoip lists via ipset_ops.py
@@ -316,7 +322,7 @@ jobs:
           set -Eeuo pipefail
           python3 .ci/ipset_ops.py \
             --mode intersect \
-            --set geoip/antifilter,geoip/refilter-community,geoip/discord-voice \
+            --set geoip/antifilter,geoip/network,geoip/refilter,geoip/refilter-community,geoip/network-community,geoip/antifilter-community,geoip/discord-voice \
             --set geoip/ru \
             --out geoip/category-ban-ru.list
           #python3 .ci/ipset_ops.py \
