@@ -327,11 +327,6 @@ jobs:
             --out geoip/category-ban-ru.list
           python3 .ci/ipset_ops.py \
             --mode diff \
-            --A geoip/antifilter,geoip/network,geoip/refilter,geoip/refilter-community,geoip/network-community,geoip/antifilter-community,geoip/discord-voice \
-            --B geoip/ru \
-            --out geoip/full-ban-no-ru.list
-          python3 .ci/ipset_ops.py \
-            --mode diff \
             --A geoip/refilter-community,geoip/network-community,geoip/antifilter-community,geoip/discord-voice \
             --B geoip/ru \
             --out geoip/ban-no-ru.list
