@@ -323,7 +323,7 @@ jobs:
           source .ci/helpers.sh
           python3 .ci/ipset_ops.py \
             --mode intersect \
-            --set geoip/antifilter,geoip/network,geoip/refilter,geoip/refilter-community,geoip/network-community,geoip/antifilter-community,geoip/discord-voice \
+            --set geoip/antifilter,geoip/network,geoip/refilter-community,geoip/network-community,geoip/antifilter-community,geoip/discord-voice \
             --set geoip/ru \
             --out geoip/category-ban-ru.list
           python3 .ci/ipset_ops.py \
