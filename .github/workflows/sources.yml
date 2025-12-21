@@ -238,7 +238,8 @@ jobs:
               geosite/russia-inside \
               geosite/antifilter-community \
               geosite/google-ai \
-              geosite/refilter
+              geosite/refilter \
+              geosite/refilter-community
             do
               [[ -f "$f" || -f "$f.list" ]] || continue
               cat "$f" 2>/dev/null || true
