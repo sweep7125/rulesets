@@ -320,6 +320,7 @@ jobs:
       - name: Build derived geoip lists via ipset_ops.py
         run: |
           set -Eeuo pipefail
+          source .ci/helpers.sh
           python3 .ci/ipset_ops.py \
             --mode intersect \
             --set geoip/antifilter,geoip/network,geoip/refilter,geoip/refilter-community,geoip/network-community,geoip/antifilter-community,geoip/discord-voice \
@@ -330,6 +331,8 @@ jobs:
             --A geoip/refilter-community,geoip/network-community,geoip/antifilter-community,geoip/discord-voice \
             --B geoip/ru \
             --out geoip/ban-no-ru.list
+          { cat geoip/ban-no-ru.list; echo; cat geoip/category-ban-ru.list; } > _inputs/ban.src
+          ip_opt _inputs/ban.src geoip/ban
           #python3 .ci/ipset_ops.py \
           #  --mode diff \
           #  --A geoip/ru \
