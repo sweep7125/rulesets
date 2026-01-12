@@ -67,7 +67,6 @@ jobs:
             for f in \
               geosite/refilter \
               geosite/refilter-community \
-              geosite/antifilter-community \
               geosite/russia-inside \
               geosite/google-ai \
               geosite/youtube \
@@ -161,7 +160,6 @@ jobs:
           set -Eeuo pipefail
           source .ci/helpers.sh
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community.lst" _inputs/refilter-community-domains.src
-          get "https://community.antifilter.download/list/domains.lst" _inputs/antifilter-community-domains.src
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/domains_all.lst" _inputs/refilter-domains.src
           get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-raw.lst" _inputs/russia-inside.src
           get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/outside-raw.lst" _inputs/russia-outside.src
@@ -174,7 +172,6 @@ jobs:
           set -Eeuo pipefail
           source .ci/helpers.sh
           dom_from_clean_to_xray_suffix _inputs/refilter-community-domains.src geosite/refilter-community
-          dom_from_clean_to_xray_suffix _inputs/antifilter-community-domains.src geosite/antifilter-community
           dom_from_clean_to_xray_suffix _inputs/refilter-domains.src            geosite/refilter
           dom_from_clean_to_xray_suffix _inputs/russia-inside.src               geosite/russia-inside
           dom_from_clean_to_xray_suffix _inputs/russia-outside.src              geosite/russia-outside
@@ -191,7 +188,7 @@ jobs:
           tmp="$(mktemp)"
           python3 .ci/domainset_ops.py \
             --mode intersect \
-            --set geosite/refilter,geosite/antifilter-community,geosite/refilter-community,geosite/russia-inside,geosite/google-ai,geosite/youtube \
+            --set geosite/refilter,geosite/refilter-community,geosite/russia-inside,geosite/google-ai,geosite/youtube \
             --set geosite/category-ru \
             --out "$tmp"
           { cat "$tmp"; printf '%s\n' jut.su habr.com 4pda.to; } > "$tmp.add"
@@ -216,7 +213,6 @@ jobs:
           {
             for f in \
               geosite/russia-inside \
-              geosite/antifilter-community \
               geosite/google-ai
             do
               [[ -f "$f" || -f "$f.list" ]] || continue
@@ -236,7 +232,6 @@ jobs:
           {
             for f in \
               geosite/russia-inside \
-              geosite/antifilter-community \
               geosite/google-ai \
               geosite/refilter \
               geosite/refilter-community
@@ -294,10 +289,6 @@ jobs:
           #get "https://www.cloudflare.com/ips-v6" _inputs/cloudflare6.src
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/ipsum.lst" _inputs/refilter-ips.src
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community_ips.lst" _inputs/refilter-community-ips.src
-          get "https://antifilter.download/list/ip.lst" _inputs/antifilter-ips.src
-          get "https://antifilter.network/download/ip.lst" _inputs/network-ips.src
-          get "https://antifilter.network/downloads/custom.lst" _inputs/network-community-ips.src
-          get "https://community.antifilter.download/list/community.lst" _inputs/antifilter-community-ips.src
           #{ cat _inputs/cloudflare4.src; echo; cat _inputs/cloudflare6.src; } > _inputs/cloudflare-all.src
           { cat _inputs/discord-voice-ips.src; } > _inputs/ru-bundle.src
 
@@ -311,11 +302,7 @@ jobs:
           #ip_opt _inputs/cloudflare6.src            geoip/cloudflare6
           #ip_opt _inputs/cloudflare-all.src         geoip/cloudflare
           ip_opt _inputs/refilter-ips.src           geoip/refilter
-          ip_opt _inputs/antifilter-ips.src           geoip/antifilter
-          ip_opt _inputs/network-ips.src           geoip/network
           ip_opt _inputs/refilter-community-ips.src geoip/refilter-community
-          ip_opt _inputs/network-community-ips.src geoip/network-community
-          ip_opt _inputs/antifilter-community-ips.src geoip/antifilter-community
           ip_opt _inputs/ru-bundle.src geoip/ru-bundle
 
       - name: Build derived geoip lists via ipset_ops.py
@@ -324,12 +311,12 @@ jobs:
           source .ci/helpers.sh
           python3 .ci/ipset_ops.py \
             --mode intersect \
-            --set geoip/antifilter,geoip/network,geoip/refilter-community,geoip/network-community,geoip/antifilter-community,geoip/discord-voice \
+            --set geoip/refilter,geoip/refilter-community,geoip/discord-voice \
             --set geoip/ru \
             --out geoip/category-ban-ru.list
           python3 .ci/ipset_ops.py \
             --mode diff \
-            --A geoip/refilter-community,geoip/network-community,geoip/antifilter-community,geoip/discord-voice \
+            --A geoip/refilter,geoip/refilter-community,geoip/discord-voice \
             --B geoip/ru \
             --out geoip/ban-no-ru.list
           { cat geoip/ban-no-ru.list; echo; cat geoip/category-ban-ru.list; } > _inputs/ban.src
@@ -337,17 +324,17 @@ jobs:
           #python3 .ci/ipset_ops.py \
           #  --mode diff \
           #  --A geoip/ru \
-          #  --B geoip/antifilter,geoip/network,geoip/refilter,geoip/refilter-community,geoip/network-community,geoip/antifilter-community,geoip/discord-voice \
+          #  --B geoip/refilter,geoip/refilter-community,geoip/discord-voice \
           #  --out geoip/ru-no-ban.list
           #python3 .ci/ipset_ops.py \
           #  --mode diff \
-          #  --A geoip/refilter \
+          #  --A geoip/refilter,geoip/refilter-community \
           #  --B geoip/ru \
           #  --out geoip/refilter-no-ru.list
           #python3 .ci/ipset_ops.py \
           #  --mode diff \
           #  --A geoip/ru \
-          #  --B geoip/refilter \
+          #  --B geoip/refilter,geoip/refilter-community \
           #  --out geoip/ru-no-refilter.list
 
       - name: Build geoip/router (dedup + optimize)
