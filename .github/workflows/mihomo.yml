@@ -2,11 +2,11 @@ name: Generate mihomo rulesets from sources
 
 on:
   schedule:
-    - cron: "5 0 * * *"
+    - cron: "9 0 * * *"
   workflow_dispatch:
 
 concurrency:
-  group: mihomo-from-sources
+  group: ${{ github.repository }}-mihomo-from-sources
   cancel-in-progress: true
 
 permissions:
@@ -83,29 +83,33 @@ jobs:
             echo "MRS_NEEDS_BUILD=0" >> "${GITHUB_ENV}"
           fi
 
-      - name: Install Mihomo (fixed .deb)
+      - name: Install mihomo (fixed version)
         if: env.MRS_NEEDS_BUILD == '1'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
-          rm -f /tmp/mihomo.deb /tmp/mihomo-*.deb
 
-          gh release download \
+          rm -f /tmp/mihomo-linux-amd64*.deb
+
+          command -v gh >/dev/null 2>&1
+
+          gh release download "${MIHOMO_VERSION}" \
             -R MetaCubeX/mihomo \
             -p 'mihomo-linux-amd64*.deb' \
-            -D /tmp \
-            -t "${MIHOMO_VERSION}"
+            -D /tmp
 
           deb="$(ls -1 /tmp/mihomo-linux-amd64*.deb | head -n1)"
           test -n "${deb}"
+
           sudo apt-get update -y
           sudo apt-get install -y "${deb}"
+
           rm -f /tmp/mihomo-linux-amd64*.deb
 
-          mihomo -v || true
+          mihomo -v
 
-      - name: Build *.mrs to repository root (streaming; no python)
+      - name: Build *.mrs to repository root (no python)
         if: env.MRS_NEEDS_BUILD == '1'
         run: |
           set -Eeuo pipefail
@@ -113,55 +117,13 @@ jobs:
           git rm -r --ignore-unmatch . >/dev/null 2>&1 || true
           rm -f mrs.hash
 
-          geosite_to_mihomo_text_stream() {
-            awk '
-              function trim(s){ sub(/^[ \t]+/,"",s); sub(/[ \t]+$/,"",s); return s }
-              {
-                gsub(/\r/,"")
-                s=trim($0)
-                if (s=="") next
-                if (s ~ /^include:/) next
-
-                if (s ~ /^keyword:/) next
-                if (s ~ /^regexp:/)  next
-
-                if (s ~ /^full:/) {
-                  v=trim(substr(s,6))
-                  sub(/^\./,"",v)
-                  if (v!="") print v
-                  next
-                }
-
-                if (s ~ /^domain:/) {
-                  v=trim(substr(s,8))
-                  sub(/^\./,"",v)
-                  if (v!="") print "+." v
-                  next
-                }
-
-                v=s
-                v=trim(v)
-                if (v ~ /^\+\./) { print v; next }
-                sub(/^\./,"",v)
-                if (v!="") print "+." v
-              }
-            '
-          }
-
-          geoip_stream() {
-            cat
-          }
-
           geosite_list="$(git ls-tree -r --name-only origin/sources:geosite 2>/dev/null || true)"
           if [[ -n "${geosite_list}" ]]; then
             while IFS= read -r f; do
               [[ -n "${f}" ]] || continue
               base="${f%.list}"
               safe="${base//\//-}"
-
-              mihomo convert-ruleset domain text \
-                <(git show "origin/sources:geosite/${f}" | geosite_to_mihomo_text_stream) \
-                "./geosite-${safe}.mrs"
+              mihomo convert-ruleset domain text <(git show "origin/sources:geosite/${f}") "geosite-${safe}.mrs"
             done <<< "${geosite_list}"
           fi
 
@@ -169,24 +131,22 @@ jobs:
           if [[ -n "${geoip_list}" ]]; then
             while IFS= read -r f; do
               [[ -n "${f}" ]] || continue
+
               bn="$(basename "${f}")"
               base="${bn%.list}"
               safe="${f%.list}"
               safe="${safe//\//-}"
 
               if [[ "${base}" == "private" ]]; then
-                mihomo convert-ruleset ipcidr text \
-                  <(git show "origin/sources:geoip/${f}" | geoip_stream) \
-                  "./geoip-${safe}.mrs"
+                mihomo convert-ruleset ipcidr text <(git show "origin/sources:geoip/${f}") "geoip-${safe}.mrs"
               else
-                mihomo convert-ruleset ipcidr text \
-                  <(git show "origin/sources:geoip/${f}" | grep -v ':' | geoip_stream) \
-                  "./geoip-${safe}.mrs"
+                mihomo convert-ruleset ipcidr text <(git show "origin/sources:geoip/${f}" | grep -v ':') "geoip-${safe}.mrs"
               fi
             done <<< "${geoip_list}"
           fi
 
           printf '%s' "${MRS_BUILD_HASH}" > mrs.hash
+
           git add -A
 
       - name: Commit updates
