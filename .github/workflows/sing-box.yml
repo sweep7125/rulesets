@@ -92,7 +92,7 @@ jobs:
         if: env.SRS_NEEDS_BUILD == '1'
         run: |
           set -Eeuo pipefail
-          curl -fsSL https://sing-box.app/install.sh | sh
+          curl -fsSL https://sing-box.app/install.sh | sh -s -- --version 1.12.12
 
       - name: Prepare converter (temp-only JSON)
         if: env.SRS_NEEDS_BUILD == '1'
