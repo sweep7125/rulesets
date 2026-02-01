@@ -6,54 +6,88 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: sources-builder
+  group: sources-builder-${{ github.workflow }}
   cancel-in-progress: true
 
 permissions:
   contents: write
 
 env:
-  COMMIT_USER_NAME: ${{ github.actor }}
-  COMMIT_USER_EMAIL: ${{ github.actor }}@users.noreply.github.com
-  GOFLAGS: -buildvcs=false
   DEBIAN_FRONTEND: noninteractive
+  GOFLAGS: -buildvcs=false
+  COMMIT_USER_NAME: github-actions[bot]
+  COMMIT_USER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v5
+      - name: Checkout repo (default branch)
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
       - name: Switch to branch sources (create if missing)
         run: |
           set -Eeuo pipefail
-          if git ls-remote --exit-code --heads origin refs/heads/sources >/dev/null 2>&1; then
-            git fetch --no-tags --depth=1 origin refs/heads/sources:refs/remotes/origin/sources
-            git switch -c sources --track origin/sources || git switch sources
+          BR="sources"
+
+          git config --local user.name  "${COMMIT_USER_NAME}"
+          git config --local user.email "${COMMIT_USER_EMAIL}"
+
+          if git fetch --no-tags --depth=1 origin "refs/heads/${BR}:refs/remotes/origin/${BR}" >/dev/null 2>&1; then
+            git switch -C "${BR}" "refs/remotes/origin/${BR}"
             git pull --ff-only || true
           else
-            git switch -c sources
-            git -c user.email="${COMMIT_USER_EMAIL}" -c user.name="${COMMIT_USER_NAME}" commit --allow-empty -m "Initialize sources"
-            git push -u origin HEAD:sources
+            git switch --orphan "${BR}"
+            git rm -r --ignore-unmatch . >/dev/null 2>&1 || true
+            git commit --allow-empty -m "Initialize sources"
+            git push -u origin "HEAD:${BR}"
           fi
+
+      - name: Checkout main helpers (sparse)
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: main-src
+          fetch-depth: 1
+          sparse-checkout: |
+            .ci
+            sections_in
+            config_get.json
+          sparse-checkout-cone-mode: true
 
       - name: Prepare helpers and inputs from main
         run: |
           set -Eeuo pipefail
-          mkdir -p .ci community _inputs
-          git fetch --no-tags --depth=1 origin main
-          git show origin/main:.ci/optimize.py > .ci/optimize.py
-          git show origin/main:.ci/ipset_ops.py > .ci/ipset_ops.py
-          chmod +x .ci/ipset_ops.py
-          git show origin/main:.ci/domainset_ops.py > .ci/domainset_ops.py
-          chmod +x .ci/domainset_ops.py
-          git show origin/main:sections_in > sections_in || true
-          git show origin/main:config_get.json > config_get.json 2>/dev/null || rm -f config_get.json
+
+          rm -rf .ci
+          mkdir -p .ci _inputs
+
+          if [[ -d main-src/.ci ]]; then
+            cp -a main-src/.ci/. .ci/
+          fi
+
+          chmod +x .ci/ipset_ops.py .ci/domainset_ops.py 2>/dev/null || true
+
+          if [[ -f main-src/sections_in ]]; then
+            cp -f main-src/sections_in sections_in
+          else
+            rm -f sections_in
+          fi
+
+          if [[ -f main-src/config_get.json ]]; then
+            cp -f main-src/config_get.json config_get.json
+          else
+            rm -f config_get.json
+          fi
+
+          rm -rf main-src
+
           cat > .ci/helpers.sh <<'SH'
           set -Eeuo pipefail
+
           OPT_PY="${GITHUB_WORKSPACE}/.ci/optimize.py"
 
           dom_xray_preserve() { python3 "$OPT_PY" domains "$1" "$2" --input-type xray  --target preserve; }
@@ -61,36 +95,17 @@ jobs:
           dom_from_clean_to_xray_exact()  { python3 "$OPT_PY" domains "$1" "$2" --input-type clean --target exact; }
 
           ip_opt() { python3 "$OPT_PY" ips "$1" "$2"; }
-          get() { curl -fsSL --compressed --connect-timeout 10 --max-time 120 "$1" -o "$2"; }
 
-          collect_geosite_stream_all() {
-            for f in \
-              geosite/refilter \
-              geosite/refilter-community \
-              geosite/russia-inside \
-              geosite/google-ai \
-              geosite/youtube \
-              geosite/discord
-            do
-              [[ -f "$f" || -f "$f.list" ]] || continue
-              cat "$f" 2>/dev/null || true
-              cat "$f.list" 2>/dev/null || true
-              echo
-            done
-          }
-
-          collect_refilter_only_stream() {
-            for f in geosite/refilter; do
-              [[ -f "$f" || -f "$f.list" ]] || continue
-              cat "$f" 2>/dev/null || true
-              cat "$f.list" 2>/dev/null || true
-              echo
-            done
+          get() {
+            curl -fsSL --compressed \
+              --connect-timeout 10 --max-time 120 \
+              --retry 5 --retry-delay 2 --retry-connrefused --retry-all-errors \
+              "$1" -o "$2"
           }
           SH
 
       - name: Checkout v2fly/domain-list-community (data only)
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: v2fly/domain-list-community
           path: community
@@ -106,51 +121,67 @@ jobs:
           rm -rf geosite geoip
           mkdir -p geosite geoip
 
-      #- name: Build geosite/category-nongov-ru by stripping include before flatten
-      #  run: |
-      #    set -Eeuo pipefail
-      #    source .ci/helpers.sh
-      #    src_ru="community/data/category-ru"
-      #    tmp="community/data/.tmp-category-nongov-ru"
-      #    inc_re='^[[:space:]]*include:[[:space:]]*category-gov-ru([[:space:]]|$|#|@)'
-      #    if [[ -f "$src_ru" ]]; then
-      #      sed -E 's/\r$//' "$src_ru" | grep -vE "$inc_re" > "$tmp"
-      #      dom_xray_preserve "$tmp" geosite/category-nongov-ru
-      #      rm -f "$tmp" "$tmp.list"
-      #    fi
-
-      - name: Resolve keep-set from sections_in (recursive includes) and flatten → geosite/
+      - name: Resolve keep-set from sections_in (deterministic) and flatten → geosite/
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
+
           DATA_DIR="community/data"
           INTEREST_FILE="sections_in"
-          declare -A keep processed
+
+          declare -A keep=()
+          queue=()
+
+          add_item() {
+            local x="$1"
+            [[ -n "$x" ]] || return 0
+            if [[ -z "${keep[$x]:-}" ]]; then
+              keep["$x"]=1
+              queue+=("$x")
+            fi
+          }
+
           if [[ -f "$INTEREST_FILE" ]]; then
             while IFS= read -r line; do
-              line="${line//$'\r'/}"; line="${line%%#*}"
-              f="$(echo "$line" | xargs)"; [[ -n "$f" ]] && keep["$f"]=1
+              line="${line//$'\r'/}"
+              line="${line%%#*}"
+              line="$(echo "$line" | xargs)"
+              [[ -n "$line" ]] || continue
+              add_item "$line"
             done < "$INTEREST_FILE"
           fi
-          for seed in category-ru category-gov-ru private; do keep["$seed"]=1; done
-          changed=1
-          while [[ $changed -eq 1 ]]; do
-            changed=0
-            for file in "${!keep[@]}"; do
-              s="$(echo "$file" | xargs)"; [[ -n "${processed[$s]:-}" ]] && continue
-              processed["$s"]=1
-              p="$DATA_DIR/$s"; [[ -f "$p" ]] || continue
+
+          add_item "category-ru"
+          add_item "category-gov-ru"
+          add_item "private"
+
+          while ((${#queue[@]})); do
+            cur="${queue[0]}"
+            queue=("${queue[@]:1}")
+
+            p="${DATA_DIR}/${cur}"
+            [[ -f "$p" ]] || continue
+
+            incs="$(
+              sed -E 's/\r$//' "$p" \
+              | grep '^include:' || true
+            )"
+
+            if [[ -n "$incs" ]]; then
               while IFS= read -r inc; do
-                inc="${inc//$'\r'/}"; inc="${inc#include:}"; inc="${inc%%#*}"
-                inc="$(echo "$inc" | xargs)"; [[ -z "$inc" ]] && continue
-                [[ -z "${keep[$inc]:-}" ]] && { keep["$inc"]=1; changed=1; }
-              done < <(grep '^include:' "$p" || true)
-            done
+                inc="${inc#include:}"
+                inc="${inc%%#*}"
+                inc="$(echo "$inc" | xargs)"
+                [[ -n "$inc" ]] || continue
+                add_item "$inc"
+              done < <(printf '%s\n' "$incs" | LC_ALL=C sort -u)
+            fi
           done
-          for rel in "${!keep[@]}"; do
-            src="$DATA_DIR/$rel"
+
+          for rel in $(printf '%s\n' "${!keep[@]}" | LC_ALL=C sort); do
+            src="${DATA_DIR}/${rel}"
             [[ -f "$src" ]] || continue
-            out="geosite/$rel"
+            out="geosite/${rel}"
             mkdir -p "$(dirname "$out")"
             dom_xray_preserve "$src" "$out"
           done
@@ -164,8 +195,6 @@ jobs:
           get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-raw.lst" _inputs/russia-inside.src
           get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/outside-raw.lst" _inputs/russia-outside.src
           get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/google_ai.lst" _inputs/google-ai.src
-          #get "https://raw.githubusercontent.com/sakib-m/Pi-hole-Torrent-Blocklist/main/all-torrent-trackers.txt" _inputs/torrent-trackers.src
-          #get "https://raw.githubusercontent.com/sakib-m/Pi-hole-Torrent-Blocklist/main/custom-tracker.txt" _inputs/torrent-trackers-custom.src
 
       - name: Normalize external DOMAIN sources → XRAY lists in geosite/
         run: |
@@ -176,51 +205,38 @@ jobs:
           dom_from_clean_to_xray_suffix _inputs/russia-inside.src               geosite/russia-inside
           dom_from_clean_to_xray_suffix _inputs/russia-outside.src              geosite/russia-outside
           dom_from_clean_to_xray_suffix _inputs/google-ai.src                   geosite/google-ai
-          #dom_from_clean_to_xray_exact  _inputs/torrent-trackers.src            geosite/torrent-trackers
-          #dom_from_clean_to_xray_exact  _inputs/torrent-trackers-custom.src     geosite/torrent-trackers-custom
 
-      - name: Build derived geosite lists (ban-ru & refilter-no-ru)
+      - name: Build derived geosite lists (ban-ru)
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
-      
-          # category-ban-ru = (refilter ∪ refilter-community) ∩ category-ru  +  ручные суффиксы
+
           tmp="$(mktemp)"
           python3 .ci/domainset_ops.py \
             --mode intersect \
             --set geosite/refilter,geosite/refilter-community,geosite/russia-inside,geosite/google-ai,geosite/youtube \
             --set geosite/category-ru \
             --out "$tmp"
-          { cat "$tmp"; printf '%s\n' jut.su habr.com 4pda.to; } > "$tmp.add"
-          dom_xray_preserve "$tmp.add" geosite/category-ban-ru
-          rm -f "$tmp" "$tmp.add"
-      
-          # refilter-no-ru = refilter − category-ru
-          #tmp="$(mktemp)"
-          #python3 .ci/domainset_ops.py \
-          #  --mode diff-simple \
-          #  --set geosite/refilter \
-          #  --set geosite/category-ru \
-          #  --out "$tmp"
-          #dom_xray_preserve "$tmp" geosite/refilter-no-ru
-          #rm -f "$tmp"
+
+          { cat "$tmp"; printf '%s\n' jut.su habr.com 4pda.to; } > "${tmp}.add"
+          dom_xray_preserve "${tmp}.add" geosite/category-ban-ru
+          rm -f "$tmp" "${tmp}.add" "${tmp}.add.list"
 
       - name: Build geosite/router (dedup + optimize, preserve)
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
           tmp="$(mktemp)"
+
           {
-            for f in \
-              geosite/russia-inside \
-              geosite/google-ai
-            do
+            for f in geosite/russia-inside geosite/google-ai geosite/refilter-community; do
               [[ -f "$f" || -f "$f.list" ]] || continue
               cat "$f" 2>/dev/null || true
               cat "$f.list" 2>/dev/null || true
               echo
             done
           } > "$tmp"
+
           dom_xray_preserve "$tmp" geosite/router
           rm -f "$tmp" "$tmp.list"
 
@@ -229,19 +245,16 @@ jobs:
           set -Eeuo pipefail
           source .ci/helpers.sh
           tmp="$(mktemp)"
+
           {
-            for f in \
-              geosite/russia-inside \
-              geosite/google-ai \
-              geosite/refilter \
-              geosite/refilter-community
-            do
+            for f in geosite/russia-inside geosite/google-ai geosite/refilter geosite/refilter-community; do
               [[ -f "$f" || -f "$f.list" ]] || continue
               cat "$f" 2>/dev/null || true
               cat "$f.list" 2>/dev/null || true
               echo
             done
           } > "$tmp"
+
           dom_xray_preserve "$tmp" geosite/ru-bundle
           rm -f "$tmp" "$tmp.list"
 
@@ -250,18 +263,16 @@ jobs:
           set -Eeuo pipefail
           source .ci/helpers.sh
           tmp="$(mktemp)"
+
           {
-            for f in \
-              geosite/private \
-              geosite/category-gov-ru \
-              geosite/russia-outside
-            do
+            for f in geosite/private geosite/category-gov-ru geosite/russia-outside; do
               [[ -f "$f" || -f "$f.list" ]] || continue
               cat "$f" 2>/dev/null || true
               cat "$f.list" 2>/dev/null || true
               echo
             done
           } > "$tmp"
+
           dom_xray_preserve "$tmp" geosite/block-out
           rm -f "$tmp" "$tmp.list"
 
@@ -269,6 +280,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           if [[ -s config_get.json ]]; then
+            rm -rf geoip-src extracted
             git clone --depth=1 https://github.com/Loyalsoldier/geoip geoip-src
             pushd geoip-src >/dev/null
             go build ./
@@ -286,11 +298,10 @@ jobs:
           get "https://raw.githubusercontent.com/GhostRooter0953/discord-voice-ips/master/voice_domains/discord-voice-ip-list" _inputs/discord-voice-ips.src
           get "https://core.telegram.org/resources/cidr.txt" _inputs/telegram-ips.src
           get "https://www.cloudflare.com/ips-v4" _inputs/cloudflare4.src
-          #get "https://www.cloudflare.com/ips-v6" _inputs/cloudflare6.src
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/ipsum.lst" _inputs/refilter-ips.src
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community_ips.lst" _inputs/refilter-community-ips.src
-          #{ cat _inputs/cloudflare4.src; echo; cat _inputs/cloudflare6.src; } > _inputs/cloudflare-all.src
-          { cat _inputs/discord-voice-ips.src; } > _inputs/ru-bundle.src
+
+          cat _inputs/discord-voice-ips.src > _inputs/ru-bundle.src
 
       - name: Normalize IP sources → CIDR lists in geoip/
         run: |
@@ -299,69 +310,58 @@ jobs:
           ip_opt _inputs/discord-voice-ips.src      geoip/discord-voice
           ip_opt _inputs/telegram-ips.src           geoip/telegram
           ip_opt _inputs/cloudflare4.src            geoip/cloudflare4
-          #ip_opt _inputs/cloudflare6.src            geoip/cloudflare6
-          #ip_opt _inputs/cloudflare-all.src         geoip/cloudflare
           ip_opt _inputs/refilter-ips.src           geoip/refilter
           ip_opt _inputs/refilter-community-ips.src geoip/refilter-community
-          ip_opt _inputs/ru-bundle.src geoip/ru-bundle
+          ip_opt _inputs/ru-bundle.src              geoip/ru-bundle
 
       - name: Build derived geoip lists via ipset_ops.py
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
+
           python3 .ci/ipset_ops.py \
             --mode intersect \
             --set geoip/refilter,geoip/refilter-community,geoip/discord-voice \
             --set geoip/ru \
             --out geoip/category-ban-ru.list
+
           python3 .ci/ipset_ops.py \
             --mode diff \
             --A geoip/refilter,geoip/refilter-community,geoip/discord-voice \
             --B geoip/ru \
             --out geoip/ban-no-ru.list
+
           { cat geoip/ban-no-ru.list; echo; cat geoip/category-ban-ru.list; } > _inputs/ban.src
           ip_opt _inputs/ban.src geoip/ban
-          #python3 .ci/ipset_ops.py \
-          #  --mode diff \
-          #  --A geoip/ru \
-          #  --B geoip/refilter,geoip/refilter-community,geoip/discord-voice \
-          #  --out geoip/ru-no-ban.list
-          #python3 .ci/ipset_ops.py \
-          #  --mode diff \
-          #  --A geoip/refilter,geoip/refilter-community \
-          #  --B geoip/ru \
-          #  --out geoip/refilter-no-ru.list
-          #python3 .ci/ipset_ops.py \
-          #  --mode diff \
-          #  --A geoip/ru \
-          #  --B geoip/refilter,geoip/refilter-community \
-          #  --out geoip/ru-no-refilter.list
 
       - name: Build geoip/router (dedup + optimize)
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
           tmp="$(mktemp)"
+
           {
-            for f in \
-              geoip/discord-voice
-            do
+            for f in geoip/discord-voice geoip/refilter-community; do
               [[ -f "$f" || -f "$f.list" ]] || continue
               cat "$f" 2>/dev/null || true
               cat "$f.list" 2>/dev/null || true
               echo
             done
           } > "$tmp"
+
           ip_opt "$tmp" geoip/router
           rm -f "$tmp" "$tmp.list"
 
       - name: Commit ONLY geosite/ and geoip/ to sources branch
         run: |
           set -Eeuo pipefail
+
           git config --local user.email "${COMMIT_USER_EMAIL}"
           git config --local user.name  "${COMMIT_USER_NAME}"
-          git ls-files -z | xargs -0 -r git rm -f --cached
+
+          git rm -r --cached --ignore-unmatch . >/dev/null 2>&1 || true
           git add -f geosite geoip
+
           git diff --staged --quiet && exit 0
           git commit -m "Update sources (geosite + geoip only) $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           git push || true
