@@ -13,205 +13,192 @@ permissions:
   contents: write
 
 env:
-  COMMIT_USER_NAME: ${{ github.actor }}
-  COMMIT_USER_EMAIL: ${{ github.actor }}@users.noreply.github.com
   DEBIAN_FRONTEND: noninteractive
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  SING_BOX_VERSION: "1.12.17"
+  COMMIT_USER_NAME: "github-actions[bot]"
+  COMMIT_USER_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
       - name: Switch to branch sing-box-rulesets (create if missing)
         run: |
           set -Eeuo pipefail
-          if git ls-remote --exit-code --heads origin refs/heads/sing-box-rulesets >/dev/null 2>&1; then
-            git fetch --no-tags --depth=1 origin refs/heads/sing-box-rulesets:refs/remotes/origin/sing-box-rulesets
-            git switch -c sing-box-rulesets --track origin/sing-box-rulesets || git switch sing-box-rulesets
-            git pull --ff-only || true
+          BR="sing-box-rulesets"
+
+          git config --local user.name  "${COMMIT_USER_NAME}"
+          git config --local user.email "${COMMIT_USER_EMAIL}"
+
+          if git fetch --no-tags --depth=1 origin "refs/heads/${BR}:refs/remotes/origin/${BR}" >/dev/null 2>&1; then
+            git switch -C "${BR}" "refs/remotes/origin/${BR}"
           else
-            git switch -c sing-box-rulesets
-            find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
-            git -c user.email="${COMMIT_USER_EMAIL}" -c user.name="${COMMIT_USER_NAME}" commit --allow-empty -m "init sing-box rules branch"
-            git push -u origin HEAD:sing-box-rulesets
+            git switch --orphan "${BR}"
+            git rm -r --ignore-unmatch . >/dev/null 2>&1 || true
+            git commit --allow-empty -m "Initialize sing-box rules branch"
+            git push -u origin "HEAD:${BR}"
           fi
 
-      - name: Compute build hash & decide build
+      - name: Compute build hash & decide build (git tree hash)
         run: |
           set -Eeuo pipefail
+
+          EMPTY_TREE="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+
           git fetch --no-tags --depth=1 origin sources || true
-          GEOSITE_SUBSET_HASH="$(
-            {
-              git ls-tree -r --name-only origin/sources:geosite || true
-            } | awk 'NF' | while IFS= read -r rel; do
-              h="$(git show "origin/sources:geosite/$rel" | sha256sum | cut -d' ' -f1 || echo)"
-              printf '%s  %s\n' "$h" "$rel"
-            done | LC_ALL=C sort | sha256sum | cut -d' ' -f1
-          )"
-          GEOIP_SUBSET_HASH="$(
-            {
-              git ls-tree -r --name-only origin/sources:geoip || true
-            } | awk 'NF' | while IFS= read -r rel; do
-              h="$(git show "origin/sources:geoip/$rel" | sha256sum | cut -d' ' -f1 || echo)"
-              printf '%s  %s\n' "$h" "$rel"
-            done | LC_ALL=C sort | sha256sum | cut -d' ' -f1
-          )"
-          SINGBOX_TAG="$(
-            curl -fsSL -H "Authorization: bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" \
-              https://api.github.com/repos/SagerNet/sing-box/releases/latest \
-            | jq -r '.tag_name // empty'
-          )"
-          [[ -n "$SINGBOX_TAG" ]] || SINGBOX_TAG=unknown
           git fetch --no-tags --depth=1 origin main || true
-          WORKFLOW_HASH="$(git show origin/main:.github/workflows/sing-box.yml 2>/dev/null | sha256sum | cut -d' ' -f1 || echo none)"
-          SRS_BUILD_HASH="$(printf '%s\n%s\n%s\n%s\n' "$GEOSITE_SUBSET_HASH" "$GEOIP_SUBSET_HASH" "$SINGBOX_TAG" "$WORKFLOW_HASH" | sha256sum | cut -d' ' -f1)"
-          echo "SRS_BUILD_HASH=$SRS_BUILD_HASH" >> "$GITHUB_ENV"
+
+          GEOSITE_TREE="$(git rev-parse "origin/sources^{tree}:geosite" 2>/dev/null || true)"
+          GEOIP_TREE="$(git rev-parse "origin/sources^{tree}:geoip" 2>/dev/null || true)"
+          [[ -n "${GEOSITE_TREE:-}" ]] || GEOSITE_TREE="${EMPTY_TREE}"
+          [[ -n "${GEOIP_TREE:-}" ]] || GEOIP_TREE="${EMPTY_TREE}"
+
+          WORKFLOW_SHA="$(
+            git show "origin/main:.github/workflows/sing-box.yaml" 2>/dev/null \
+              | sha256sum | awk '{print $1}' \
+              || printf '' | sha256sum | awk '{print $1}'
+          )"
+
+          BUILD_HASH="$(
+            printf '%s\n%s\n%s\n%s\n' \
+              "${GEOSITE_TREE}" \
+              "${GEOIP_TREE}" \
+              "${SING_BOX_VERSION}" \
+              "${WORKFLOW_SHA}" \
+            | sha256sum | awk '{print $1}'
+          )"
+
+          echo "SRS_BUILD_HASH=${BUILD_HASH}" >> "${GITHUB_ENV}"
+
           PREV_HASH="$(cat srs.hash 2>/dev/null || true)"
-          if [[ "$SRS_BUILD_HASH" != "$PREV_HASH" ]]; then
-            echo "SRS_NEEDS_BUILD=1" >> "$GITHUB_ENV"
+          if [[ "${BUILD_HASH}" != "${PREV_HASH}" ]]; then
+            echo "SRS_NEEDS_BUILD=1" >> "${GITHUB_ENV}"
           else
-            echo "SRS_NEEDS_BUILD=0" >> "$GITHUB_ENV"
+            echo "SRS_NEEDS_BUILD=0" >> "${GITHUB_ENV}"
           fi
 
-      - name: Read file list from sources
-        id: src
-        run: |
-          set -Eeuo pipefail
-          git fetch --no-tags --depth=1 origin sources
-          GEOSITE=$(git ls-tree -r --name-only origin/sources:geosite | tr '\n' ' ')
-          GEOIP=$(git ls-tree -r --name-only origin/sources:geoip   | tr '\n' ' ')
-          echo "GEOSITE=$GEOSITE" >> "$GITHUB_OUTPUT"
-          echo "GEOIP=$GEOIP"     >> "$GITHUB_OUTPUT"
-
-      - name: Install sing-box
+      - name: Install sing-box (fixed version)
         if: env.SRS_NEEDS_BUILD == '1'
         run: |
           set -Eeuo pipefail
-          curl -fsSL https://sing-box.app/install.sh | sh -s -- --version 1.12.17
+          curl -fsSL https://sing-box.app/install.sh | sudo -E sh -s -- --version "${SING_BOX_VERSION}"
+          sing-box version
 
-      - name: Prepare converter (temp-only JSON)
+      - name: Build *.srs to repository root (streaming; no python; JSON temp only)
         if: env.SRS_NEEDS_BUILD == '1'
         run: |
           set -Eeuo pipefail
-          cat > /tmp/sb_convert.py <<'PY'
-          import sys, json, re, os
 
-          def write_json(path, rule):
-              os.makedirs(os.path.dirname(path), exist_ok=True)
-              with open(path, "w", encoding="utf-8") as f:
-                  json.dump({"version": 3, "rules": [rule] if rule else []}, f, ensure_ascii=False)
+          git rm -r --ignore-unmatch . >/dev/null 2>&1 || true
+          rm -f srs.hash
 
-          def strip_anno(s):
-              s = re.sub(r'\s+#.*$', '', s)
-              s = re.sub(r'\s+//.*$', '', s)
-              s = re.sub(r'\s+@.*$', '', s)
-              return s.strip()
+          mkdir -p /tmp/json
 
-          def geosite_to_json(inp, outp):
-              dom, suf, kw, rx = [], [], [], []
-              with open(inp, "r", encoding="utf-8", errors="ignore") as f:
-                  for raw in f:
-                      t = raw.strip().replace('\r','')
-                      if not t or t.startswith('#') or t.startswith('//') or t.startswith('include:'):
-                          continue
-                      if   t.startswith('full:'):
-                          v = strip_anno(t[5:])
-                          if v: dom.append(v)
-                      elif t.startswith('keyword:'):
-                          v = strip_anno(t[8:])
-                          if v: kw.append(v)
-                      elif t.startswith('regexp:'):
-                          v = strip_anno(t[7:])
-                          if v: rx.append(v)
-                      elif t.startswith('domain:'):
-                          v = strip_anno(t[7:])
-                          if v: suf.append(v)
-                      else:
-                          v = strip_anno(t)
-                          if v: suf.append(v)
-              rule = {}
-              if dom: rule["domain"] = dom
-              if suf: rule["domain_suffix"] = suf
-              if kw:  rule["domain_keyword"] = kw
-              if rx:  rule["domain_regex"] = rx
-              write_json(outp, rule)
+          geosite_to_json_stream() {
+            awk '
+              function trim(s){ sub(/^[ \t]+/,"",s); sub(/[ \t]+$/,"",s); return s }
+              {
+                gsub(/\r/,"")
+                s=trim($0)
+                if (s=="") next
+                if (s ~ /^include:/) next
 
-          def geoip_to_json(inp, outp):
-              # Имя файла без расширения: ru, private, category-ban-ru, ru-bundle и т.п.
-              base = os.path.basename(inp)
-              name = base[:-5] if base.endswith(".list") else base
+                if (s ~ /^full:/)   { v=substr(s,6); v=trim(v); if(v!="") print "domain\t"  v; next }
+                if (s ~ /^domain:/) { v=substr(s,8); v=trim(v); sub(/^\./,"",v); if(v!="") print "suffix\t"  v; next }
+                if (s ~ /^keyword:/){ v=substr(s,9); v=trim(v); if(v!="") print "keyword\t" v; next }
+                if (s ~ /^regexp:/) { v=substr(s,8); v=trim(v); if(v!="") print "regex\t"   v; next }
 
-              nets = []
-              with open(inp, "r", encoding="utf-8", errors="ignore") as f:
-                  for raw in f:
-                      t = raw.strip()
-                      if not t or t.startswith('#') or t.startswith('//'):
-                          continue
-                      # отрезаем хвост комментариев после адреса/сети
-                      t = re.split(r'\s+#|\s+//', t, 1)[0].strip()
-                      if not t:
-                          continue
+                v=s
+                sub(/^\+\./,"",v)
+                sub(/^\./,"",v)
+                v=trim(v)
+                if(v!="") print "suffix\t" v
+              }
+            ' | jq -Rn '
+              def add($k; $v): .rules[0][$k] = ((.rules[0][$k] // []) + [$v]);
+              reduce (inputs | split("\t")) as $it ({"version":3,"rules":[{}]};
+                if   $it[0]=="domain"  then add("domain";         $it[1])
+                elif $it[0]=="suffix"  then add("domain_suffix";  $it[1])
+                elif $it[0]=="keyword" then add("domain_keyword"; $it[1])
+                elif $it[0]=="regex"   then add("domain_regex";   $it[1])
+                else . end
+              )
+              | .rules[0] |= with_entries(select(.value | length > 0))
+              | if (.rules[0] | length) == 0 then .rules = [] else . end
+            '
+          }
 
-                      # Для всех категорий, КРОМЕ private, режем IPv6:
-                      # IPv6-адреса и IPv6-CIDR всегда содержат ':'
-                      if name != "private" and ":" in t:
-                          continue
+          geoip_to_json_stream() {
+            jq -Rn '
+              [inputs | select(length>0)] as $a
+              | {"version":3, "rules": ( ($a|length) > 0 ? [{"ip_cidr":$a}] : [] )}
+            '
+          }
 
-                      nets.append(t)
+          geosite_list="$(git ls-tree -r --name-only origin/sources:geosite 2>/dev/null || true)"
+          if [[ -n "${geosite_list}" ]]; then
+            while IFS= read -r f; do
+              [[ -n "${f}" ]] || continue
 
-              rule = {"ip_cidr": nets} if nets else {}
-              write_json(outp, rule)
+              base="${f%.list}"
+              safe="${base//\//-}"
+              tmp_json="/tmp/json/geosite-${safe}.json"
 
-          if __name__ == "__main__":
-              kind, inp, outp = sys.argv[1], sys.argv[2], sys.argv[3]
-              if kind == "geosite":
-                  geosite_to_json(inp, outp)
-              else:
-                  geoip_to_json(inp, outp)
-          PY
+              git show "origin/sources:geosite/${f}" | geosite_to_json_stream > "${tmp_json}"
+              sing-box rule-set compile --output "geosite-${safe}.srs" "${tmp_json}"
+            done <<< "${geosite_list}"
+          fi
 
-      - name: Build *.srs to repository root (no JSON in repo)
-        if: env.SRS_NEEDS_BUILD == '1'
+          geoip_list="$(git ls-tree -r --name-only origin/sources:geoip 2>/dev/null || true)"
+          if [[ -n "${geoip_list}" ]]; then
+            while IFS= read -r f; do
+              [[ -n "${f}" ]] || continue
+
+              bn="$(basename "${f}")"
+              base="${bn%.list}"
+              safe="${f%.list}"
+              safe="${safe//\//-}"
+
+              tmp_json="/tmp/json/geoip-${safe}.json"
+
+              if [[ "${base}" == "private" ]]; then
+                git show "origin/sources:geoip/${f}" | geoip_to_json_stream > "${tmp_json}"
+              else
+                git show "origin/sources:geoip/${f}" | grep -v ':' | geoip_to_json_stream > "${tmp_json}"
+              fi
+
+              sing-box rule-set compile --output "geoip-${safe}.srs" "${tmp_json}"
+            done <<< "${geoip_list}"
+          fi
+
+          rm -rf /tmp/json
+          printf '%s' "${SRS_BUILD_HASH}" > srs.hash
+
+          git add -A
+
+      - name: Commit updates
         run: |
           set -Eeuo pipefail
-          mkdir -p /tmp/src /tmp/json
-          find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name 'srs.hash' -exec rm -rf {} +
 
-          # geosite → geosite-*.srs
-          for f in ${{ steps.src.outputs.GEOSITE }}; do
-            git show "origin/sources:geosite/$f" > "/tmp/src/${f}"
-            base="${f%.list}"
-            safe="${base//\//-}"
-            tmp_json="/tmp/json/geosite-${safe}.json"
-            python3 /tmp/sb_convert.py geosite "/tmp/src/${f}" "$tmp_json"
-            sing-box rule-set compile --output "geosite-${safe}.srs" "$tmp_json"
-          done
-
-          # geoip → geoip-*.srs (IPv6 вырезается у всех, кроме private)
-          for f in ${{ steps.src.outputs.GEOIP }}; do
-            git show "origin/sources:geoip/$f" > "/tmp/src/${f}"
-            base="${f%.list}"
-            safe="${base//\//-}"
-            tmp_json="/tmp/json/geoip-${safe}.json"
-            python3 /tmp/sb_convert.py geoip "/tmp/src/${f}" "$tmp_json"
-            sing-box rule-set compile --output "geoip-${safe}.srs" "$tmp_json"
-          done
-
-          rm -rf /tmp/json /tmp/src
-          printf '%s' "${SRS_BUILD_HASH}" > ./srs.hash
-
-      - name: Commit *.srs only
-        run: |
-          set -Eeuo pipefail
           git config --local user.email "${COMMIT_USER_EMAIL}"
           git config --local user.name  "${COMMIT_USER_NAME}"
-          find . -mindepth 1 -maxdepth 1 -type f ! -name '*.srs' ! -name 'srs.hash' -delete
-          git add -A
+
           git diff --staged --quiet && exit 0
           git commit -m "Update sing-box rulesets (*.srs) $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           git push || true
+
+      - name: Purge jsDelivr CDN
+        if: env.SRS_NEEDS_BUILD == '1'
+        run: |
+          set -Eeuo pipefail
+          shopt -s nullglob
+          for f in *.srs srs.hash; do
+            curl -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@sing-box-rulesets/${f}"
+          done
+          shopt -u nullglob
