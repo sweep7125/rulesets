@@ -60,7 +60,7 @@ jobs:
           [[ -n "${GEOIP_TREE:-}" ]] || GEOIP_TREE="${EMPTY_TREE}"
 
           WORKFLOW_SHA="$(
-            git show "origin/main:.github/workflows/mihomo.yaml" 2>/dev/null \
+            git show "origin/main:.github/workflows/mihomo.yml" 2>/dev/null \
               | sha256sum | awk '{print $1}' \
               || printf '' | sha256sum | awk '{print $1}'
           )"
