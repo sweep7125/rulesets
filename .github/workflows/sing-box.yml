@@ -59,6 +59,7 @@ jobs:
           [[ -n "${GEOSITE_TREE:-}" ]] || GEOSITE_TREE="${EMPTY_TREE}"
           [[ -n "${GEOIP_TREE:-}" ]] || GEOIP_TREE="${EMPTY_TREE}"
 
+          # IMPORTANT: this file is sing-box.yml
           WORKFLOW_SHA="$(
             git show "origin/main:.github/workflows/sing-box.yml" 2>/dev/null \
               | sha256sum | awk '{print $1}' \
@@ -90,7 +91,7 @@ jobs:
           curl -fsSL https://sing-box.app/install.sh | sudo -E sh -s -- --version "${SING_BOX_VERSION}"
           sing-box version
 
-      - name: Build *.srs to repository root (streaming; no python; JSON temp only)
+      - name: Build *.srs to repository root (streaming; jq; temp JSON only)
         if: env.SRS_NEEDS_BUILD == '1'
         run: |
           set -Eeuo pipefail
@@ -134,10 +135,14 @@ jobs:
             '
           }
 
+          # FIX: no ternary operator (?:) to support newer jq builds
           geoip_to_json_stream() {
             jq -Rn '
-              [inputs | select(length>0)] as $a
-              | {"version":3, "rules": ( ($a|length) > 0 ? [{"ip_cidr":$a}] : [] )}
+              [inputs | select(length > 0)] as $a
+              | if ($a|length) > 0
+                then {"version":3, "rules":[{"ip_cidr":$a}]}
+                else {"version":3, "rules":[]}
+                end
             '
           }
 
@@ -145,7 +150,6 @@ jobs:
           if [[ -n "${geosite_list}" ]]; then
             while IFS= read -r f; do
               [[ -n "${f}" ]] || continue
-
               base="${f%.list}"
               safe="${base//\//-}"
               tmp_json="/tmp/json/geosite-${safe}.json"
@@ -164,7 +168,6 @@ jobs:
               base="${bn%.list}"
               safe="${f%.list}"
               safe="${safe//\//-}"
-
               tmp_json="/tmp/json/geoip-${safe}.json"
 
               if [[ "${base}" == "private" ]]; then
@@ -185,7 +188,6 @@ jobs:
       - name: Commit updates
         run: |
           set -Eeuo pipefail
-
           git config --local user.email "${COMMIT_USER_EMAIL}"
           git config --local user.name  "${COMMIT_USER_NAME}"
 
