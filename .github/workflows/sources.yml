@@ -331,8 +331,17 @@ jobs:
             --B geoip/ru \
             --out geoip/ban-no-ru.list
 
-          { cat geoip/ban-no-ru.list; echo; cat geoip/category-ban-ru.list; } > _inputs/ban.src
-          ip_opt _inputs/ban.src geoip/ban
+          tmp="$(mktemp)"
+
+          {
+            for f in geoip/refilter geoip/refilter-community geoip/discord-voice; do
+              [[ -f "$f" || -f "$f.list" ]] || continue
+              cat "$f" 2>/dev/null || true
+              cat "$f.list" 2>/dev/null || true
+              echo
+            done
+          } > "$tmp"
+          ip_opt "$tmp" geoip/ban
 
       - name: Build geoip/router (dedup + optimize)
         run: |
