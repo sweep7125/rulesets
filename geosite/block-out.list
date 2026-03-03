@@ -92,6 +92,7 @@ mari-el.ru
 mari.ru
 marine.ru
 mgfoms.ru
+mil.ru
 mordovia.ru
 mos.ru
 mosenergosbyt.ru
@@ -173,7 +174,6 @@ yaroslavl.ru
 yuzhno-sakhalinsk.ru
 zdrav10.ru
 zte.home
-0.in-addr.arpa
 10.in-addr.arpa
 127.in-addr.arpa
 b2c-ticket-sentry.onelya.ru
@@ -281,6 +281,5 @@ a.e.f.ip6.arpa
 b.e.f.ip6.arpa
 255.255.255.255.in-addr.arpa
 8.b.d.0.1.0.0.2.ip6.arpa
-0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa
 1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa
 regexp:^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$
