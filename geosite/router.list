@@ -37,6 +37,8 @@ affinity.studio
 agents.media
 ahrefs.com
 ai.com
+aimlab.gg
+aimlabs.com
 aircanada.com
 akc.org
 alberta.ca
@@ -81,6 +83,7 @@ arc.net
 archive.ph
 archiveofourown.org
 arduino.cc
+arkoselabs.com
 as6723.net
 atlassian.com
 att.com
@@ -116,6 +119,7 @@ bitnami.com
 bitru.org
 blackseanews.net
 blinkshot.io
+bloody.com
 bluehost.com
 bng.gg
 booktracker.org
@@ -141,6 +145,7 @@ bufferbloat.net
 bungiestore.com
 buymeacoffee.com
 byteoversea.com
+caesium.app
 canva.com
 canva.dev
 capacitorjs.com
@@ -178,6 +183,7 @@ clevelandclinic.org
 clickup.com
 cloudflare-dns.com
 cloudflare-ech.com
+cloudflareclient.com
 cloudtorrents.com
 cms-twdigitalassets.com
 cnd2exp.online
@@ -256,6 +262,7 @@ discours.io
 discourse-cdn.com
 disctech.com
 disneyplus.com
+distrochooser.de
 dkr.com
 document360.com
 document360.io
@@ -277,6 +284,7 @@ e-hentai.org
 e4mc.link
 e621.net
 easydmarc.com
+eaton.com
 echofm.online
 editorx.com
 edu-cisco.org
@@ -475,6 +483,7 @@ island-of-pleasure.site
 istories.media
 itch.io
 itch.zone
+itdog.info
 itninja.com
 itsmycity.ru
 jamf.com
@@ -533,6 +542,7 @@ lgeapi.com
 lgthinq.com
 libgen.li
 libgen.rs
+libsdl.org
 licdn.com
 lidarr.audio
 lifehacker.com
@@ -603,6 +613,7 @@ miitomo.com
 miiverse.com
 mintmobile.com
 mixcloud.com
+modartt.com
 modrinth.com
 mongodb.com
 monolisa.dev
@@ -721,6 +732,7 @@ ocstore.com
 octopus.do
 oculus.com
 ohmyswift.ru
+ohmyz.sh
 oi.legal
 okx.com
 omnissa.com
@@ -768,6 +780,7 @@ pcmag.com
 pdq.com
 penguin.com
 penguinrandomhouse.com
+penpot.app
 periscope.tv
 personaltrainermath.com
 pexels.com
@@ -901,6 +914,7 @@ rutracker.cc
 rutracker.net
 rutracker.org
 rutracker.wiki
+saerasoft.com
 sakhalin.info
 sakharovfoundation.org
 salesforce-experience.com
@@ -1003,6 +1017,7 @@ spacelift.io
 speedtest.net
 spektr.press
 spiceworks.com
+spiceworksstatic.com
 spiegel.de
 spitfireaudio.com
 splatoon2tournament.com
@@ -1185,6 +1200,7 @@ vesma.today
 viber.com
 vice.com
 vine.co
+vintagestory.at
 vipdrive.net
 vipergirls.to
 visualcapitalist.com
@@ -1295,9 +1311,11 @@ adobe.activate.com
 aftermarket.schaeffler.com
 aftermarket.zf.com
 ai.google.dev
+aimlabspages.kinsta.cloud
 aisandbox-pa.googleapis.com
 aistudio.google.com
 api.github.com
+api.pwnedpasswords.com
 api.radarr.video
 api.service-kp.com
 api.theins.info
@@ -1310,6 +1328,7 @@ atv4.dnskp.cc
 bard.google.com
 bbc.co.uk
 bbci.co.uk
+beyond.hg-cdn.com
 booth.pximg.net
 builds.parsec.app
 cdn.betterttv.net
@@ -1340,8 +1359,10 @@ edgeservices.bing.com
 elements.envato.com
 epidemz.net.co
 event.on24.com
+events.ccc.de
 exchanger.bits.media
 footballapi.pulselive.com
+forum.dcs.world
 forum.netgate.com
 forum.ru-board.com
 forum.voynaplemyon.com
@@ -1352,6 +1373,7 @@ gaming.amazon.com
 geller-pa.googleapis.com
 gemini.google.com
 generativelanguage.googleapis.com
+geo.captcha-delivery.com
 geolocation.onetrust.com
 global.fncstatic.com
 gql.twitch.tv
@@ -1393,6 +1415,7 @@ openaiapi-site.azureedge.net
 openaicom.imgix.net
 openwrt.wk.cz
 os.mbed.com
+packages.cachyos.org
 packages.gitlab.com
 pay.buckaroo.nl
 platform.activestate.com
@@ -1405,7 +1428,6 @@ r4.err.ee
 repo.mongodb.org
 rf.dobrochan.net
 robinfrontend-pa.googleapis.com
-roblox-api.arkoselabs.com
 rus.delfi.ee
 rus.jauns.lv
 seedoff.zannn.top
@@ -1436,6 +1458,8 @@ wiki.fextralife.com
 www.hrw.org
 www.jabra.com
 www.microchip.com
+www.montechpc.com
+www.noctua.at
 www.postfix.org
 www.smashwords.com
 www.stalker2.com
