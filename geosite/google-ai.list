@@ -1,3 +1,5 @@
+antigravity-unleash.goog
+antigravity.google
 deepmind.com
 deepmind.google
 gemini.google
@@ -6,10 +8,14 @@ jules.google
 labs.google
 notebooklm.google
 ai.google.dev
+aida.googleapis.com
 aisandbox-pa.googleapis.com
 aistudio.google.com
+antigravity-pa.googleapis.com
+antigravity.googleapis.com
 bard.google.com
 clients6.google.com
+firebaseinstallations.googleapis.com
 geller-pa.googleapis.com
 gemini.google.com
 generativelanguage.googleapis.com
@@ -18,4 +24,5 @@ makersuite.google.com
 notebooklm.google.com
 proactivebackend-pa.googleapis.com
 robinfrontend-pa.googleapis.com
+speechs3proto2-pa.googleapis.com
 stitch.withgoogle.com
