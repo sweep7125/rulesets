@@ -1,171 +1,357 @@
-name: Generate mihomo rulesets from sources
+name: Build geosite
 
 on:
-  schedule:
-    - cron: "9 0 * * *"
   workflow_dispatch:
-
-concurrency:
-  group: ${{ github.repository }}-mihomo-from-sources
-  cancel-in-progress: true
+  push:
+    branches:
+      - test
+      - master
+    paths-ignore:
+      - "README.md"
+      - ".gitignore"
+      - "LICENSE"
+      - "release/**"
 
 permissions:
   contents: write
 
-env:
-  DEBIAN_FRONTEND: noninteractive
-  MIHOMO_VERSION: "v1.19.19"
-  COMMIT_USER_NAME: "github-actions[bot]"
-  COMMIT_USER_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
-
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    name: Build
+    runs-on: ubuntu-latest
+    env:
+      CURL: "curl -fsSL --retry 3 --retry-delay 2 --retry-connrefused"
 
     steps:
-      - name: Checkout repo
+      - name: Checkout codebase
         uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
-      - name: Switch to branch mihomo-rulesets (create if missing)
+      - name: Checkout geosite builder
+        uses: actions/checkout@v6
+        with:
+          repository: v2fly/domain-list-community
+          path: community
+          fetch-depth: 1
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: community/go.mod
+          cache: true
+          cache-dependency-path: community/go.sum
+
+      - name: Set tag
+        if: github.ref_name == 'master'
         run: |
-          set -Eeuo pipefail
-          BR="mihomo-rulesets"
+          DAILY_TAG=$(date +%Y%m%d%H%M)
+          echo "DAILY_TAG=$DAILY_TAG" >> "$GITHUB_ENV"
 
-          git config --local user.name  "${COMMIT_USER_NAME}"
-          git config --local user.email "${COMMIT_USER_EMAIL}"
+      - name: Create Tag
+        if: github.ref_name == 'master'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { DAILY_TAG } = process.env
+            await github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `refs/tags/${DAILY_TAG}`,
+              sha: context.sha
+            })
 
-          if git fetch --no-tags --depth=1 origin "refs/heads/${BR}:refs/remotes/origin/${BR}" >/dev/null 2>&1; then
-            git switch -C "${BR}" "refs/remotes/origin/${BR}"
-          else
-            git switch --orphan "${BR}"
-            git rm -r --ignore-unmatch . >/dev/null 2>&1 || true
-            git commit --allow-empty -m "Initialize mihomo rules branch"
-            git push -u origin "HEAD:${BR}"
-          fi
-
-      - name: Compute build hash & decide build (git tree hash)
+      - name: Build geosite.dat
         run: |
-          set -Eeuo pipefail
+          set -euo pipefail
 
-          EMPTY_TREE="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+          rm -rf community/data /tmp/out
+          mkdir -p community/data /tmp/out
 
-          git fetch --no-tags --depth=1 origin sources || true
-          git fetch --no-tags --depth=1 origin main || true
+          cp -a ./data/. community/data/
 
-          GEOSITE_TREE="$(git rev-parse "origin/sources^{tree}:geosite" 2>/dev/null || true)"
-          GEOIP_TREE="$(git rev-parse "origin/sources^{tree}:geoip" 2>/dev/null || true)"
-          [[ -n "${GEOSITE_TREE:-}" ]] || GEOSITE_TREE="${EMPTY_TREE}"
-          [[ -n "${GEOIP_TREE:-}" ]] || GEOIP_TREE="${EMPTY_TREE}"
+          pushd community >/dev/null
+          go run ./ -outputdir=/tmp/out
+          popd >/dev/null
 
-          WORKFLOW_SHA="$(
-            git show "origin/main:.github/workflows/mihomo.yml" 2>/dev/null \
-              | sha256sum | awk '{print $1}' \
-              || printf '' | sha256sum | awk '{print $1}'
-          )"
+          test -s /tmp/out/dlc.dat
+          cp -f /tmp/out/dlc.dat ./geosite.dat
 
-          BUILD_HASH="$(
-            printf '%s\n%s\n%s\n%s\n' \
-              "${GEOSITE_TREE}" \
-              "${GEOIP_TREE}" \
-              "${MIHOMO_VERSION}" \
-              "${WORKFLOW_SHA}" \
-            | sha256sum | awk '{print $1}'
-          )"
-
-          echo "MRS_BUILD_HASH=${BUILD_HASH}" >> "${GITHUB_ENV}"
-
-          PREV_HASH="$(cat mrs.hash 2>/dev/null || true)"
-          if [[ "${BUILD_HASH}" != "${PREV_HASH}" ]]; then
-            echo "MRS_NEEDS_BUILD=1" >> "${GITHUB_ENV}"
-          else
-            echo "MRS_NEEDS_BUILD=0" >> "${GITHUB_ENV}"
-          fi
-
-      - name: Install mihomo (fixed version)
-        if: env.MRS_NEEDS_BUILD == '1'
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Install Mihomo (latest stable)
         run: |
-          set -Eeuo pipefail
+          set -euo pipefail
+          ARCH=$(dpkg --print-architecture)
+          LATEST_URL=$(${{ env.CURL }} https://api.github.com/repos/MetaCubeX/mihomo/releases/latest \
+            | grep -oP '"browser_download_url":\s*"\K[^"]*mihomo-linux-'"$ARCH"'-[^"]*\.deb(?=")' \
+            | head -n1)
+          echo "Downloading: $LATEST_URL"
+          ${{ env.CURL }} -o /tmp/mihomo.deb "$LATEST_URL"
+          sudo dpkg -i /tmp/mihomo.deb || sudo apt-get install -f -y
+          rm -f /tmp/mihomo.deb
 
-          rm -f /tmp/mihomo-linux-amd64*.deb
-
-          command -v gh >/dev/null 2>&1
-
-          gh release download "${MIHOMO_VERSION}" \
-            -R MetaCubeX/mihomo \
-            -p 'mihomo-linux-amd64*.deb' \
-            -D /tmp
-
-          deb="$(ls -1 /tmp/mihomo-linux-amd64*.deb | head -n1)"
-          test -n "${deb}"
-
-          sudo apt-get update -y
-          sudo apt-get install -y "${deb}"
-
-          rm -f /tmp/mihomo-linux-amd64*.deb
-
-          mihomo -v
-
-      - name: Build *.mrs to repository root (no python)
-        if: env.MRS_NEEDS_BUILD == '1'
+      - name: Install sing-box
         run: |
-          set -Eeuo pipefail
+          set -euo pipefail
+          ${{ env.CURL }} https://sing-box.app/install.sh | sudo -E sh -s -- --version 1.12.12
 
-          git rm -r --ignore-unmatch . >/dev/null 2>&1 || true
-          rm -f mrs.hash
-
-          geosite_list="$(git ls-tree -r --name-only origin/sources:geosite 2>/dev/null || true)"
-          if [[ -n "${geosite_list}" ]]; then
-            while IFS= read -r f; do
-              [[ -n "${f}" ]] || continue
-              base="${f%.list}"
-              safe="${base//\//-}"
-              mihomo convert-ruleset domain text <(git show "origin/sources:geosite/${f}") "geosite-${safe}.mrs"
-            done <<< "${geosite_list}"
-          fi
-
-          geoip_list="$(git ls-tree -r --name-only origin/sources:geoip 2>/dev/null || true)"
-          if [[ -n "${geoip_list}" ]]; then
-            while IFS= read -r f; do
-              [[ -n "${f}" ]] || continue
-
-              bn="$(basename "${f}")"
-              base="${bn%.list}"
-              safe="${f%.list}"
-              safe="${safe//\//-}"
-
-              if [[ "${base}" == "private" ]]; then
-                mihomo convert-ruleset ipcidr text <(git show "origin/sources:geoip/${f}") "geoip-${safe}.mrs"
-              else
-                mihomo convert-ruleset ipcidr text <(git show "origin/sources:geoip/${f}" | grep -v ':') "geoip-${safe}.mrs"
-              fi
-            done <<< "${geoip_list}"
-          fi
-
-          printf '%s' "${MRS_BUILD_HASH}" > mrs.hash
-
-          git add -A
-
-      - name: Commit updates
+      - name: Build .mrs
         run: |
-          set -Eeuo pipefail
+          set -euo pipefail
 
-          git config --local user.email "${COMMIT_USER_EMAIL}"
-          git config --local user.name  "${COMMIT_USER_NAME}"
+          work=/tmp/mihomo
+          out="$work/rulesets"
 
-          git diff --staged --quiet && exit 0
-          git commit -m "Update mihomo rulesets (*.mrs) $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-          git push || true
+          rm -rf "$work"
+          mkdir -p "$out"
+          cp -a ./data/. "$work"/
 
-      - name: Purge jsDelivr CDN
-        if: env.MRS_NEEDS_BUILD == '1'
-        run: |
-          set -Eeuo pipefail
-          shopt -s nullglob
-          for f in *.mrs mrs.hash; do
-            curl -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@mihomo-rulesets/${f}"
+          find "$work" -path "$out" -prune -o -type f -print0 |
+          while IFS= read -r -d '' f; do
+            tmp="$(mktemp)"
+
+            awk '
+              function trim(s) {
+                sub(/^[ \t]+/, "", s)
+                sub(/[ \t]+$/, "", s)
+                return s
+              }
+
+              function strip_tail(s) {
+                gsub(/\r/, "", s)
+                sub(/[ \t]*#.*/, "", s)
+                sub(/[ \t]*\/\/.*/, "", s)
+                sub(/[ \t]*@.*/, "", s)
+                return trim(s)
+              }
+
+              function emit_exact(v) {
+                v = strip_tail(v)
+                gsub(/[ \t]+/, "", v)
+                v = tolower(v)
+                sub(/^\./, "", v)
+                if (v != "") print v
+              }
+
+              function emit_suffix(v) {
+                v = strip_tail(v)
+                gsub(/[ \t]+/, "", v)
+                v = tolower(v)
+                sub(/^\./, "", v)
+                if (v != "") {
+                  v = "+." v
+                  sub(/\.$/, ".*", v)
+                  print v
+                }
+              }
+
+              {
+                s = strip_tail($0)
+                if (s == "") next
+                s = tolower(s)
+
+                if (s ~ /^include:/) next
+                if (s ~ /^regexp:/) next
+
+                if (s ~ /^full:/) {
+                  sub(/^full:/, "", s)
+                  emit_exact(s)
+                  next
+                }
+
+                if (s ~ /^domain:/) {
+                  sub(/^domain:/, "", s)
+                  emit_suffix(s)
+                  next
+                }
+
+                if (s ~ /^keyword:/) {
+                  sub(/^keyword:/, "", s)
+                  emit_suffix(s)
+                  next
+                }
+
+                if (s ~ /^[a-z0-9_-]+:/) next
+
+                emit_suffix(s)
+              }
+            ' "$f" > "$tmp"
+
+            rel="${f#$work/}"
+            rel_noext="${rel%.*}"
+            dest="$out/${rel_noext}.mrs"
+            mkdir -p "$(dirname "$dest")"
+
+            mihomo convert-ruleset domain text "$tmp" "$dest"
+
+            rm -f "$tmp"
           done
-          shopt -u nullglob
+
+      - name: Build sing-box .srs (geosite)
+        run: |
+          set -euo pipefail
+
+          src=/tmp/sing-box/src
+          out=/tmp/sing-box/rulesets
+          rm -rf /tmp/sing-box
+          mkdir -p "$src" "$out"
+          cp -a ./data/. "$src"/
+
+          find "$src" -type f -print0 |
+          while IFS= read -r -d '' f; do
+            tmp_json="$(mktemp)"
+            awk '
+              function trim(s){ sub(/^[ \t]+/,"",s); sub(/[ \t]+$/,"",s); return s }
+              function strip_tail(s){
+                gsub(/\r/,"",s)
+                s=trim(s)
+                sub(/[ \t]*#.*/, "", s)
+                sub(/[ \t]*\/\/.*/, "", s)
+                sub(/[ \t]*@.*/, "", s)
+                return trim(s)
+              }
+              {
+                t = strip_tail($0)
+                if (t == "") next
+                if (t ~ /^\/\//) next
+                if (t ~ /^#/) next
+                if (t ~ /^include:/) next
+
+                if (t ~ /^full:/)   { v=strip_tail(substr(t,6)); sub(/^\./,"",v); if(v!="") print "domain\t"  v; next }
+                if (t ~ /^domain:/) { v=strip_tail(substr(t,8)); sub(/^\./,"",v); if(v!="") print "suffix\t"  v; next }
+                if (t ~ /^keyword:/){ v=strip_tail(substr(t,9));                   if(v!="") print "keyword\t" v; next }
+                if (t ~ /^regexp:/) { v=strip_tail(substr(t,8));                   if(v!="") print "regex\t"   v; next }
+
+                v=t; sub(/^\./,"",v); if(v!="") print "keyword\t" v
+              }
+            ' "$f" | jq -Rn '
+              def add($k; $v): .rules[0][$k] = ((.rules[0][$k] // []) + [$v]);
+              reduce (inputs | split("\t")) as $it ({"version":3,"rules":[{}]};
+                if   $it[0]=="domain"  then add("domain";         $it[1])
+                elif $it[0]=="suffix"  then add("domain_suffix";  $it[1])
+                elif $it[0]=="keyword" then add("domain_keyword"; $it[1])
+                elif $it[0]=="regex"   then add("domain_regex";   $it[1])
+                else . end
+              )
+              | .rules[0] |= with_entries(select(.value | length > 0))
+              | if (.rules[0] | length) == 0 then .rules = [] else . end
+            ' > "$tmp_json"
+
+            rel="${f#$src/}"
+            rel_noext="${rel%.*}"
+            dest="$out/${rel_noext}.srs"
+            mkdir -p "$(dirname "$dest")"
+            sing-box rule-set compile --output "$dest" "$tmp_json"
+            rm -f "$tmp_json"
+          done
+
+      - name: MASTER Prepare release directory and archives
+        if: github.ref_name == 'master'
+        run: |
+          set -euo pipefail
+          rm -rf release
+          mkdir -p release/mihomo release/sing-box
+          cp ./geosite.dat release/
+          cp -a /tmp/mihomo/rulesets/.   release/mihomo/
+          cp -a /tmp/sing-box/rulesets/. release/sing-box/
+          rm -f /tmp/mihomo.tar.gz /tmp/sing-box.tar.gz
+          tar -czf release/mihomo.tar.gz   -C release mihomo
+          tar -czf release/sing-box.tar.gz -C release sing-box
+          test -s release/mihomo.tar.gz
+          test -s release/sing-box.tar.gz
+          sha256sum release/geosite.dat > release/geosite.dat.sha256
+
+      - name: MASTER Push to release branch and update master
+        if: github.ref_name == 'master'
+        run: |
+          cd release || exit 1
+          git init
+          git config --local user.name "hydraponique"
+          git config --local user.email "hydraponique@users.noreply.github.com"
+          git checkout -b release
+          git add -A
+          git commit -m "Release ${{ env.DAILY_TAG }}"
+          git remote add origin "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+          git push -f -u origin release
+          cd .. || exit 1
+          git config --local user.name "hydraponique"
+          git config --local user.email "hydraponique@users.noreply.github.com"
+          git checkout master
+          git add release/
+          git commit -m "Release ${{ env.DAILY_TAG }}" || echo "No changes to commit"
+          git push origin master
+
+      - name: MASTER Publish GitHub Release
+        if: github.ref_name == 'master'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.DAILY_TAG }}
+          name: ${{ env.DAILY_TAG }}
+          prerelease: false
+          draft: false
+          files: |
+            release/geosite.dat
+            release/geosite.dat.sha256
+            release/*.tar.gz
+
+      - name: MASTER Purge CDN for release and updated master branches
+        if: github.ref_name == 'master'
+        run: |
+          set -euo pipefail
+          cd release || exit 1
+          find . -type f -not -path "./.git/*" -print0 | while IFS= read -r -d '' f; do
+            rel="${f#./}"
+            ${{ env.CURL }} -i "https://purge.jsdelivr.net/gh/${{ github.repository }}/release/${rel}"
+            ${{ env.CURL }} -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@master/release/${rel}"
+            ${{ env.CURL }} -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@release/${rel}"
+            ${{ env.CURL }} -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@${{ env.DAILY_TAG }}/release/${rel}"
+          done
+
+      - name: TEST Prepare release directory
+        if: github.ref_name == 'test'
+        run: |
+          set -euo pipefail
+          rm -rf release
+          mkdir -p release/mihomo release/sing-box
+          cp ./geosite.dat release/
+          cp -a /tmp/mihomo/rulesets/.   release/mihomo/
+          cp -a /tmp/sing-box/rulesets/. release/sing-box/
+          sha256sum release/geosite.dat > release/geosite.dat.sha256
+
+      - name: TEST Push to test-release branch & update test branch
+        if: github.ref_name == 'test'
+        run: |
+          cd release || exit 1
+          git init
+          git config --local user.name "hydraponique"
+          git config --local user.email "hydraponique@users.noreply.github.com"
+          git checkout -b test-release
+          git add -A
+          git commit -m "Test Release $(date -u +%Y%m%d%H%M)"
+          git remote add origin "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
+          git push -f -u origin test-release
+          cd .. || exit 1
+          git config --local user.name "hydraponique"
+          git config --local user.email "hydraponique@users.noreply.github.com"
+          git checkout -B test
+          git add release/
+          git commit -m "Test Release $(date -u +%Y%m%d%H%M)" || echo "No changes to commit"
+          git push origin test
+
+      - name: TEST Purge CDN for test-release and updated test branches
+        if: github.ref_name == 'test'
+        run: |
+          set -euo pipefail
+          cd release || exit 1
+          find . -type f -not -path "./.git/*" -print0 | while IFS= read -r -d '' f; do
+            rel="${f#./}"
+            ${{ env.CURL }} -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@test/release/${rel}"
+            ${{ env.CURL }} -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@test-release/${rel}"
+          done
+
+      - name: Trigger routing update
+        if: success() && github.ref_name == 'master'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.PAT_FOR_ROUTING }}
+          repository: hydraponique/roscomvpn-routing
+          event-type: update-routing-configs
