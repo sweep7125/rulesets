@@ -190,21 +190,82 @@ jobs:
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
+
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community.lst" _inputs/refilter-community-domains.src
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/domains_all.lst" _inputs/refilter-domains.src
           get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-raw.lst" _inputs/russia-inside.src
           get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/outside-raw.lst" _inputs/russia-outside.src
           get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/google_ai.lst" _inputs/google-ai.src
 
+          # allow-domains components of "Russia inside" + explicit Google AI
+          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/anime.lst"    _inputs/allow-anime.src
+          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/block.lst"    _inputs/allow-block.src
+          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/geoblock.lst" _inputs/allow-geoblock.src
+          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/news.lst"     _inputs/allow-news.src
+          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/porn.lst"     _inputs/allow-porn.src
+
+          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/discord.lst"    _inputs/allow-discord.src
+          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/hdrezka.lst"    _inputs/allow-hdrezka.src
+          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/meta.lst"       _inputs/allow-meta.src
+          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/tiktok.lst"     _inputs/allow-tiktok.src
+          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/twitter.lst"    _inputs/allow-twitter.src
+          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/youtube.lst"    _inputs/allow-youtube.src
+
       - name: Normalize external DOMAIN sources → XRAY lists in geosite/
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
+
           dom_from_clean_to_xray_suffix _inputs/refilter-community-domains.src geosite/refilter-community
           dom_from_clean_to_xray_suffix _inputs/refilter-domains.src            geosite/refilter
           dom_from_clean_to_xray_suffix _inputs/russia-inside.src               geosite/russia-inside
           dom_from_clean_to_xray_suffix _inputs/russia-outside.src              geosite/russia-outside
           dom_from_clean_to_xray_suffix _inputs/google-ai.src                   geosite/google-ai
+
+          # allow-domains separate components
+          dom_from_clean_to_xray_suffix _inputs/allow-anime.src                 geosite/allow-anime
+          dom_from_clean_to_xray_suffix _inputs/allow-block.src                 geosite/allow-block
+          dom_from_clean_to_xray_suffix _inputs/allow-geoblock.src              geosite/allow-geoblock
+          dom_from_clean_to_xray_suffix _inputs/allow-news.src                  geosite/allow-news
+          dom_from_clean_to_xray_suffix _inputs/allow-porn.src                  geosite/allow-porn
+
+          dom_from_clean_to_xray_suffix _inputs/allow-discord.src               geosite/allow-discord
+          dom_from_clean_to_xray_suffix _inputs/allow-hdrezka.src               geosite/allow-hdrezka
+          dom_from_clean_to_xray_suffix _inputs/allow-meta.src                  geosite/allow-meta
+          dom_from_clean_to_xray_suffix _inputs/allow-tiktok.src                geosite/allow-tiktok
+          dom_from_clean_to_xray_suffix _inputs/allow-twitter.src               geosite/allow-twitter
+          dom_from_clean_to_xray_suffix _inputs/allow-youtube.src               geosite/allow-youtube
+
+      - name: Build geosite/russia-inside-itdog (dedup + optimize, preserve)
+        run: |
+          set -Eeuo pipefail
+          source .ci/helpers.sh
+          tmp="$(mktemp)"
+
+          {
+            for f in \
+              geosite/allow-anime \
+              geosite/allow-block \
+              geosite/allow-geoblock \
+              geosite/allow-news \
+              geosite/allow-porn \
+              geosite/allow-hdrezka \
+              geosite/allow-meta \
+              geosite/allow-tiktok \
+              geosite/allow-twitter \
+              geosite/allow-youtube \
+              geosite/allow-discord \
+              geosite/google-ai
+            do
+              [[ -f "$f" || -f "$f.list" ]] || continue
+              cat "$f" 2>/dev/null || true
+              cat "$f.list" 2>/dev/null || true
+              echo
+            done
+          } > "$tmp"
+
+          dom_xray_preserve "$tmp" geosite/russia-inside-itdog
+          rm -f "$tmp" "$tmp.list"
 
       - name: Build derived geosite lists (ban-ru)
         run: |
@@ -342,6 +403,7 @@ jobs:
             done
           } > "$tmp"
           ip_opt "$tmp" geoip/ban
+          rm -f "$tmp" "$tmp.list"
 
       - name: Build geoip/router (dedup + optimize)
         run: |
