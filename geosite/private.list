@@ -3,6 +3,7 @@ full:miwifi.com
 full:routerlogin.com
 full:tplogin.cn
 full:instant.arubanetworks.com
+full:local.adguard.org
 full:oasisauth.h3c.com
 full:router.asus.com
 full:setmeup.arubanetworks.com
@@ -123,6 +124,7 @@ localhost.sec.qq.com
 9.e.f.ip6.arpa
 a.e.f.ip6.arpa
 b.e.f.ip6.arpa
+kis.v2.scr.kaspersky-labs.com
 255.255.255.255.in-addr.arpa
 8.b.d.0.1.0.0.2.ip6.arpa
 1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa
