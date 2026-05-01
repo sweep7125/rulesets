@@ -46,7 +46,7 @@ jobs:
             git push -u origin "HEAD:${BR}"
           fi
 
-      - name: Checkout main helpers (sparse)
+      - name: Checkout main helpers and custom data (sparse)
         uses: actions/checkout@v6
         with:
           ref: main
@@ -56,17 +56,22 @@ jobs:
             .ci
             sections_in
             config_get.json
+            data
           sparse-checkout-cone-mode: true
 
       - name: Prepare helpers and inputs from main
         run: |
           set -Eeuo pipefail
 
-          rm -rf .ci
+          rm -rf .ci data
           mkdir -p .ci _inputs
 
           if [[ -d main-src/.ci ]]; then
             cp -a main-src/.ci/. .ci/
+          fi
+
+          if [[ -d main-src/data ]]; then
+            cp -a main-src/data data
           fi
 
           chmod +x .ci/ipset_ops.py .ci/domainset_ops.py 2>/dev/null || true
@@ -236,6 +241,21 @@ jobs:
           dom_from_clean_to_xray_suffix _inputs/allow-twitter.src               geosite/allow-twitter
           dom_from_clean_to_xray_suffix _inputs/allow-youtube.src               geosite/allow-youtube
 
+      - name: Normalize custom DOMAIN sources from data/geosite → geosite/
+        run: |
+          set -Eeuo pipefail
+          source .ci/helpers.sh
+
+          [[ -d data/geosite ]] || exit 0
+
+          while IFS= read -r -d '' src; do
+            rel="${src#data/geosite/}"
+            out="geosite/${rel}"
+
+            mkdir -p "$(dirname "$out")"
+            dom_from_clean_to_xray_suffix "$src" "$out"
+          done < <(find data/geosite -type f -print0 | LC_ALL=C sort -z)
+
       - name: Build geosite/russia-inside-itdog (dedup + optimize, preserve)
         run: |
           set -Eeuo pipefail
@@ -374,6 +394,21 @@ jobs:
           ip_opt _inputs/refilter-ips.src           geoip/refilter
           ip_opt _inputs/refilter-community-ips.src geoip/refilter-community
           ip_opt _inputs/ru-bundle.src              geoip/ru-bundle
+
+      - name: Normalize custom IP sources from data/geoip → geoip/
+        run: |
+          set -Eeuo pipefail
+          source .ci/helpers.sh
+
+          [[ -d data/geoip ]] || exit 0
+
+          while IFS= read -r -d '' src; do
+            rel="${src#data/geoip/}"
+            out="geoip/${rel}"
+
+            mkdir -p "$(dirname "$out")"
+            ip_opt "$src" "$out"
+          done < <(find data/geoip -type f -print0 | LC_ALL=C sort -z)
 
       - name: Build derived geoip lists via ipset_ops.py
         run: |
