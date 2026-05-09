@@ -199,7 +199,6 @@ jobs:
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community.lst" _inputs/refilter-community-domains.src
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/domains_all.lst" _inputs/refilter-domains.src
           get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-raw.lst" _inputs/russia-inside.src
-          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/outside-raw.lst" _inputs/russia-outside.src
           get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/google_ai.lst" _inputs/google-ai.src
 
           # allow-domains components of "Russia inside" + explicit Google AI
@@ -224,7 +223,6 @@ jobs:
           dom_from_clean_to_xray_suffix _inputs/refilter-community-domains.src geosite/refilter-community
           dom_from_clean_to_xray_suffix _inputs/refilter-domains.src            geosite/refilter
           dom_from_clean_to_xray_suffix _inputs/russia-inside.src               geosite/russia-inside
-          dom_from_clean_to_xray_suffix _inputs/russia-outside.src              geosite/russia-outside
           dom_from_clean_to_xray_suffix _inputs/google-ai.src                   geosite/google-ai
 
           # allow-domains separate components
@@ -256,107 +254,6 @@ jobs:
             dom_from_clean_to_xray_suffix "$src" "$out"
           done < <(find data/geosite -type f -print0 | LC_ALL=C sort -z)
 
-      - name: Build geosite/russia-inside-itdog (dedup + optimize, preserve)
-        run: |
-          set -Eeuo pipefail
-          source .ci/helpers.sh
-          tmp="$(mktemp)"
-
-          {
-            for f in \
-              geosite/allow-anime \
-              geosite/allow-block \
-              geosite/allow-geoblock \
-              geosite/allow-news \
-              geosite/allow-porn \
-              geosite/allow-hdrezka \
-              geosite/allow-meta \
-              geosite/allow-tiktok \
-              geosite/allow-twitter \
-              geosite/allow-youtube \
-              geosite/allow-discord \
-              geosite/google-ai
-            do
-              [[ -f "$f" || -f "$f.list" ]] || continue
-              cat "$f" 2>/dev/null || true
-              cat "$f.list" 2>/dev/null || true
-              echo
-            done
-          } > "$tmp"
-
-          dom_xray_preserve "$tmp" geosite/russia-inside-itdog
-          rm -f "$tmp" "$tmp.list"
-
-      - name: Build derived geosite lists (ban-ru)
-        run: |
-          set -Eeuo pipefail
-          source .ci/helpers.sh
-
-          tmp="$(mktemp)"
-          python3 .ci/domainset_ops.py \
-            --mode intersect \
-            --set geosite/refilter,geosite/refilter-community,geosite/russia-inside,geosite/google-ai,geosite/youtube \
-            --set geosite/category-ru \
-            --out "$tmp"
-
-          { cat "$tmp"; printf '%s\n' jut.su habr.com 4pda.to; } > "${tmp}.add"
-          dom_xray_preserve "${tmp}.add" geosite/category-ban-ru
-          rm -f "$tmp" "${tmp}.add" "${tmp}.add.list"
-
-      - name: Build geosite/router (dedup + optimize, preserve)
-        run: |
-          set -Eeuo pipefail
-          source .ci/helpers.sh
-          tmp="$(mktemp)"
-
-          {
-            for f in geosite/russia-inside geosite/google-ai geosite/refilter-community; do
-              [[ -f "$f" || -f "$f.list" ]] || continue
-              cat "$f" 2>/dev/null || true
-              cat "$f.list" 2>/dev/null || true
-              echo
-            done
-          } > "$tmp"
-
-          dom_xray_preserve "$tmp" geosite/router
-          rm -f "$tmp" "$tmp.list"
-
-      - name: Build geosite/ru-bundle (dedup + optimize, preserve)
-        run: |
-          set -Eeuo pipefail
-          source .ci/helpers.sh
-          tmp="$(mktemp)"
-
-          {
-            for f in geosite/russia-inside geosite/google-ai geosite/refilter geosite/refilter-community; do
-              [[ -f "$f" || -f "$f.list" ]] || continue
-              cat "$f" 2>/dev/null || true
-              cat "$f.list" 2>/dev/null || true
-              echo
-            done
-          } > "$tmp"
-
-          dom_xray_preserve "$tmp" geosite/ru-bundle
-          rm -f "$tmp" "$tmp.list"
-
-      - name: Build geosite/block-out (dedup + optimize, preserve)
-        run: |
-          set -Eeuo pipefail
-          source .ci/helpers.sh
-          tmp="$(mktemp)"
-
-          {
-            for f in geosite/private geosite/category-gov-ru geosite/russia-outside; do
-              [[ -f "$f" || -f "$f.list" ]] || continue
-              cat "$f" 2>/dev/null || true
-              cat "$f.list" 2>/dev/null || true
-              echo
-            done
-          } > "$tmp"
-
-          dom_xray_preserve "$tmp" geosite/block-out
-          rm -f "$tmp" "$tmp.list"
-
       - name: Download upstream geoip.dat & build base RU/PRIVATE (optional)
         run: |
           set -Eeuo pipefail
@@ -376,24 +273,16 @@ jobs:
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
-          get "https://raw.githubusercontent.com/GhostRooter0953/discord-voice-ips/master/voice_domains/discord-voice-ip-list" _inputs/discord-voice-ips.src
-          get "https://core.telegram.org/resources/cidr.txt" _inputs/telegram-ips.src
-          get "https://www.cloudflare.com/ips-v4" _inputs/cloudflare4.src
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/ipsum.lst" _inputs/refilter-ips.src
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community_ips.lst" _inputs/refilter-community-ips.src
 
-          cat _inputs/discord-voice-ips.src > _inputs/ru-bundle.src
 
       - name: Normalize IP sources → CIDR lists in geoip/
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
-          ip_opt _inputs/discord-voice-ips.src      geoip/discord-voice
-          ip_opt _inputs/telegram-ips.src           geoip/telegram
-          ip_opt _inputs/cloudflare4.src            geoip/cloudflare4
           ip_opt _inputs/refilter-ips.src           geoip/refilter
           ip_opt _inputs/refilter-community-ips.src geoip/refilter-community
-          ip_opt _inputs/ru-bundle.src              geoip/ru-bundle
 
       - name: Normalize custom IP sources from data/geoip → geoip/
         run: |
@@ -409,54 +298,6 @@ jobs:
             mkdir -p "$(dirname "$out")"
             ip_opt "$src" "$out"
           done < <(find data/geoip -type f -print0 | LC_ALL=C sort -z)
-
-      - name: Build derived geoip lists via ipset_ops.py
-        run: |
-          set -Eeuo pipefail
-          source .ci/helpers.sh
-
-          python3 .ci/ipset_ops.py \
-            --mode intersect \
-            --set geoip/refilter,geoip/refilter-community,geoip/discord-voice \
-            --set geoip/ru \
-            --out geoip/category-ban-ru.list
-
-          python3 .ci/ipset_ops.py \
-            --mode diff \
-            --A geoip/refilter,geoip/refilter-community,geoip/discord-voice \
-            --B geoip/ru \
-            --out geoip/ban-no-ru.list
-
-          tmp="$(mktemp)"
-
-          {
-            for f in geoip/refilter geoip/refilter-community geoip/discord-voice; do
-              [[ -f "$f" || -f "$f.list" ]] || continue
-              cat "$f" 2>/dev/null || true
-              cat "$f.list" 2>/dev/null || true
-              echo
-            done
-          } > "$tmp"
-          ip_opt "$tmp" geoip/ban
-          rm -f "$tmp" "$tmp.list"
-
-      - name: Build geoip/router (dedup + optimize)
-        run: |
-          set -Eeuo pipefail
-          source .ci/helpers.sh
-          tmp="$(mktemp)"
-
-          {
-            for f in geoip/discord-voice geoip/refilter-community; do
-              [[ -f "$f" || -f "$f.list" ]] || continue
-              cat "$f" 2>/dev/null || true
-              cat "$f.list" 2>/dev/null || true
-              echo
-            done
-          } > "$tmp"
-
-          ip_opt "$tmp" geoip/router
-          rm -f "$tmp" "$tmp.list"
 
       - name: Commit ONLY geosite/ and geoip/ to sources branch
         run: |
