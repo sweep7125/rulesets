@@ -126,70 +126,37 @@ jobs:
           rm -rf geosite geoip
           mkdir -p geosite geoip
 
-      - name: Resolve keep-set from sections_in (deterministic) and flatten → geosite/
+      - name: Build ALL v2fly/domain-list-community lists → flat geosite/
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
 
           DATA_DIR="community/data"
-          INTEREST_FILE="sections_in"
 
-          declare -A keep=()
-          queue=()
-
-          add_item() {
-            local x="$1"
-            [[ -n "$x" ]] || return 0
-            if [[ -z "${keep[$x]:-}" ]]; then
-              keep["$x"]=1
-              queue+=("$x")
-            fi
+          [[ -d "$DATA_DIR" ]] || {
+            echo "Missing $DATA_DIR"
+            exit 1
           }
 
-          if [[ -f "$INTEREST_FILE" ]]; then
-            while IFS= read -r line; do
-              line="${line//$'\r'/}"
-              line="${line%%#*}"
-              line="$(echo "$line" | xargs)"
-              [[ -n "$line" ]] || continue
-              add_item "$line"
-            done < "$INTEREST_FILE"
-          fi
+          declare -A seen=()
 
-          add_item "category-ru"
-          add_item "category-gov-ru"
-          add_item "private"
+          while IFS= read -r -d '' src; do
+            rel="${src#${DATA_DIR}/}"
+            base="$(basename "$rel")"
+            out="geosite/${base}"
 
-          while ((${#queue[@]})); do
-            cur="${queue[0]}"
-            queue=("${queue[@]:1}")
-
-            p="${DATA_DIR}/${cur}"
-            [[ -f "$p" ]] || continue
-
-            incs="$(
-              sed -E 's/\r$//' "$p" \
-              | grep '^include:' || true
-            )"
-
-            if [[ -n "$incs" ]]; then
-              while IFS= read -r inc; do
-                inc="${inc#include:}"
-                inc="${inc%%#*}"
-                inc="$(echo "$inc" | xargs)"
-                [[ -n "$inc" ]] || continue
-                add_item "$inc"
-              done < <(printf '%s\n' "$incs" | LC_ALL=C sort -u)
+            if [[ -n "${seen[$base]:-}" ]]; then
+              echo "Name collision after flattening:"
+              echo "  ${seen[$base]}"
+              echo "  ${src}"
+              echo "Both would become: ${out}"
+              exit 1
             fi
-          done
 
-          for rel in $(printf '%s\n' "${!keep[@]}" | LC_ALL=C sort); do
-            src="${DATA_DIR}/${rel}"
-            [[ -f "$src" ]] || continue
-            out="geosite/${rel}"
-            mkdir -p "$(dirname "$out")"
+            seen["$base"]="$src"
+
             dom_xray_preserve "$src" "$out"
-          done
+          done < <(find "$DATA_DIR" -type f -print0 | LC_ALL=C sort -z)
 
       - name: Download external one-file DOMAIN sources (.src)
         run: |
