@@ -203,6 +203,9 @@ jobs:
           get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/tiktok.lst"     _inputs/allow-tiktok.src
           get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/twitter.lst"    _inputs/allow-twitter.src
           get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/youtube.lst"    _inputs/allow-youtube.src
+          # OISD
+          get "https://raw.githubusercontent.com/sjhgvr/oisd/main/domainswild2_big.txt"   _inputs/oisd-big.src
+          get "https://raw.githubusercontent.com/sjhgvr/oisd/main/domainswild2_small.txt" _inputs/oisd-small.src
 
       - name: Normalize external DOMAIN sources → XRAY lists in geosite/
         run: |
@@ -227,6 +230,8 @@ jobs:
           dom_from_clean_to_xray_suffix _inputs/allow-tiktok.src                geosite/allow-tiktok
           dom_from_clean_to_xray_suffix _inputs/allow-twitter.src               geosite/allow-twitter
           dom_from_clean_to_xray_suffix _inputs/allow-youtube.src               geosite/allow-youtube
+          dom_from_clean_to_xray_suffix _inputs/oisd-big.src                    geosite/oisd-big
+          dom_from_clean_to_xray_suffix _inputs/oisd-small.src                  geosite/oisd-small
 
       - name: Normalize custom DOMAIN sources from data/geosite → geosite/
         run: |
