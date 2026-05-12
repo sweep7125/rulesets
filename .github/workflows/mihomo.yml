@@ -229,13 +229,3 @@ jobs:
           git diff --staged --quiet && exit 0
           git commit -m "Update mihomo rulesets (*.mrs) $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           git push || true
-
-      - name: Purge jsDelivr CDN
-        if: env.MRS_NEEDS_BUILD == '1'
-        run: |
-          set -Eeuo pipefail
-          shopt -s nullglob
-          for f in *.mrs mrs.hash; do
-            curl -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@mihomo-rulesets/${f}"
-          done
-          shopt -u nullglob
