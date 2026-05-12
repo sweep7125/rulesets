@@ -14,7 +14,6 @@ permissions:
 
 env:
   DEBIAN_FRONTEND: noninteractive
-  GOFLAGS: -buildvcs=false
   COMMIT_USER_NAME: github-actions[bot]
   COMMIT_USER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
 
@@ -54,8 +53,6 @@ jobs:
           fetch-depth: 1
           sparse-checkout: |
             .ci
-            sections_in
-            config_get.json
             data
           sparse-checkout-cone-mode: true
 
@@ -76,18 +73,6 @@ jobs:
 
           chmod +x .ci/ipset_ops.py .ci/domainset_ops.py 2>/dev/null || true
 
-          if [[ -f main-src/sections_in ]]; then
-            cp -f main-src/sections_in sections_in
-          else
-            rm -f sections_in
-          fi
-
-          if [[ -f main-src/config_get.json ]]; then
-            cp -f main-src/config_get.json config_get.json
-          else
-            rm -f config_get.json
-          fi
-
           rm -rf main-src
 
           cat > .ci/helpers.sh <<'SH'
@@ -99,7 +84,30 @@ jobs:
           dom_from_clean_to_xray_suffix() { python3 "$OPT_PY" domains "$1" "$2" --input-type clean --target suffix; }
           dom_from_clean_to_xray_exact()  { python3 "$OPT_PY" domains "$1" "$2" --input-type clean --target exact; }
 
-          ip_opt() { python3 "$OPT_PY" ips "$1" "$2"; }
+          ip_opt() {
+            python3 "$OPT_PY" ips "$1" "$2"
+          }
+
+          ip_opt_geoip() {
+            local src="$1"
+            local out="$2"
+            local tmp
+
+            tmp="$(mktemp)"
+
+            # Только geoip/private сохраняет IPv6.
+            # Все остальные geoip/* получают только IPv4.
+            if [[ "$out" == "geoip/private" ]]; then
+              cp -f "$src" "$tmp"
+            else
+              grep -Ev '^[[:space:]]*($|#)' "$src" \
+                | grep -Ev ':' \
+                > "$tmp" || true
+            fi
+
+            ip_opt "$tmp" "$out"
+            rm -f "$tmp"
+          }
 
           get() {
             curl -fsSL --compressed \
@@ -117,6 +125,18 @@ jobs:
           fetch-depth: 1
           sparse-checkout: |
             data
+          sparse-checkout-cone-mode: true
+          filter: blob:none
+
+      - name: Checkout Loyalsoldier/geoip release text files
+        uses: actions/checkout@v6
+        with:
+          repository: Loyalsoldier/geoip
+          ref: release
+          path: loyalsoldier-geoip
+          fetch-depth: 1
+          sparse-checkout: |
+            text
           sparse-checkout-cone-mode: true
           filter: blob:none
 
@@ -157,6 +177,8 @@ jobs:
 
             dom_xray_preserve "$src" "$out"
           done < <(find "$DATA_DIR" -type f -print0 | LC_ALL=C sort -z)
+
+          rm -rf community
 
       - name: Download external one-file DOMAIN sources (.src)
         run: |
@@ -221,35 +243,43 @@ jobs:
             dom_from_clean_to_xray_suffix "$src" "$out"
           done < <(find data/geosite -type f -print0 | LC_ALL=C sort -z)
 
-      - name: Download upstream geoip.dat & build base RU/PRIVATE (optional)
+      - name: Build ALL Loyalsoldier geoip text lists → geoip/
         run: |
           set -Eeuo pipefail
-          if [[ -s config_get.json ]]; then
-            rm -rf geoip-src extracted
-            git clone --depth=1 https://github.com/Loyalsoldier/geoip geoip-src
-            pushd geoip-src >/dev/null
-            go build ./
-            popd >/dev/null
-            ./geoip-src/geoip convert -c ./config_get.json
-            python3 .ci/optimize.py ips extracted/ru.txt      geoip/ru
-            python3 .ci/optimize.py ips extracted/private.txt geoip/private
-            rm -rf extracted geoip-src
-          fi
+          source .ci/helpers.sh
+
+          SRC_DIR="loyalsoldier-geoip/text"
+
+          [[ -d "$SRC_DIR" ]] || {
+            echo "Missing $SRC_DIR"
+            exit 1
+          }
+
+          while IFS= read -r -d '' src; do
+            file="$(basename "$src")"
+            name="${file%.txt}"
+            out="geoip/${name}"
+
+            ip_opt_geoip "$src" "$out"
+          done < <(find "$SRC_DIR" -type f -name '*.txt' -print0 | LC_ALL=C sort -z)
+
+          rm -rf loyalsoldier-geoip
 
       - name: Download external one-file IP sources (.src)
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
+
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/ipsum.lst" _inputs/refilter-ips.src
           get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community_ips.lst" _inputs/refilter-community-ips.src
 
-
-      - name: Normalize IP sources → CIDR lists in geoip/
+      - name: Normalize external IP sources → CIDR lists in geoip/
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
-          ip_opt _inputs/refilter-ips.src           geoip/refilter
-          ip_opt _inputs/refilter-community-ips.src geoip/refilter-community
+
+          ip_opt_geoip _inputs/refilter-ips.src           geoip/refilter
+          ip_opt_geoip _inputs/refilter-community-ips.src geoip/refilter-community
 
       - name: Normalize custom IP sources from data/geoip → geoip/
         run: |
@@ -263,7 +293,7 @@ jobs:
             out="geoip/${rel}"
 
             mkdir -p "$(dirname "$out")"
-            ip_opt "$src" "$out"
+            ip_opt_geoip "$src" "$out"
           done < <(find data/geoip -type f -print0 | LC_ALL=C sort -z)
 
       - name: Commit ONLY geosite/ and geoip/ to sources branch
@@ -278,4 +308,4 @@ jobs:
 
           git diff --staged --quiet && exit 0
           git commit -m "Update sources (geosite + geoip only) $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-          git push || true
+          git push
