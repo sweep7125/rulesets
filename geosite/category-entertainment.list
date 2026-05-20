@@ -137,11 +137,13 @@ full:ea.tt.omtrdc.net
 full:espn.hb.omtrdc.net
 full:espndotcom.tt.omtrdc.net
 full:f3b7q2p3.ssl.hwcdn.net
+full:favoritescc-hamivideo2.cdn.hinet.net
 full:gamer-cds.cdn.hinet.net
 full:gamer2-cds.cdn.hinet.net
 full:hls-amt.itunes.apple.com
 full:hls.itunes.apple.com
 full:lastfm.freetls.fastly.net
+full:lgcscc-hamivideo2.cdn.hinet.net
 full:mobilelive-hamivideo.cdn.hinet.net
 full:msh.amazon.co.uk
 full:netflix.com.edgesuite.net
@@ -165,6 +167,8 @@ full:spotify.com.edgesuite.net
 full:spotify.map.fastly.net
 full:spotify.map.fastlylb.net
 full:static-hamivideo.cdn.hinet.net
+full:thumbnail-hamivideo.cdn.hinet.net
+full:tlmr-hamivideo2.cdn.hinet.net
 full:tvcastlive-hamivideo.cdn.hinet.net
 full:ubisoft-orbit-savegames.s3.amazonaws.com
 full:ubisoft-uplay-savegames.s3.amazonaws.com
@@ -172,6 +176,7 @@ full:ubisoft.siteintercept.qualtrics.com
 full:uts-api.itunes.apple.com
 full:wb-agora-hydra-file-storage-k1.s3.amazonaws.com
 full:weblive-hamivideo.cdn.hinet.net
+full:webvodad-hamivideo.cdn.hinet.net
 full:a4e8s8k3.map2.ssl.hwcdn.net
 full:prodforza.blob.core.windows.net
 full:roblox-load-generator-configuration.s3.us-east-2.amazonaws.com

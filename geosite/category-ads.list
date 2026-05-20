@@ -21,7 +21,6 @@ full:cdn.js7k.com
 full:clickserve.cc-dt.com
 full:crl.versign.net
 full:default.exp-tas.com
-full:download.qatp1.net
 full:fbcdn-a.akamaihd.net
 full:firebase-settings.crashlytics.com
 full:github-api.arkoselabs.com
@@ -32,7 +31,6 @@ full:heads4-ak-spotify-com.akamaized.net
 full:img-prod-cms-rt-microsoft-com.akamaized.net
 full:img-s-msn-com.akamaized.net
 full:ingest.apple-studies.com
-full:monitoring.qpdp1.net
 full:mwf-service.akamaized.net
 full:officecdn-microsoft-com.akamaized.net
 full:ood.opsource.net
@@ -52,15 +50,10 @@ full:pinggai9.caixin.com
 full:practivate.adobe.ipp
 full:practivate.adobe.newoa
 full:practivate.adobe.ntp
-full:qagpublic.qatp1.net
-full:qgadmin.qcpp1.net
 full:qpx.googleflights.net
-full:qualysapi.qatp1.net
-full:qualysguard.qpdp1.net
 full:rink.hockeyapp.net
 full:roovza-launches.appsflyersdk.com
 full:sberpro.vedomosti.ru
-full:scanservice1.qcpp1.net
 full:statics-marketingsites-eas-ms-com.akamaized.net
 full:statics-marketingsites-eus-ms-com.akamaized.net
 full:statics-marketingsites-wcus-ms-com.akamaized.net
@@ -632,6 +625,7 @@ amazontrust.com
 amazonvideo.cc
 amazonvideo.com
 amazonvideodirect.com
+amazonwebservices.cn
 amazonworkdocs.cn
 amazonworkdocs.com
 amemv.cn
@@ -6643,6 +6637,7 @@ wwwitunes.com
 wwwlapple.com
 wwwmacbookair.com
 wwwmfacebook.com
+wxaurl.cn
 wxcloudrun.com
 wxgateway.com
 wxlivecdn.com
