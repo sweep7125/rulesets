@@ -28,7 +28,6 @@ full:hpstore.corpmerchandise.com
 full:img-prod-cms-rt-microsoft-com.akamaized.net
 full:img-s-msn-com.akamaized.net
 full:ingest.apple-studies.com
-full:mdn.mozillademos.org
 full:mozilla-ohttp.fastly-edge.com
 full:mwf-service.akamaized.net
 full:officecdn-microsoft-com.akamaized.net
@@ -432,6 +431,8 @@ alivertsm.com
 alivevm.com
 alivevmax.com
 alivevue.com
+allizom.net
+allizom.org
 alphassl.com
 altera.com
 alteraforum.com
@@ -1674,6 +1675,7 @@ cadoverlay.com
 cadren.com
 caice.com
 calendarserver.org
+calicolabs.com
 callbackkiller.com
 callersbane.com
 cam-duct.com
@@ -1738,6 +1740,7 @@ canonfoundation.org
 canonproprinters.com
 canva.com
 canvastatus.com
+capitalg.com
 carbon.com
 careersatfb.com
 carekit.org
@@ -2220,6 +2223,7 @@ desktopmovies.net
 desktopmovies.org
 destinationbim.com
 detaliczny.com
+detodosparatodos.org
 dev-my.com
 dev-my.games
 developer-advisor.com
@@ -2294,6 +2298,7 @@ direectv.com
 diretv.com
 discountbeatsbydre-us.com
 discountbeatsstore.com
+discovershiretoko.org
 discreet.com
 discussionsapple.com
 diskstation.me
@@ -2436,6 +2441,7 @@ ebuyheadphones.com
 ecgapp.net
 echocdn.com
 echosign.com
+ecmascript.org
 ecotect.com
 ecotect.net
 ecscad.com
@@ -2500,6 +2506,7 @@ exascale-tech.com
 experience-vmware.com
 exploreintel.com
 expresswifi.com
+extendfirefox.com
 extensions4revit.com
 extensionworkshop.com
 extremetube.com
@@ -2859,6 +2866,8 @@ firebase.io
 firebaseapp.com
 firebaseio.com
 firefox.com
+firefox.hu
+firefoxtweetmachine.com
 firefoxusercontent.com
 firewire.cl
 firewire.eu
@@ -2909,6 +2918,8 @@ fotolia.tv
 fotolja.com
 foundationdb.org
 fourthns.systems
+foxkeh.com
+foxkeh.jp
 fpacebook.com
 fptolia.com
 fqcebook.com
@@ -3016,11 +3027,14 @@ getbuzzsaw.com
 getdirect.tv
 getdrebeatssale.com
 getfiddler.com
+getfirebug.com
+getpersonas.com
 getpocket.com
 getprintersupports.com
 getws1.com
 getwsone.com
 gfacecbook.com
+gfiber.com
 gfotolia.com
 gfx.ms
 ggoogle.com
@@ -3357,6 +3371,7 @@ gvt5.com
 gvt6.com
 gvt7.com
 gvt9.com
+hackasaurus.org
 hackerfacebook.com
 hackfacebook.com
 hackfacebookid.com
@@ -3993,6 +4008,7 @@ interactivebrokers.ca
 interactivebrokers.com
 interactivebrokers.eu
 interactivebrokers.ie
+interforest.org
 internet.org
 internet.ru
 internetdownloadmanager.com
@@ -4114,6 +4130,7 @@ iprad-ryoma.com
 ischool.com
 iskoot.com
 islamiccenterofnewlondon.com
+isomorphiclabs.com
 istorytell.com
 it-territory.com
 italiabeatsbydrdre.com
@@ -4121,6 +4138,7 @@ itasoftware.com
 itcanwait.com
 itfromtheinside.com
 itirex.ru
+itisatrap.org
 itnel.com
 itools.info
 itun.es
@@ -4287,6 +4305,7 @@ latencytop.com
 latticedata.com
 launchpad.wang
 le-direct.tv
+learningfreedomandtheweb.org
 leavinghpinc.com
 leecountytimes.com
 lerna.ru
@@ -4330,6 +4349,7 @@ liverail.com
 liverail.tv
 livesketchshare.com
 livingyourambition.com
+lizardwrangler.com
 llama.com
 lnstagram-help.com
 logi.com
@@ -4485,6 +4505,7 @@ mdnyalp.dev
 me.com
 mearki.com
 meccontroller.com
+mecha-mozilla.org
 media-amazon.com
 media-imdb.com
 mediafiles-cisco.com
@@ -4775,13 +4796,33 @@ movidius.com
 movidius.net
 movidius.org
 movika.com
+mozaws.net
 mozgcp.net
+mozilla-europe.org
+mozilla-hispano.org
+mozilla-mexico.org
 mozilla.ai
 mozilla.com
 mozilla.community
+mozilla.cz
+mozilla.de
+mozilla.jp
+mozilla.lt
 mozilla.net
 mozilla.org
+mozilla.pe
+mozilla.pt
+mozilla.ro
+mozillabd.org
+mozillademos.org
+mozillafactory.org
 mozillafoundation.org
+mozillaignite.org
+mozillalabs.com
+mozillaquebec.org
+mozillazine.jp
+mozillians.org
+mozit.cloud
 mpgw-my.com
 mpnevolution.com
 mradx.net
@@ -5109,6 +5150,7 @@ onedrive.org
 onefifteen.net
 onefifteen.org
 oneme.ru
+onemozilla.org
 onenote.com
 onenote.net
 onestore.ms
@@ -5139,6 +5181,7 @@ opensource.guide
 opensourceinsight.dev
 opensourceinsights.dev
 openthread.io
+opentimetable.jp
 opentranslatorstothings.org
 openvino.ai
 openvinotoolkit.org
@@ -5251,6 +5294,7 @@ pocketbiketrader.com
 pointtown.com
 polymer-project.org
 polymerproject.org
+popcornjs.org
 popmechanic.io
 popmechanic.ru
 porkbun.com
@@ -5321,6 +5365,7 @@ prostudiobeatscybersale.com
 ps-exchange.com
 pstatic.net
 pub.dev
+publicsuffix.org
 publishproxy.com
 pullstring.net
 pushgrow.io
@@ -5856,6 +5901,7 @@ telerik.com
 tellmewhygame.com
 tenbin.ai
 tenbyfotolia.com
+tenor.com
 tensorflow.org
 tenten.vn
 terraform.io
@@ -6258,11 +6304,13 @@ webex.fr
 webhosting.com
 webkit.org
 webkitgtk.org
+webmademovies.org
 webmproject.org
 webobjects.com
 webobjects.de
 webobjects.eu
 webobjects.net
+webpass.net
 webpkgcache.com
 webrtc.org
 webtoons.com
@@ -6323,6 +6371,7 @@ windowsphone.com
 windowssearch.com
 windowsuem.com
 windowsupdate.com
+wing.com
 winhec.com
 winhec.net
 wink.am
@@ -7007,7 +7056,6 @@ dell.com.vi
 dell.org.il
 dellemc.com.cn
 delltechnologies.com.cn
-developer.allizom.org
 drweb.co.jp
 ecgapp.com.cn
 eligens.com.br
@@ -7232,8 +7280,6 @@ macbookpro.com.au
 macos.com.au
 mageconf.com.ua
 marketo.co.uk
-mdn.allizom.net
-mdn.mozit.cloud
 medical-reserve.co.jp
 megamon.co.kr
 microsoftonline-p-i.net.cn
@@ -7249,6 +7295,7 @@ motorola.com.au
 motorola.com.co
 motorola.com.pe
 motorola.com.pr
+mozilla.org.uk
 mr-apple.com.tw
 now.com.hk
 nvidia.co.at
