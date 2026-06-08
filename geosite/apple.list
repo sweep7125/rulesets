@@ -23,7 +23,6 @@ full:crl-lb.apple.com.akadns.net
 full:dd-cdn.origin-apple.com.akadns.net
 full:gspe19-2-cn-ssl.ls-apple.com.akadns.net
 full:gspe19-cn.ls-apple.com.akadns.net
-full:icloud-cdn.icloud.com.akadns.net
 full:init-p01md-lb.push-apple.com.akadns.net
 full:init-p01st-lb.push-apple.com.akadns.net
 full:init-s01st-lb.push-apple.com.akadns.net
@@ -31,10 +30,7 @@ full:iphone-ld.origin-apple.com.akadns.net
 full:mesu-cdn.apple.com.akadns.net
 full:mesu-china.apple.com.akadns.net
 full:notary-submissions-prod.s3.us-west-2.amazonaws.com
-full:ocsp-lb.apple.com.akadns.net
-full:ocsp2-lb.apple.com.akadns.net
 full:oscdn.origin-apple.com.akadns.net
-full:pancake.cdn-apple.com.akadns.net
 full:stocks-sparkline-lb.apple.com.akadns.net
 full:store.apple.com.edgekey.net
 full:swcatalog-cdn.apple.com.akadns.net
@@ -46,6 +42,7 @@ full:weather-data.apple.com.akadns.net
 full:www-cdn.icloud.com.akadns.net
 full:init.gc-lb.apple.com.akadns.net
 full:store.storeimages.apple.com.akadns.net
+full:cl2.apple.com.edgekey.net.globalredir.akadns.net
 full:images.apple.com.edgekey.net.globalredir.akadns.net
 full:store.apple.com.edgekey.net.globalredir.akadns.net
 full:www.apple.com.edgekey.net.globalredir.akadns.net

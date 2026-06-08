@@ -5,6 +5,4 @@ full:ocsp2.apple.com
 full:valid.apple.com
 full:certs-lb.apple.com.akadns.net
 full:crl-lb.apple.com.akadns.net
-full:ocsp-lb.apple.com.akadns.net
-full:ocsp2-lb.apple.com.akadns.net
 full:valid.origin-apple.com.akadns.net
