@@ -588,6 +588,7 @@ developerservices2.apple.com
 devimages-cdn.apple.com
 devstreaming-cdn.apple.com
 greenend.org.uk
+jetbrains.com.cn
 mcr.microsoft.com
 microsoftreactor.com.cn
 playgrounds-cdn.apple.com
@@ -596,5 +597,4 @@ researchkit.com.cn
 swiftui.com.cn
 timestamp.apple.com
 visualstudio.co.uk
-download-cdn.jetbrains.com.cn
 regexp:.+\.dkr\.ecr\.[^\.]+\.amazonaws\.com$
