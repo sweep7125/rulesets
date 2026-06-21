@@ -1,7 +1,5 @@
 full:gog-cdn.akamaized.net
 full:gog.qtlglb.com
+full:gog-cdn-lumen.secure2.footprint.net
 gog-statics.com
 gog.com
-regexp:^images(-\d)?\.gog-statics\.com$
-regexp:^cdn-akamai-.+\.gog-services\.com$
-regexp:^gog-cdn-.+\.footprint\.net$

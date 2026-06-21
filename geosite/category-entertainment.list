@@ -144,6 +144,7 @@ full:f3b7q2p3.ssl.hwcdn.net
 full:favoritescc-hamivideo2.cdn.hinet.net
 full:gamer-cds.cdn.hinet.net
 full:gamer2-cds.cdn.hinet.net
+full:gog-cdn-lumen.secure2.footprint.net
 full:hls-amt.itunes.apple.com
 full:hls-hamivideo.cdn.hinet.net
 full:hls.itunes.apple.com
@@ -1887,11 +1888,8 @@ regexp:^[0-9]+vod-adaptive\.akamaized\.net$
 regexp:^epicgames-download\d\.akamaized\.net$
 regexp:^ewcdn[0-9]+\.nowe\.com$
 regexp:^hses[1-7]?\.akamaized\.net$
-regexp:^images(-\d)?\.gog-statics\.com$
-regexp:^cdn-akamai-.+\.gog-services\.com$
 regexp:^cdn\d-epicgames-\d+\.file\.myqcloud\.com$
 regexp:^epicgames-download\d-\d+\.file\.myqcloud\.com$
-regexp:^gog-cdn-.+\.footprint\.net$
 regexp:(^|\.)apiproxy-device-prod-nlb-.+\.amazonaws\.com$
 regexp:(^|\.)apiproxy-website-nlb-prod-.+\.amazonaws\.com$
 regexp:(^|\.)dualstack\.apiproxy-.+\.amazonaws\.com$

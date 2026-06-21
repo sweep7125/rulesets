@@ -77,6 +77,7 @@ full:cloudsync-prod.s3.amazonaws.com
 full:datarouter.apps.netherrealm.com
 full:ea.tt.omtrdc.net
 full:f3b7q2p3.ssl.hwcdn.net
+full:gog-cdn-lumen.secure2.footprint.net
 full:robloxcorp.s.llnwi.net
 full:ubisoft-orbit-savegames.s3.amazonaws.com
 full:ubisoft-uplay-savegames.s3.amazonaws.com
@@ -818,8 +819,5 @@ edge.steam-dns.top.comcast.net
 steam.cdn.orcon.net.nz
 steam.cdn.slingshot.co.nz
 regexp:^epicgames-download\d\.akamaized\.net$
-regexp:^images(-\d)?\.gog-statics\.com$
-regexp:^cdn-akamai-.+\.gog-services\.com$
 regexp:^cdn\d-epicgames-\d+\.file\.myqcloud\.com$
 regexp:^epicgames-download\d-\d+\.file\.myqcloud\.com$
-regexp:^gog-cdn-.+\.footprint\.net$

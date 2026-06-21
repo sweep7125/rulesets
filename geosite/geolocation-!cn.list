@@ -120,6 +120,7 @@ full:deribit.cdn.prismic.io
 full:elib.maruzen.co.jp
 full:f3b7q2p3.ssl.hwcdn.net
 full:gitlab-assets.oss-cn-hongkong.aliyuncs.com
+full:gog-cdn-lumen.secure2.footprint.net
 full:licdn.cn.cdn20.com
 full:public-us-pingsx.api.clonoth.com
 full:report.ap.yandex-net.ru
@@ -23982,16 +23983,13 @@ regexp:^[0-9]+vod-adaptive\.akamaized\.net$
 regexp:^epicgames-download\d\.akamaized\.net$
 regexp:^ewcdn[0-9]+\.nowe\.com$
 regexp:^hses[1-7]?\.akamaized\.net$
-regexp:^images(-\d)?\.gog-statics\.com$
 regexp:(^|\.)fiftymvapi\..+$
 regexp:(^|\.)youyuapi\..+$
 regexp:.+\.awsdns-cn-[0-9][0-9]\.(biz|com|net|top)$
 regexp:.+\.awsdns-cn-[0-9][a-e0-9]\.cn$
-regexp:^cdn-akamai-.+\.gog-services\.com$
 regexp:^cdn\d-epicgames-\d+\.file\.myqcloud\.com$
 regexp:^chatgpt-async-webps-prod-\S+-\d+\.webpubsub\.azure\.com$
 regexp:^epicgames-download\d-\d+\.file\.myqcloud\.com$
-regexp:^gog-cdn-.+\.footprint\.net$
 regexp:^r+[0-9]+(---|\.)sn-(2x3|ni5|j5o)\w{5}\.googlevideo\.com$
 regexp:^r+[0-9]+(---|\.)sn-(2x3|ni5|j5o)\w{5}\.xn--ngstr-lra8j\.com$
 regexp:(^|\.)apiproxy-device-prod-nlb-.+\.amazonaws\.com$
