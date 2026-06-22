@@ -22,6 +22,8 @@ full:crl.versign.net
 full:default.exp-tas.com
 full:fbcdn-a.akamaihd.net
 full:github-api.arkoselabs.com
+full:gog-cdn.akamaized.net
+full:gog.qtlglb.com
 full:google-ohttp-relay-safebrowsing.fastly-edge.com
 full:gtm.oasisfeng.com
 full:heads-ak-spotify-com.akamaized.net
@@ -64,6 +66,7 @@ full:www.recaptcha.net
 full:apple.com.akadns.net
 full:bytedance.map.fastly.net
 full:disney.my.sentry.io
+full:gog-cdn-lumen.secure2.footprint.net
 full:logs.ads.vungle.com
 full:o33249.ingest.sentry.io
 full:o4504926511693824.ingest.sentry.io
@@ -497,10 +500,12 @@ alibabacapital.com
 alibabachengdun.com
 alibabacloud.com
 alibabacorp.com
+alibabadesign.com
 alibabadns.com
 alibabadoctor.com
 alibabafuturehotel.com
 alibabagroup.com
+alibabapictures.com
 alibabaplanet.com
 alibabaued.com
 alibabausercontent.com
@@ -515,9 +520,11 @@ aliexpress.com
 aliexpress.ru
 alifanyi.com
 aligames.com
+aligenie.com
 aligfwaf.com
 alihealth.cn
 alihealth.hk
+alihive.com
 aliimg.com
 alikmd.com
 alikunlun.com
@@ -1084,6 +1091,7 @@ azure-dns.com
 azure-dns.info
 azure-dns.net
 azure-dns.org
+azure-mobile.cn
 azure-mobile.net
 azure-sphere.com
 azure-test.net
@@ -2162,6 +2170,7 @@ coding.me
 coding.net
 codm.com
 cofco.com
+combofin.com
 como-hackearfacebook.com
 componentkit.org
 compresspdf.new
@@ -2548,6 +2557,7 @@ dssott.com
 dtci.co
 dtci.technology
 dtsell.com
+duanqu.com
 duapp.com
 duapp.net
 duapps.com
@@ -2561,6 +2571,7 @@ duurl.cn
 duxiaoman-int.com
 duxiaoman.com
 duxiaomanfintech.com
+duxiaomanfund.com
 duxiaomantech.com
 dvdstudiopro.biz
 dvdstudiopro.com
@@ -2571,6 +2582,7 @@ dvdstudiopro.us
 dwz.cn
 dxm-cdn.com
 dxm-int.com
+dxmbaoxian.com
 dxmjinr.com
 dxmlcf.com
 dxmlcfintech.com
@@ -3267,6 +3279,10 @@ go2map.com
 gobeatsye.com
 gobuyonlinestore.net
 godoc.org
+gog-services.com
+gog-statics.com
+gog.com
+gogalaxy.com
 gogettaxi.org
 gogle.com
 gogokid.com
@@ -3669,6 +3685,7 @@ huoshanxiaoshipin.net
 huoshanzhibo.cn
 huoshanzhibo.com
 huoshanzhibo.net
+hupan.com
 hwad.net
 hwastro.cn
 hwastro.com
@@ -4243,6 +4260,7 @@ jivochat.ng
 jivochat.ru
 jivosite.com
 jivosite.ru
+jiyoujia.com
 jkbeats.com
 jkcsjd.com
 jokecommunity.cn
@@ -4662,6 +4680,7 @@ mi-img.com
 mi.com
 miaibox.com
 miaostreet.com
+miaoya.cn
 mickey.tv
 microad.jp
 microbit.org
@@ -5102,6 +5121,7 @@ newmonst1erbeatsto1re.com
 newmonsterbeatsheadphones.com
 newschristmasshopping.com
 newsfeed.com
+newstjk.com
 newton.com
 next.com
 nextechafrica.net
@@ -5244,6 +5264,7 @@ onsaletrend.com
 ookla.com
 ooklaserver.net
 oortgslb.com
+open-uc.cn
 openai.com
 openapp.run
 openbcs.com
@@ -5728,6 +5749,7 @@ sharepointonline.com
 shazam.com
 shedevrum.ai
 sheets.new
+shejijia.com
 shenjing.com
 shidianguji.com
 shifen.com
@@ -5751,6 +5773,7 @@ shuqi.com
 shuqiapi.com
 shuqiread.com
 shuqireader.com
+shuqistat.com
 shuxinyc.com
 shuzilm.cn
 shyhhema.com
@@ -5823,6 +5846,10 @@ sososnap.com
 sou.cn
 sou.com
 sourcecraft.dev
+sovcloud-mx.cn
+sovcloud-static.cn
+sovcloud-usercontent.cn
+sovcloud.cn
 spaindisney.com
 sparenode.com
 spasibo.digital
@@ -6318,8 +6345,10 @@ tzygd.cn
 u3d.cn
 uberads.com
 ubnw.net
+uc-engine.cn
 uc.cn
 uc123.com
+ucfly.com
 uchi.ru
 ucweb.com
 uczzd.cn
@@ -7149,6 +7178,7 @@ yogalayout.com
 yoma.cn
 yoojia.com
 youdao.com
+youdaoads.com
 youhua.com
 youku.com
 youku.tv
