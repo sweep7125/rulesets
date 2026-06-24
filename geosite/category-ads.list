@@ -19,7 +19,6 @@ full:cdn-spotify-experiments.conductrics.com
 full:cdn.js7k.com
 full:clickserve.cc-dt.com
 full:crl.versign.net
-full:default.exp-tas.com
 full:fbcdn-a.akamaihd.net
 full:github-api.arkoselabs.com
 full:gog-cdn.akamaized.net
@@ -2657,6 +2656,7 @@ eworld.com
 exmailgz.com
 exoclick.com
 exosrv.com
+exp-tas.com
 expresswifi.com
 extendfirefox.com
 extensionworkshop.com
@@ -3242,6 +3242,7 @@ git.io
 gitdrone.cn
 github.ai
 github.blog
+github.career
 github.com
 github.community
 github.dev
@@ -4397,6 +4398,7 @@ kunlunvi.com
 kunlunwe.com
 kuper.ru
 kurobbs.com
+kurogame-service.com
 kurogame.com
 kurogame.net
 kurogame.xyz
@@ -4464,6 +4466,7 @@ lexuemei.com
 lf126.net
 lf127.net
 liangxinyao.com
+lifeatspotify.com
 like.com
 linglonglife.com
 lingshoujia.com
@@ -5663,10 +5666,12 @@ samsungadhub.com
 samsungads.com
 samsungapps.com
 samsungcloud.com
+samsungcloudcn.com
 samsungconsent.com
 samsungdm.com
 samsunggalaxyfriends.com
 samsunghealth.com
+samsunghealthcn.com
 samsungiotcloud.com
 samsungiots.com
 samsungknox.com
@@ -5881,6 +5886,7 @@ spotifycdn.net
 spotifycharts.com
 spotifycodes.com
 spotifyforbrands.com
+spotifyforvendors.com
 spotifyjobs.com
 sprinklesapp.com
 sqlserveronlinux.com
@@ -6603,7 +6609,10 @@ vsassets.io
 vscenevideo.com
 vscode-cdn.net
 vscode-unpkg.net
+vscode-webview.net
 vscode.dev
+vscodeedu.app
+vscodeedu.com
 vsemrabota.ru
 vxo7tu.com
 vzuu.com
@@ -7850,6 +7859,7 @@ researchkit.com.cn
 rtx.com.cn
 saee.org.cn
 sagemaker.com.cn
+samsung.com.cn
 samsungeshop.com.cn
 sbux.com.my
 shhs-ydd8x2.yjrmss.cn

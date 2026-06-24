@@ -16,7 +16,6 @@ full:cisco.evergage.com
 full:ciscolivehls-i.akamaihd.net
 full:clickserve.cc-dt.com
 full:crl.versign.net
-full:default.exp-tas.com
 full:faronics.kayako.com
 full:fbcdn-a.akamaihd.net
 full:github-api.arkoselabs.com
@@ -2502,6 +2501,7 @@ evolverpro.com
 eworld.com
 exacttarget.com
 exascale-tech.com
+exp-tas.com
 experience-vmware.com
 exploreintel.com
 expresswifi.com
@@ -3056,6 +3056,7 @@ gipscorp.com
 git.io
 github.ai
 github.blog
+github.career
 github.com
 github.community
 github.dev
@@ -5531,10 +5532,12 @@ samsungadhub.com
 samsungads.com
 samsungapps.com
 samsungcloud.com
+samsungcloudcn.com
 samsungconsent.com
 samsungdm.com
 samsunggalaxyfriends.com
 samsunghealth.com
+samsunghealthcn.com
 samsungiotcloud.com
 samsungiots.com
 samsungknox.com
@@ -6291,7 +6294,10 @@ vscale.io
 vscale.ru
 vscode-cdn.net
 vscode-unpkg.net
+vscode-webview.net
 vscode.dev
+vscodeedu.app
+vscodeedu.com
 vsphere.com
 vsphere.net
 vultr.com
@@ -7365,6 +7371,7 @@ reactorms.com.cn
 redtube.com.br
 researchkit.com.cn
 sagemaker.com.cn
+samsung.com.cn
 samsungeshop.com.cn
 sandisk.co.jp
 sandisk.co.kr
