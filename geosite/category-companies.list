@@ -24,7 +24,6 @@ full:gtm.oasisfeng.com
 full:hpstore.corpmerchandise.com
 full:img-prod-cms-rt-microsoft-com.akamaized.net
 full:img-s-msn-com.akamaized.net
-full:ingest.apple-studies.com
 full:mozilla-ohttp.fastly-edge.com
 full:mwf-service.akamaized.net
 full:officecdn-microsoft-com.akamaized.net
@@ -596,6 +595,7 @@ apple-pay.wang
 apple-store.cn
 apple-store.net
 apple-store.wang
+apple-studies.com
 apple-usa.net
 apple.ae
 apple.at
@@ -864,6 +864,7 @@ atlasonepoint.com
 atlassian-dev.net
 atlassian.com
 atlassian.net
+atmeta.com
 atokara.jp
 atom.io
 atscaleconference.com
@@ -1115,6 +1116,7 @@ azk8s.cn
 aznbcontent.cn
 aztask.cn
 azure-api.cn
+azure-api.net
 azure-apihub.cn
 azure-automation.cn
 azure-connectedvehicles-stage.cn
@@ -1178,6 +1180,7 @@ azuresandbox.cn
 azureserviceprofiler.com
 azuresmartspaces.net
 azurestackvalidation.com
+azurestaticapps.net
 azurewebsites.net
 b2c-digest.ru
 b2clogin.cn
