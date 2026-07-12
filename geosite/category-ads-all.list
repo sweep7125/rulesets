@@ -64,11 +64,8 @@ full:www.recaptcha-cn.net
 full:www.recaptcha.net
 full:apple.com.akadns.net
 full:bytedance.map.fastly.net
-full:disney.my.sentry.io
 full:gog-cdn-lumen.secure2.footprint.net
 full:logs.ads.vungle.com
-full:o33249.ingest.sentry.io
-full:o4504926511693824.ingest.sentry.io
 full:prod-support.apple-support.akadns.net
 full:push-apple.com.akadns.net
 full:report.ap.yandex-net.ru
@@ -488,6 +485,7 @@ aihst8.com
 aipage.com
 aireads.cn
 airmay.com
+airnut.com
 airport.brussels
 airport.com
 airport.eu
@@ -3309,6 +3307,7 @@ getpersonas.com
 getpocket.com
 getsays.cn
 getsays.com
+getsentry.com
 getsynapse.io
 gfacecbook.com
 gfotolia.com
@@ -4347,6 +4346,7 @@ jianying.com
 jiaoyimao.cn
 jiaoyimao.com
 jibemobile.com
+jimeng.com
 jingdong.com
 jingdongjinrong.com
 jingpinhui.com
@@ -4464,6 +4464,7 @@ kuaishou.com
 kuaishouapps.com
 kuaishoupay.com
 kuaishouzt.com
+kuaizhan.com
 kugoo.com
 kugou.com
 kugou.net
@@ -4975,6 +4976,11 @@ modelarts-maas.cn
 modelarts-maas.com
 modernjs.cn
 mojang.com
+moji.com
+moji001.com
+moji002.com
+mojicdn.com
+mojichina.com
 momentumms.com
 monbeats2013.com
 moneywithfacebook.com
@@ -5861,6 +5867,9 @@ segment.com
 segment.io
 segmenthub.com
 segmentify.com
+sentry-cdn.com
+sentry.dev
+sentry.io
 serverlesscloud.cn
 serverlesslibrary.net
 services-apple.net
@@ -6658,6 +6667,9 @@ vkuservideo.net
 vkuservideo.ru
 vkvideo.ru
 vkworkspace.kz
+vlabimg.com
+vlabstatic.com
+vlabvod.com
 vm45e.cn
 vmailru.net
 vmall.com
@@ -8312,7 +8324,6 @@ zggbdszt.net.cn
 zxid-api.mobileservice.cn
 zxid-m.mobileservice.cn
 zygbdszt.net.cn
-ad.api.moji.com
 adash.man.aliyuncs.com
 atrace.chelaile.net.cn
 courier-push-apple.com.akadns.net
