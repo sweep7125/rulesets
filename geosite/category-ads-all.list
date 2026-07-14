@@ -6,7 +6,6 @@ full:googleapis-cn.com
 full:googleapps-cn.com
 full:googleflights-cn.net
 full:gstatic-cn.com
-full:practivate.adobe
 full:qiao-cn.com
 full:recaptcha-cn.net
 full:recaptcha.net
@@ -47,9 +46,6 @@ full:pinggai6.caixin.com
 full:pinggai7.caixin.com
 full:pinggai8.caixin.com
 full:pinggai9.caixin.com
-full:practivate.adobe.ipp
-full:practivate.adobe.newoa
-full:practivate.adobe.ntp
 full:qpx.googleflights.net
 full:rink.hockeyapp.net
 full:sberpro.vedomosti.ru
@@ -128,7 +124,6 @@ flickr
 gbiz
 gle
 gmail
-goo
 goog
 google
 guge
@@ -2026,6 +2021,7 @@ chat.com
 chatdrama.cn
 chatdrama.net
 chatgpt.com
+chatgpt.site
 chatqidian.cn
 chatqidian.net
 chattext.cn

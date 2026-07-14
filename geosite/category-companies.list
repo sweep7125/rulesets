@@ -5,7 +5,6 @@ full:googleapis-cn.com
 full:googleapps-cn.com
 full:googleflights-cn.net
 full:gstatic-cn.com
-full:practivate.adobe
 full:qiao-cn.com
 full:recaptcha-cn.net
 full:recaptcha.net
@@ -29,9 +28,6 @@ full:mwf-service.akamaized.net
 full:officecdn-microsoft-com.akamaized.net
 full:ood.opsource.net
 full:p-events-delivery.akamaized.net
-full:practivate.adobe.ipp
-full:practivate.adobe.newoa
-full:practivate.adobe.ntp
 full:qpx.googleflights.net
 full:rink.hockeyapp.net
 full:statics-marketingsites-eas-ms-com.akamaized.net
@@ -106,7 +102,6 @@ gle
 gmail
 gmo
 godaddy
-goo
 goog
 google
 guge
@@ -114,7 +109,6 @@ hangout
 hotmail
 ibm
 imdb
-intel
 intuit
 java
 kindle
