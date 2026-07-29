@@ -2,6 +2,7 @@ full:checkip.amazonaws.com
 full:checkip.dyn.com
 full:checkip.dyndns.org
 full:ip.comss.net
+full:myip.dnsomatic.com
 full:whatismyip.akamai.com
 full:ipv4-check-perf.radar.cloudflare.com
 full:ipv6-check-perf.radar.cloudflare.com
@@ -94,6 +95,7 @@ ipqualityscore.com
 ipquery.io
 ipregistry.co
 iproyal.com
+ipsimple.org
 ipstack.com
 ipverify.com
 ipw.cn
@@ -117,6 +119,7 @@ myipaddress.com
 myiplookup.com
 mylocation.org
 nodedata.io
+nossl.sh
 osint.sh
 proxycheck.io
 realip.cc
