@@ -63,6 +63,7 @@ full:bytedance.map.fastly.net
 full:disney.my.sentry.io
 full:gog-cdn-lumen.secure2.footprint.net
 full:logs.ads.vungle.com
+full:mozilla.map.fastly.net
 full:o33249.ingest.sentry.io
 full:o4504926511693824.ingest.sentry.io
 full:prod-support.apple-support.akadns.net
@@ -506,11 +507,14 @@ alibaba-inc.com
 alibaba.com
 alibabacapital.com
 alibabachengdun.com
+alibabachengdun.net
 alibabacloud.com
 alibabacorp.com
 alibabadesign.com
 alibabadns.com
 alibabadoctor.com
+alibabafonts.com
+alibabafoundation.com
 alibabafuturehotel.com
 alibabagroup.com
 alibabapictures.com
@@ -580,6 +584,7 @@ allizom.net
 allizom.org
 alloyteam.com
 alyms.cn
+alysm.cn
 amaaozn.com
 amap.com
 amap.net
@@ -2282,6 +2287,7 @@ createspace.com
 creativecloud.com
 creativesdk.com
 cretgate.com
+cri.cn
 crixet.com
 crmdynint-gcc.com
 crmdynint.com
@@ -2290,6 +2296,7 @@ crossmediapanel.com
 crowdtangle.com
 crr.com
 cs4hs.com
+csjplatform.com
 ctobsnssdk.com
 cueme.cn
 cuffiesaldi.com
@@ -3093,6 +3100,7 @@ feishuvc.com
 feizhu.cn
 feizhu.com
 femalefounderscomp.com
+fengniaojipei.net
 fenxi.com
 feook.com
 ferabook.com
@@ -3787,6 +3795,8 @@ hwtrip.com
 hwwt8.com
 hypercachenet.com
 hypercachenode.com
+hzchengdun.com
+hzchengdun.net
 i-book.com
 i-book.net
 i.org
@@ -4370,6 +4380,7 @@ justveryok.com
 jwt.ms
 jx5.ru
 ka9bv.cn
+kada.com
 kaggle.com
 kaggle.io
 kaggle.net
@@ -5257,6 +5268,7 @@ nwcdinfosec.cn
 nxta.org
 nzwgs.com
 o-courier.ru
+o-uchi.ru
 o3.ru
 o365cn.com
 o365files.cn
@@ -5441,6 +5453,7 @@ pageview.mobi
 paidaojia.cn
 pailitao.com
 paipai.com
+pangle.cn
 pangolin-dsp-toutiao-b.com
 pangolin-dsp-toutiao.com
 pangolin-sdk-toutiao-b.com
@@ -5698,6 +5711,7 @@ reactjs.org
 readnovel.com
 realcybertron.com
 realsrv.com
+realtyverif.ru
 recoiljs.org
 redkix.com
 reform-apple.com
@@ -6118,6 +6132,7 @@ taobao.org
 taobaocdn.com
 taobizhong.com
 taopiaopiao.com
+taotian.com
 tapd.cn
 tapsell.ir
 tarantool.io
@@ -6342,6 +6357,7 @@ tlivesource.com
 tm2a8.cn
 tm7sg.cn
 tmall.com
+tmall.hk
 tmall.ru
 tmalltv.com
 tmjl.ai
@@ -6464,6 +6480,7 @@ uc.cn
 uc123.com
 ucfly.com
 uchi.ru
+uchilk.ru
 ucweb.com
 uczzd.cn
 ueberamazon.de
@@ -7132,6 +7149,7 @@ xin.xin
 xinlingshou.cn
 xinyan.cn
 xitu.io
+xixikf.cn
 xjietiao.com
 xjoycity.com
 xmail.ru
@@ -7144,6 +7162,7 @@ xn----7sbbamm1bv2bh7i.com
 xn----8sbahiqzthbd0bn.xn--p1ai
 xn----8sbaroledu6bi7j.com
 xn----8sbeoy5bze.com
+xn----otbzjdu.xn--p1ai
 xn--80aafgovrgbc7am.xn--p1ai
 xn--80acbjgmges7ca.xn--p1ai
 xn--80acbjgsdq2cl.xn--p1ai
@@ -7355,6 +7374,7 @@ yeyousg.com
 yfanads.cn
 yfanads.com
 yhd.com
+yhgfb-cn-static.com
 yho.com
 yidianliulan.cn
 yidianliulan.com
@@ -7363,6 +7383,7 @@ yihaodianimg.com
 yili.com
 yimg.com
 yimg.jp
+yisou.com
 yiwanzhushou.com
 yiyaojd.com
 yizhitou.com
@@ -7370,6 +7391,7 @@ yjwujian.cn
 ykimg.com
 ym.run
 ymail.com
+yndx.net
 yogalayout.com
 yoma.cn
 yoojia.com
