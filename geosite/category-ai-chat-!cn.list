@@ -83,6 +83,7 @@ flow.google
 gemini.google
 generativeai.google
 githubcopilot.com
+grazie.ai
 grok.com
 grokipedia.com
 groq.com
@@ -91,6 +92,7 @@ hf.co
 hf.space
 huggingface.co
 jasper.ai
+jetbrains.ai
 jules.google
 kiro.dev
 labs.google
@@ -156,6 +158,7 @@ host.livekit.cloud
 jules.google.com
 labs.google.com
 makersuite.google.com
+notebook.google.com
 notebooklm.google.com
 opal.google.com
 proactivebackend-pa.googleapis.com
@@ -164,5 +167,6 @@ stitch.withgoogle.com
 turn.livekit.cloud
 coderabbit.gallery.vsassets.io
 gateway.ai.cloudflare.com
+grazie.aws.intellij.net
 openai.com.cdn.cloudflare.net
 regexp:^chatgpt-async-webps-prod-\S+-\d+\.webpubsub\.azure\.com$
