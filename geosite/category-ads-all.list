@@ -36,16 +36,6 @@ full:openai.qualtrics.com
 full:openaicom.imgix.net
 full:p-events-delivery.akamaized.net
 full:p16-tiktokcdn-com.akamaized.net
-full:pinggai0.caixin.com
-full:pinggai1.caixin.com
-full:pinggai2.caixin.com
-full:pinggai3.caixin.com
-full:pinggai4.caixin.com
-full:pinggai5.caixin.com
-full:pinggai6.caixin.com
-full:pinggai7.caixin.com
-full:pinggai8.caixin.com
-full:pinggai9.caixin.com
 full:qpx.googleflights.net
 full:rink.hockeyapp.net
 full:sberpro.vedomosti.ru
@@ -162,6 +152,7 @@ zappos
 100beatscheap.com
 10xfotolia.com
 11222.cn
+112263.com
 126.com
 126.link
 126.net
@@ -205,6 +196,7 @@ zappos
 2013newbeatsworld.com
 2013pascherbeatsbydre.com
 2014cheapbeatsbydre.com
+20thcenturystudios.com
 20thcenturystudios.jp
 21-school.ru
 21vbc.com
@@ -274,6 +266,10 @@ zappos
 360webcache.com
 360zqaq.com
 365yg.com
+36dianping.com
+36kr.com
+36krcdn.com
+36krcnd.com
 3ili6.cn
 3songshu.com
 4008-517-517.cn
@@ -331,6 +327,7 @@ aaxads.com
 abc-studios.com
 abc.com
 abcheadphones.com
+abcnews.com
 abeatsbydrdre.com
 abhouses.com
 abonementx5.ru
@@ -387,6 +384,8 @@ adbecrsl.com
 adbkwai.com
 adbutter.net
 adcolony.com
+addthis.com
+addthiscdn.com
 addthisedge.com
 adfox.ru
 adgoogle.net
@@ -1193,6 +1192,7 @@ baike.com
 baikevod.com
 baitiao.com
 bamgrid.com
+bamtech.net
 bandgirlz.com
 bandpage.com
 baomitu.com
@@ -1838,10 +1838,13 @@ cainiaoyizhan.com
 caiyu.com
 calendarserver.org
 callersbane.com
+callhulu.com
 camelphat.com
 camelspaceeffect.com
 campuslondon.com
 canada-beatsbydre.com
+capcut.com
+capcutcdn-us.com
 carbon.com
 careersatfb.com
 carekit.org
@@ -2400,6 +2403,7 @@ desktopmovies.net
 desktopmovies.org
 detaliczny.com
 detodosparatodos.org
+detpress.com
 dev-my.com
 dev-my.games
 developer-advisor.com
@@ -2468,7 +2472,9 @@ disney.ro
 disney.ru
 disney.se
 disney.sg
+disneyaccount.com
 disneyadsales.com
+disneyanimation.com
 disneyarena.com
 disneyaulani.com
 disneybaby.com
@@ -2483,6 +2489,7 @@ disneyinternational.com
 disneyinternationalhd.com
 disneyjunior.com
 disneyjuniortreataday.com
+disneylandparis.com
 disneylatino.com
 disneymagicmoments.de
 disneymagicmoments.es
@@ -2499,11 +2506,13 @@ disneynewseries.com
 disneynow.com
 disneypeoplesurveys.com
 disneyplus.com
+disneyprivacycenter.com
 disneyredirects.com
 disneysrivieraresort.com
 disneystore.com
 disneystreaming.com
 disneysubscription.com
+disneytermsofuse.com
 disneytvajobs.com
 disneyworld-go.com
 diwodiwo.xyz
@@ -3134,6 +3143,7 @@ find-apple.com
 findmybeats.com
 findmyipad.com
 findskill.com
+findyourlimits.com
 fiotolia.com
 firebase.com
 firebase.io
@@ -3213,6 +3223,8 @@ freefacebook.com
 freefacebook.net
 freefacebookads.net
 freefblikes.com
+freeform.com
+freehulu.com
 freexh.blog
 freexh.live
 freindfeed.com
@@ -3238,6 +3250,8 @@ fundaiphone5s.com
 fundraisingwithfacebook.com
 funnyfacebook.org
 futureofbusinesssurvey.org
+fxnetwork.com
+fxnetworks.com
 fyeds.com
 fyeds0.com
 fyeds1.com
@@ -3700,9 +3714,13 @@ hnbntv.com
 hololens.com
 homepod.cn
 honawalaan.com
+hongkongdisneyland.com
 hongxiu.com
 honkaiimpact3.com
 honkaistarrail.com
+hooloo.tv
+hoolu.com
+hoolu.tv
 hophing.cn
 hopstop.tv
 hotbeatsonsale.com
@@ -3732,6 +3750,7 @@ httpool.com
 httpsfacebook.com
 httpwwwfacebook.com
 htznr.li
+hu1u.com
 huawei.cn
 huawei.com
 huaweiacad.com
@@ -3771,6 +3790,37 @@ huaweistatic.com
 huaweiyun.cn
 huaweiyun.com
 huaxiong.com
+huloo.cc
+huloo.tv
+hulu.com
+hulu.jp
+hulu.tv
+hulu.us
+huluaction.com
+huluad.com
+huluapp.com
+huluasks.com
+hulucall.com
+hulufree.com
+hulugans.com
+hulugermany.com
+hulugo.com
+huluim.com
+huluinstantmessenger.com
+huluitaly.com
+hulunet.com
+hulunetwork.com
+huluplus.com
+hulupremium.com
+hulupurchase.com
+huluqa.com
+hulurussia.com
+huluspain.com
+hulusports.com
+hulustream.com
+huluteam.com
+hulutv.com
+huluusa.com
 hummingbird.ms
 hunaniptv.com
 hunantv.com
@@ -4379,6 +4429,7 @@ jivosite.ru
 jiyoujia.com
 jkbeats.com
 jkcsjd.com
+joinmaidez.com
 jokecommunity.cn
 jokecommunity.com
 jokecommunity.net
@@ -4623,6 +4674,7 @@ lppzimg.com
 lqc006.com
 lrts.me
 lu1da.cn
+lucasfilm.com
 luckincoffeecdn.com
 luckyissue.com
 luckysf.net
@@ -5162,6 +5214,7 @@ mtsdengi.ru
 mtsmedia.ru
 multilingual-volc.com
 muscdn.com
+mushymush.tv
 musical.ly
 musickit.net
 muyewx.com
@@ -5197,6 +5250,7 @@ myhuaweicloud-obs.cn
 myhuaweicloud-obs.com
 myhuaweicloud.cn
 myhuaweicloud.com
+myhulu.com
 myhwcdn.cn
 myhwcdn.com
 myhwcloudlive.com
@@ -5435,6 +5489,7 @@ oracle-tencent.cn
 oracle-tencent.com
 oracle-tencent.net
 orbitera.com
+originalhulu.com
 originalimg.com
 originalstatic.com
 originalvod.com
@@ -5508,6 +5563,7 @@ paulsimon-music.com
 paxlicense.org
 paydxm.com
 payecom.ru
+payhulu.com
 paywb.com
 paywb.ru
 pbiwebcontent.cn
@@ -5553,6 +5609,7 @@ pipix.com
 pipixiaha.com
 pittpatt.com
 pixapp.net
+pixar.com
 pixate.com
 pixeldance.com
 pixiv-recommend.net
@@ -5755,6 +5812,7 @@ realtyverif.ru
 recoiljs.org
 redkix.com
 reform-apple.com
+registerhulu.com
 renovacionoffice.com
 renovacionxboxlive.com
 repo.new
@@ -5882,6 +5940,7 @@ scsentry.cn
 sealsuite.com
 sealsuite.net
 seamonkey-project.org
+searchlightpictures.com
 searchstatic.com
 searchtoutiaolive.com
 seattlespheres.com
@@ -5912,6 +5971,7 @@ sgsic.com
 sgtmos.com
 sgyeyou.com
 sgyouxi.com
+shanghaidisneyresort.com
 shanhaitujian.com
 sharepoint.cn
 sharepoint.com
@@ -6355,12 +6415,14 @@ thefacebook.net
 thefind.com
 thegithubshop.com
 thegooglestore.com
+thehulubraintrust.com
 theinstagramhack.com
 thelarkcloud.com
 themarvelexperiencetour.com
 themisweeps.com
 thestationbymaker.com
 theuab.net
+thewaltdisneycompany.com
 theworld.cn
 thinkboxsoftware.com
 thinkdifferent.us
@@ -6415,6 +6477,7 @@ tmall.ru
 tmalltv.com
 tmjl.ai
 toboads.com
+tokyodisneyresort.jp
 topbeatsbydrdreoutlet.com
 topbeatsdealer.com
 topbeatsforsale.com
@@ -6870,6 +6933,7 @@ walderis.ru
 wali.com
 wallberis.ru
 wallet.com
+waltdisneystudios.com
 wandoujia.com
 wangyin.com
 wannianqingjianzhan.com
@@ -7086,6 +7150,7 @@ wwwapple.net
 wwwapplemusic.com
 wwwfacebok.com
 wwwfacebook.com
+wwwhuluplus.com
 wwwicloud.com
 wwwinstagram.com
 wwwipodlounge.com
@@ -7665,7 +7730,6 @@ ad.wang502.com
 adc.hpplay.cn
 adeng.hpplay.cn
 adjust.net.in
-adq.chinaso.com
 ads.huan.tv
 ads.huantest.com
 ads.trafficjunky.net
@@ -7673,7 +7737,6 @@ ads.wteam.xyz
 adservice.sigmob.cn
 advapi.joyplus.tv
 advapikj.joyplus.tv
-adx.36kr.com
 ai-guardrail.com.cn
 alexafund.com.cn
 alibabacloud.co.in
@@ -7836,7 +7899,6 @@ cctvlib.com.cn
 cctvlibrary.com.cn
 cctvpro.com.cn
 cdn.banclip.com
-cdn.pocoiq.cn
 chatgpt.livekit.cloud
 chinabank.com.cn
 chinatea.com.cn
@@ -7847,7 +7909,6 @@ cn-shanghai.aliyuncs.com
 cnms.net.cn
 cntv.com.cn
 contextual.media.net
-das-rpt-log.ucloud.cn
 data.flurry.com
 decide.mixpanel.com
 dicos.com.cn
@@ -7869,7 +7930,6 @@ disneyplus.bn5x.net
 disneytickets.co.uk
 disneyturkiye.com.tr
 dmm.co.jp
-dn-growing.qbox.me
 dnspod.com.cn
 dnsv1.com.cn
 duiou.com.cn
@@ -8086,7 +8146,6 @@ mozilla.org.uk
 mr-apple.com.tw
 myhwclouds.com.cn
 nwcdcloud.com.cn
-oct.pocoiq.cn
 odnoklassniki.co.ee
 okr.com.cn
 onedrive.co.uk
@@ -8169,7 +8228,6 @@ starbucks.com.pe
 starbucks.com.sg
 starbucks.com.tr
 starbucks.com.uy
-stat.chinaso.com
 static.hotjar.com
 static.javhd.com
 static.sensorsdata.cn

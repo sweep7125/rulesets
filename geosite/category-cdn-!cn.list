@@ -94,9 +94,11 @@ cloudflare-gateway.com
 cloudflare-ipfs.com
 cloudflare-quic.com
 cloudflare-terms-of-service-abuse.com
+cloudflare.app
 cloudflare.com
 cloudflare.dev
 cloudflare.net
+cloudflare.pay
 cloudflare.tv
 cloudflareaccess.com
 cloudflareanycast.net
@@ -186,7 +188,6 @@ vrcdn.live
 vrcdn.video
 warp.plus
 workers.dev
-zencdn.net
 accdn.com.cn
 akamai.co.kr
 akcdn.com.cn

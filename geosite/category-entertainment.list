@@ -214,6 +214,7 @@ full:roblox-poc.global.ssl.fastly.net
 full:steamcloudsweden.blob.core.windows.net
 full:steamcommunity-a.akamaihd.net.edgesuite.net
 full:steamugcquincy.blob.core.windows.net
+full:disneyplus.com.ssl.sc.omtrdc.net
 hbo
 imdb
 nico
@@ -232,6 +233,7 @@ youtube
 12diasderegalosdeitunes.pe
 12joursdecadeauxdeitunes.com
 2025copy.com
+20thcenturystudios.com
 20thcenturystudios.jp
 24h.tv
 2k.com
@@ -252,6 +254,7 @@ youtube
 9anime.ws
 abc-studios.com
 abc.com
+abcnews.com
 abema-tv.com
 abema.io
 abema.tv
@@ -311,6 +314,7 @@ argo-bdp.com
 arma3.com
 armaplatform.com
 artstation.com
+artstationmedia.com
 artstorm.com
 asobostudio.com
 att.tv
@@ -322,6 +326,7 @@ ayudanintendo.com
 babble.com
 babyzone.com
 bamgrid.com
+bamtech.net
 bandcamp.com
 bang-dream.com
 bangumi.tv
@@ -387,7 +392,6 @@ buzzsprout.com
 byspotify.com
 bystys.tech
 bytedapm.com
-byteoversea.com
 callersbane.com
 callhulu.com
 camelot-europe.com
@@ -458,6 +462,7 @@ deadspacegame.com
 deezer.com
 denfaminicogamer.jp
 dengekionline.com
+detpress.com
 deviantart.com
 deviantart.net
 diablo3.com
@@ -469,7 +474,6 @@ dicela.net
 diddykongracing.com
 dilcdn.com
 dinopoloclub.com
-directv.com
 disco-api.com
 discomax.com
 discoveryplus.com
@@ -507,7 +511,9 @@ disney.ro
 disney.ru
 disney.se
 disney.sg
+disneyaccount.com
 disneyadsales.com
+disneyanimation.com
 disneyarena.com
 disneyaulani.com
 disneybaby.com
@@ -522,6 +528,7 @@ disneyinternational.com
 disneyinternationalhd.com
 disneyjunior.com
 disneyjuniortreataday.com
+disneylandparis.com
 disneylatino.com
 disneymagicmoments.de
 disneymagicmoments.es
@@ -538,11 +545,13 @@ disneynewseries.com
 disneynow.com
 disneypeoplesurveys.com
 disneyplus.com
+disneyprivacycenter.com
 disneyredirects.com
 disneysrivieraresort.com
 disneystore.com
 disneystreaming.com
 disneysubscription.com
+disneytermsofuse.com
 disneytvajobs.com
 disneyworld-go.com
 dkr.com
@@ -655,11 +664,14 @@ forza.net
 forzamotorsport.net
 forzaracingchampionship.com
 forzarc.com
+freeform.com
 freehulu.com
 frostbite.com
 funimation.com
 futpromos.com
 futunited.com
+fxnetwork.com
+fxnetworks.com
 gaijin.net
 gaijinent.com
 game-repack.site
@@ -778,6 +790,7 @@ historyofdota.org
 hobbigame.com
 homebox.com
 homeboxoffice.com
+hongkongdisneyland.com
 honkaiimpact3.com
 honkaistarrail.com
 hooloo.tv
@@ -952,6 +965,7 @@ lolusercontent.com
 lordofultima.com
 loverslab.com
 lowiro.com
+lucasfilm.com
 maddenchampionship.com
 maddenrewards.com
 maddenseason.info
@@ -1192,6 +1206,7 @@ personaltrainermath.com
 piapro.net
 pinkcore.com
 pinkcore.net
+pixar.com
 pixiv-recommend.net
 pixiv.help
 pixiv.me
@@ -1361,10 +1376,12 @@ scdn.co
 screens-lab.jp
 seagroup.com
 seaofsolitude.com
+searchlightpictures.com
 seeurlpcl.com
 sendvid.com
 shadowcomplex.com
 shadowverse-evolve.com
+shanghaidisneyresort.com
 shopdisney.com
 shops-disney.com
 showtime.com
@@ -1495,6 +1512,7 @@ thesims4.com
 thesimssocial.com
 thestationbymaker.com
 thetvdb.com
+thewaltdisneycompany.com
 thewonderful101.com
 thisisgame.com
 thisispolaris.com
@@ -1523,6 +1541,7 @@ tiktokw.us
 titanfall.com
 tmdb.org
 tnt-ea.com
+tokyodisneyresort.jp
 tospotify.com
 toy-people.com
 trbcdn.net
@@ -1532,7 +1551,6 @@ ttlivecdn.com
 ttoverseaus.net
 ttvnw.net
 ttwstatic.com
-tvb.com
 tver.jp
 tvigle.ru
 twinmotion.com
@@ -1588,6 +1606,7 @@ vrchat.com
 vrchat.net
 vrv.co
 wallhaven.cc
+waltdisneystudios.com
 wanuxi.com
 wargaming.com
 wargaming.net
@@ -2002,7 +2021,6 @@ edge.steam-dns.top.comcast.net
 hbo.com.c.footprint.net
 steam.cdn.orcon.net.nz
 steam.cdn.slingshot.co.nz
-disneyplus.com.ssl.sc.omtrdc.net
 prod.service.minerva.devices.a2z.com
 regexp:^[0-9]+vod-adaptive\.akamaized\.net$
 regexp:^epicgames-download\d\.akamaized\.net$
