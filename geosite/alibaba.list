@@ -330,8 +330,13 @@ alipay.com.cn
 aliwx.com.cn
 ap-southeast-1.aliyuncs.com
 cainiao.com.cn
+cn-beijing.aliyuncs.com
+cn-chengdu.aliyuncs.com
+cn-guangzhou.aliyuncs.com
 cn-hangzhou.aliyuncs.com
+cn-hongkong.aliyuncs.com
 cn-shanghai.aliyuncs.com
+hotfix-api.aliyuncs.com
 log-global.aliyuncs.com
 lydaas.com.cn
 lydass.com.cn
@@ -362,5 +367,6 @@ oss-eu-west-1.aliyuncs.com
 oss-me-east-1.aliyuncs.com
 oss-us-east-1.aliyuncs.com
 oss-us-west-1.aliyuncs.com
+registry.aliyuncs.com
 saee.org.cn
 adash.man.aliyuncs.com
