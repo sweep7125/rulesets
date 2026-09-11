@@ -80,9 +80,23 @@ jobs:
 
           OPT_PY="${GITHUB_WORKSPACE}/.ci/optimize.py"
 
-          dom_xray_preserve() { python3 "$OPT_PY" domains "$1" "$2" --input-type xray  --target preserve; }
-          dom_from_clean_to_xray_suffix() { python3 "$OPT_PY" domains "$1" "$2" --input-type clean --target suffix; }
-          dom_from_clean_to_xray_exact()  { python3 "$OPT_PY" domains "$1" "$2" --input-type clean --target exact; }
+          dom_xray_preserve() {
+            python3 "$OPT_PY" domains "$1" "$2" \
+              --input-type xray \
+              --target preserve
+          }
+
+          dom_from_clean_to_xray_suffix() {
+            python3 "$OPT_PY" domains "$1" "$2" \
+              --input-type clean \
+              --target suffix
+          }
+
+          dom_from_clean_to_xray_exact() {
+            python3 "$OPT_PY" domains "$1" "$2" \
+              --input-type clean \
+              --target exact
+          }
 
           ip_opt() {
             python3 "$OPT_PY" ips "$1" "$2"
@@ -111,8 +125,12 @@ jobs:
 
           get() {
             curl -fsSL --compressed \
-              --connect-timeout 10 --max-time 120 \
-              --retry 5 --retry-delay 2 --retry-connrefused --retry-all-errors \
+              --connect-timeout 10 \
+              --max-time 120 \
+              --retry 5 \
+              --retry-delay 2 \
+              --retry-connrefused \
+              --retry-all-errors \
               "$1" -o "$2"
           }
           SH
@@ -234,11 +252,33 @@ jobs:
           dom_from_clean_to_xray_suffix _inputs/allow-tiktok.src                geosite/allow-tiktok
           dom_from_clean_to_xray_suffix _inputs/allow-twitter.src               geosite/allow-twitter
           dom_from_clean_to_xray_suffix _inputs/allow-youtube.src               geosite/allow-youtube
+
+          # OISD
           dom_from_clean_to_xray_suffix _inputs/oisd-big.src                    geosite/oisd-big
           dom_from_clean_to_xray_suffix _inputs/oisd-small.src                  geosite/oisd-small
 
-          # One consolidated abuse category for domain-based blocking.
-          dom_from_clean_to_xray_suffix _inputs/hagezi-tif-domains.src           geosite/abuse-ban
+          # HaGeZi TIF
+          dom_from_clean_to_xray_suffix _inputs/hagezi-tif-domains.src          geosite/abuse-ban
+
+      - name: Build combined OISD Big + Abuse list → geosite/block-abuse-oisd
+        run: |
+          set -Eeuo pipefail
+          source .ci/helpers.sh
+
+          tmp="$(mktemp)"
+
+          # Both source lists are already normalized XRAY lists.
+          # Merge them and run domain optimization again so duplicates and
+          # redundant domain/suffix entries shared by OISD Big and HaGeZi TIF
+          # are eliminated across the combined set.
+          cat \
+            geosite/oisd-big \
+            geosite/abuse-ban \
+            > "$tmp"
+
+          dom_xray_preserve "$tmp" geosite/block-abuse-oisd
+
+          rm -f "$tmp"
 
       - name: Normalize custom DOMAIN sources from data/geosite → geosite/
         run: |
@@ -339,5 +379,6 @@ jobs:
           git add -f geosite geoip
 
           git diff --staged --quiet && exit 0
+
           git commit -m "Update sources (geosite + geoip only) $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           git push
