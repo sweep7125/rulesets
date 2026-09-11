@@ -260,23 +260,24 @@ jobs:
           # HaGeZi TIF
           dom_from_clean_to_xray_suffix _inputs/hagezi-tif-domains.src          geosite/abuse-ban
 
-      - name: Build combined OISD Big + Abuse list → geosite/block-abuse-oisd
+      - name: Build combined OISD Big + HaGeZi TIF → geosite/block-abuse-oisd
         run: |
           set -Eeuo pipefail
           source .ci/helpers.sh
 
           tmp="$(mktemp)"
 
-          # Both source lists are already normalized XRAY lists.
-          # Merge them and run domain optimization again so duplicates and
-          # redundant domain/suffix entries shared by OISD Big and HaGeZi TIF
-          # are eliminated across the combined set.
+          # Merge the original domain sources first.
+          # optimize.py then normalizes the full combined set as one list,
+          # removing duplicates and redundant suffixes across OISD Big + TIF.
           cat \
-            geosite/oisd-big \
-            geosite/abuse-ban \
+            _inputs/oisd-big.src \
+            _inputs/hagezi-tif-domains.src \
             > "$tmp"
 
-          dom_xray_preserve "$tmp" geosite/block-abuse-oisd
+          dom_from_clean_to_xray_suffix \
+            "$tmp" \
+            geosite/block-abuse-oisd
 
           rm -f "$tmp"
 
