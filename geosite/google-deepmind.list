@@ -19,6 +19,7 @@ gemini.google
 generativeai.google
 jules.google
 labs.google
+notebook.google
 notebooklm.google
 opal.google
 aicode.googleapis.com
@@ -26,6 +27,7 @@ aida.googleapis.com
 aisandbox-pa.googleapis.com
 aistudio.google.com
 bard.google.com
+flow.google.com
 geller-pa.googleapis.com
 gemini.google.com
 gemini.gstatic.com

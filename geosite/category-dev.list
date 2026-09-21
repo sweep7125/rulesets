@@ -7,9 +7,10 @@ full:default.exp-tas.com
 full:developer.microsoft.com
 full:developers.facebook.com
 full:dtlgalleryint.cloudapp.net
-full:firebase.google.com
 full:firebase.googleapis.com
 full:firebaseappcheck.googleapis.com
+full:firebaseappdistribution.googleapis.com
+full:firebaseapptesters.googleapis.com
 full:firebasedynamiclinks-ipv4.googleapis.com
 full:firebasedynamiclinks-ipv6.googleapis.com
 full:firebasedynamiclinks.googleapis.com
@@ -128,6 +129,7 @@ clojure.org
 cnpmjs.org
 codeberg.org
 codeberg.page
+codebuff.com
 codeforaliving.io
 codethemicrobit.com
 compass.is
@@ -196,6 +198,7 @@ ffmpeg.org
 fightforux.com
 filezilla-project.org
 firebase.com
+firebase.dev
 firebase.io
 firebaseapp.com
 firebaseio.com
@@ -216,6 +219,7 @@ framercanvas.com
 framerstatic.com
 framerusercontent.com
 freebsd.org
+freebuff.com
 frescolib.org
 fury.blog
 fury.co
@@ -618,6 +622,7 @@ developer.apple.com
 developerservices2.apple.com
 devimages-cdn.apple.com
 devstreaming-cdn.apple.com
+firebase.google.com
 greenend.org.uk
 jetbrains.com.cn
 mcr.microsoft.com
