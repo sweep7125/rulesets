@@ -15,19 +15,8 @@ permissions:
 env:
   DEBIAN_FRONTEND: noninteractive
   GOFLAGS: -buildvcs=false
-
   COMMIT_USER_NAME: github-actions[bot]
   COMMIT_USER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
-
-  # Only these source categories are allowed into the generated geosite.dat.
-  # oisd-big is renamed to "oisd" before building.
-  GEOSITE_INCLUDE: |
-    abuse-ban
-    oisd-big
-
-  # IPv4 abuse list only.
-  GEOIP_INCLUDE: |
-    abuse-ban
 
 jobs:
   build:
@@ -44,7 +33,7 @@ jobs:
           set -Eeuo pipefail
           BR="server"
 
-          git config --local user.name  "${COMMIT_USER_NAME}"
+          git config --local user.name "${COMMIT_USER_NAME}"
           git config --local user.email "${COMMIT_USER_EMAIL}"
 
           if git fetch --no-tags --depth=1 origin "refs/heads/${BR}:refs/remotes/origin/${BR}" >/dev/null 2>&1; then
@@ -56,151 +45,51 @@ jobs:
             git push -u origin "HEAD:${BR}"
           fi
 
-      - name: Fetch sources + main
+      - name: Fetch sources and main
         run: |
           set -Eeuo pipefail
           git fetch --no-tags --depth=1 origin sources
           git fetch --no-tags --depth=1 origin main
 
-      - name: Prepare work dirs
+      - name: Prepare only OISD Big as geosite category oisd_big
         run: |
           set -Eeuo pipefail
-          rm -rf /tmp/src /tmp/community /tmp/geoip /tmp/out
-          mkdir -p /tmp/src /tmp/community/data /tmp/geoip /tmp/out
+          rm -rf /tmp/community /tmp/out
+          mkdir -p /tmp/community/data /tmp/out
 
-      - name: Extract geosite/geoip from sources
-        run: |
-          set -Eeuo pipefail
-
-          git archive --format=tar origin/sources geosite | tar -x -C /tmp/src
-          git archive --format=tar origin/sources geoip   | tar -x -C /tmp/src
-
-          cp -a /tmp/src/geosite/. /tmp/community/data/
-          cp -a /tmp/src/geoip/.   /tmp/geoip/
-
-      - name: Keep only abuse + OISD source categories
-        run: |
-          set -Eeuo pipefail
-
-          keep_filter_dir() {
-            local dir="$1"
-            local inc="$2"
-
-            declare -A keep=()
-
-            while IFS= read -r raw; do
-              raw="${raw//$'\r'/}"
-              raw="${raw%%#*}"
-              item="$(echo "$raw" | xargs)"
-              [[ -n "$item" ]] || continue
-
-              keep["$item"]=1
-              [[ "$item" == *.list ]] || keep["$item.list"]=1
-
-              bn="${item##*/}"
-              keep["$bn"]=1
-              [[ "$bn" == *.list ]] || keep["$bn.list"]=1
-
-              base="${bn%.list}"
-              keep["$base"]=1
-              keep["$base.list"]=1
-            done <<< "$inc"
-
-            find "$dir" -type f -print0 | while IFS= read -r -d '' f; do
-              rel="${f#${dir}/}"
-              bn="${rel##*/}"
-              base="${bn%.list}"
-
-              if [[ -n "${keep[$rel]:-}${keep[$bn]:-}${keep[$base]:-}${keep[$base.list]:-}" ]]; then
-                continue
-              fi
-
-              rm -f "$f"
-            done
-
-            find "$dir" -type d -empty -delete || true
-          }
-
-          keep_filter_dir "/tmp/community/data" "${GEOSITE_INCLUDE}"
-          keep_filter_dir "/tmp/geoip"          "${GEOIP_INCLUDE}"
-
-          # Fail closed if expected source categories are missing.
-          [[ -f /tmp/community/data/abuse-ban || -f /tmp/community/data/abuse-ban.list ]] || {
-            echo "Missing geosite source: abuse-ban"
-            exit 1
-          }
-
-          [[ -f /tmp/community/data/oisd-big || -f /tmp/community/data/oisd-big.list ]] || {
-            echo "Missing geosite source: oisd-big"
-            exit 1
-          }
-
-          [[ -f /tmp/geoip/abuse-ban || -f /tmp/geoip/abuse-ban.list ]] || {
-            echo "Missing geoip source: abuse-ban"
-            exit 1
-          }
-
-      - name: Normalize geosite filenames and rename OISD Full
-        run: |
-          set -Eeuo pipefail
-
-          # v2fly/domain-list-community expects category filenames without .list.
-          find /tmp/community/data -type f -name '*.list' -print0 | while IFS= read -r -d '' f; do
-            dir="$(dirname "$f")"
-            base="$(basename "$f" .list)"
-            mv -f "$f" "$dir/$base"
+          OISD_SOURCE_PATH=""
+          for path in geosite/oisd-big.list geosite/oisd-big; do
+            if git cat-file -e "origin/sources:${path}" 2>/dev/null; then
+              [[ -z "${OISD_SOURCE_PATH}" ]] || {
+                echo "Ambiguous OISD Big source files"
+                exit 1
+              }
+              OISD_SOURCE_PATH="${path}"
+            fi
           done
-
-          # Expose OISD Full/Big as a clean "oisd" category in geosite.dat.
-          mv -f /tmp/community/data/oisd-big /tmp/community/data/oisd
-
-          # At this point geosite input must contain exactly two categories.
-          mapfile -t geosite_files < <(find /tmp/community/data -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort)
-          expected_geosite=$'abuse-ban\noisd'
-          actual_geosite="$(printf '%s\n' "${geosite_files[@]}")"
-
-          if [[ "${actual_geosite}" != "${expected_geosite}" ]]; then
-            echo "Unexpected geosite input set:"
-            printf '%s\n' "${geosite_files[@]}"
+          [[ -n "${OISD_SOURCE_PATH}" ]] || {
+            echo "Missing OISD Big source"
             exit 1
-          fi
+          }
 
-          # geoip input must contain exactly one category.
-          mapfile -t geoip_files < <(find /tmp/geoip -maxdepth 1 -type f -printf '%f\n' | sed 's/\.list$//' | LC_ALL=C sort -u)
-          expected_geoip="abuse-ban"
-          actual_geoip="$(printf '%s\n' "${geoip_files[@]}")"
+          git show "origin/sources:${OISD_SOURCE_PATH}" > /tmp/community/data/oisd_big
+          test -s /tmp/community/data/oisd_big
+          echo "OISD_SOURCE_PATH=${OISD_SOURCE_PATH}" >> "${GITHUB_ENV}"
 
-          if [[ "${actual_geoip}" != "${expected_geoip}" ]]; then
-            echo "Unexpected geoip input set:"
-            printf '%s\n' "${geoip_files[@]}"
+          [[ "$(find /tmp/community/data -type f)" == "/tmp/community/data/oisd_big" ]] || {
+            echo "Expected only geosite category oisd_big"
             exit 1
-          fi
+          }
 
-      - name: Compute base hashes
+      - name: Compute OISD source and workflow hashes
         run: |
           set -Eeuo pipefail
-          EMPTY_TREE="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 
-          GEOSITE_TREE="$(git rev-parse "origin/sources^{tree}:geosite" 2>/dev/null || true)"
-          GEOIP_TREE="$(git rev-parse "origin/sources^{tree}:geoip" 2>/dev/null || true)"
+          OISD_BLOB="$(git rev-parse "origin/sources:${OISD_SOURCE_PATH}")"
+          WORKFLOW_SHA="$(git show origin/main:.github/workflows/server.yml | sha256sum | awk '{print $1}')"
 
-          [[ -n "${GEOSITE_TREE:-}" ]] || GEOSITE_TREE="${EMPTY_TREE}"
-          [[ -n "${GEOIP_TREE:-}" ]] || GEOIP_TREE="${EMPTY_TREE}"
-
-          GEOSITE_INC_SHA="$(printf '%s' "${GEOSITE_INCLUDE}" | sha256sum | awk '{print $1}')"
-          GEOIP_INC_SHA="$(printf '%s' "${GEOIP_INCLUDE}" | sha256sum | awk '{print $1}')"
-
-          WORKFLOW_SHA="$(
-            git show "origin/main:.github/workflows/server.yml" 2>/dev/null \
-              | sha256sum | awk '{print $1}' \
-              || printf '' | sha256sum | awk '{print $1}'
-          )"
-
-          echo "GEOSITE_TREE=${GEOSITE_TREE}"         >> "${GITHUB_ENV}"
-          echo "GEOIP_TREE=${GEOIP_TREE}"             >> "${GITHUB_ENV}"
-          echo "GEOSITE_INC_SHA=${GEOSITE_INC_SHA}"   >> "${GITHUB_ENV}"
-          echo "GEOIP_INC_SHA=${GEOIP_INC_SHA}"       >> "${GITHUB_ENV}"
-          echo "WORKFLOW_SHA=${WORKFLOW_SHA}"         >> "${GITHUB_ENV}"
+          echo "OISD_BLOB=${OISD_BLOB}" >> "${GITHUB_ENV}"
+          echo "WORKFLOW_SHA=${WORKFLOW_SHA}" >> "${GITHUB_ENV}"
 
       - name: Checkout v2fly/domain-list-community builder
         uses: actions/checkout@v6
@@ -209,61 +98,22 @@ jobs:
           path: dlc
           fetch-depth: 1
 
-      - name: Checkout v2fly/geoip builder
-        uses: actions/checkout@v6
-        with:
-          repository: v2fly/geoip
-          path: v2geoip
-          fetch-depth: 1
-
       - name: Decide geosite build
         run: |
           set -Eeuo pipefail
 
-          DLC_SHA="$(git -C dlc rev-parse HEAD || echo none)"
-          echo "DLC_SHA=${DLC_SHA}" >> "${GITHUB_ENV}"
-
+          DLC_SHA="$(git -C dlc rev-parse HEAD)"
           GEOSITE_BUILD_HASH="$(
-            printf '%s\n%s\n%s\n%s\n' \
-              "${GEOSITE_TREE}" \
-              "${GEOSITE_INC_SHA}" \
-              "${DLC_SHA}" \
-              "${WORKFLOW_SHA}" \
-            | sha256sum | awk '{print $1}'
+            printf '%s\n%s\n%s\n' "${OISD_BLOB}" "${DLC_SHA}" "${WORKFLOW_SHA}" \
+              | sha256sum | awk '{print $1}'
           )"
-
           echo "GEOSITE_BUILD_HASH=${GEOSITE_BUILD_HASH}" >> "${GITHUB_ENV}"
 
           PREV="$(cat geosite.hash 2>/dev/null || true)"
-          if [[ "${GEOSITE_BUILD_HASH}" != "${PREV}" ]]; then
+          if [[ ! -s geosite.dat || "${GEOSITE_BUILD_HASH}" != "${PREV}" ]]; then
             echo "GEOSITE_NEEDS_BUILD=1" >> "${GITHUB_ENV}"
           else
             echo "GEOSITE_NEEDS_BUILD=0" >> "${GITHUB_ENV}"
-          fi
-
-      - name: Decide geoip build
-        run: |
-          set -Eeuo pipefail
-
-          V2GEOIP_SHA="$(git -C v2geoip rev-parse HEAD || echo none)"
-          echo "V2GEOIP_SHA=${V2GEOIP_SHA}" >> "${GITHUB_ENV}"
-
-          GEOIP_BUILD_HASH="$(
-            printf '%s\n%s\n%s\n%s\n' \
-              "${GEOIP_TREE}" \
-              "${GEOIP_INC_SHA}" \
-              "${V2GEOIP_SHA}" \
-              "${WORKFLOW_SHA}" \
-            | sha256sum | awk '{print $1}'
-          )"
-
-          echo "GEOIP_BUILD_HASH=${GEOIP_BUILD_HASH}" >> "${GITHUB_ENV}"
-
-          PREV="$(cat geoip.hash 2>/dev/null || true)"
-          if [[ "${GEOIP_BUILD_HASH}" != "${PREV}" ]]; then
-            echo "GEOIP_NEEDS_BUILD=1" >> "${GITHUB_ENV}"
-          else
-            echo "GEOIP_NEEDS_BUILD=0" >> "${GITHUB_ENV}"
           fi
 
       - name: Setup Go for geosite builder
@@ -274,14 +124,6 @@ jobs:
           cache: true
           cache-dependency-path: dlc/go.sum
 
-      - name: Setup Go for geoip builder
-        if: env.GEOIP_NEEDS_BUILD == '1'
-        uses: actions/setup-go@v6
-        with:
-          go-version-file: v2geoip/go.mod
-          cache: true
-          cache-dependency-path: v2geoip/go.sum
-
       - name: Build geosite.dat
         if: env.GEOSITE_NEEDS_BUILD == '1'
         run: |
@@ -289,7 +131,7 @@ jobs:
 
           rm -rf dlc/data
           mkdir -p dlc/data
-          cp -a /tmp/community/data/. dlc/data/
+          cp /tmp/community/data/oisd_big dlc/data/oisd_big
 
           pushd dlc >/dev/null
           go run ./ -outputdir=/tmp/out
@@ -299,76 +141,25 @@ jobs:
           mv -f /tmp/out/dlc.dat ./geosite.dat
           printf '%s' "${GEOSITE_BUILD_HASH}" > ./geosite.hash
 
-      - name: Build geoip.dat
-        if: env.GEOIP_NEEDS_BUILD == '1'
-        run: |
-          set -Eeuo pipefail
-
-          pushd v2geoip >/dev/null
-          go mod download
-          go build -o geoip
-          popd >/dev/null
-
-          if [[ -f /tmp/geoip/abuse-ban.list ]]; then
-            GEOIP_ABUSE_SRC="/tmp/geoip/abuse-ban.list"
-          elif [[ -f /tmp/geoip/abuse-ban ]]; then
-            GEOIP_ABUSE_SRC="/tmp/geoip/abuse-ban"
-          else
-            echo "Missing geoip source: abuse-ban"
-            exit 1
-          fi
-
-          jq -n \
-            --arg src "${GEOIP_ABUSE_SRC}" \
-            '{
-              input: [
-                {
-                  type: "text",
-                  action: "add",
-                  args: {
-                    name: "abuse-ban",
-                    uri: $src,
-                    onlyIPType: "ipv4"
-                  }
-                }
-              ],
-              output: [
-                {
-                  type: "v2rayGeoIPDat",
-                  action: "output",
-                  args: {
-                    outputDir: "/tmp/out",
-                    outputName: "geoip.dat"
-                  }
-                }
-              ]
-            }' > /tmp/geoip.config.json
-
-          ./v2geoip/geoip -c /tmp/geoip.config.json
-
-          test -s /tmp/out/geoip.dat
-          mv -f /tmp/out/geoip.dat ./geoip.dat
-          printf '%s' "${GEOIP_BUILD_HASH}" > ./geoip.hash
-
-      - name: Commit updated files
+      - name: Commit only geosite output
         run: |
           set -Eeuo pipefail
 
           git config --local user.email "${COMMIT_USER_EMAIL}"
-          git config --local user.name  "${COMMIT_USER_NAME}"
+          git config --local user.name "${COMMIT_USER_NAME}"
 
-          git add -A geosite.dat geosite.hash geoip.dat geoip.hash
+          git rm -f --ignore-unmatch geoip.dat geoip.hash
+          git add geosite.dat geosite.hash
           git diff --staged --quiet && exit 0
 
-          git commit -m "Update server geofiles $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          git commit -m "Update server geosite $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           git push
 
       - name: Purge jsDelivr CDN
-        if: env.GEOSITE_NEEDS_BUILD == '1' || env.GEOIP_NEEDS_BUILD == '1'
+        if: env.GEOSITE_NEEDS_BUILD == '1'
         run: |
           set -Eeuo pipefail
 
-          for f in geosite.dat geosite.hash geoip.dat geoip.hash; do
-            [[ -f "$f" ]] || continue
-            curl -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@server/${f}"
+          for f in geosite.dat geosite.hash; do
+            curl -fsS "https://purge.jsdelivr.net/gh/${{ github.repository }}@server/${f}"
           done
