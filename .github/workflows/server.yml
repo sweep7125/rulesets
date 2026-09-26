@@ -131,13 +131,24 @@ jobs:
 
           rm -rf dlc/data
           mkdir -p dlc/data
-          cp /tmp/community/data/oisd_big dlc/data/oisd_big
+          cp /tmp/community/data/oisd_big dlc/data/oisd-big
 
           pushd dlc >/dev/null
           go run ./ -outputdir=/tmp/out
           popd >/dev/null
 
           test -s /tmp/out/dlc.dat
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("/tmp/out/dlc.dat")
+          data = path.read_bytes()
+          old = b"\x0a\x08OISD-BIG"
+          new = b"\x0a\x08OISD_BIG"
+          if data.count(old) != 1:
+              raise SystemExit("Expected exactly one OISD-BIG geosite country code")
+          path.write_bytes(data.replace(old, new, 1))
+          PY
           mv -f /tmp/out/dlc.dat ./geosite.dat
           printf '%s' "${GEOSITE_BUILD_HASH}" > ./geosite.hash
 
