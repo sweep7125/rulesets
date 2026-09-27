@@ -12,10 +12,10 @@ full:firebaselogging-pa.googleapis.com
 full:firebaselogging.googleapis.com
 full:firebaseperusertopics-pa.googleapis.com
 full:firebaseremoteconfig.googleapis.com
-crashlytics.com
-firebase.com
-firebase.dev
-firebase.io
-firebaseapp.com
-firebaseio.com
-firebase.google.com
+domain:crashlytics.com
+domain:firebase.com
+domain:firebase.dev
+domain:firebase.io
+domain:firebaseapp.com
+domain:firebaseio.com
+domain:firebase.google.com

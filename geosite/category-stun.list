@@ -356,4 +356,4 @@ full:stun1.l.google.com
 full:stun2.l.google.com
 full:stun3.l.google.com
 full:stun4.l.google.com
-metered.live
+domain:metered.live

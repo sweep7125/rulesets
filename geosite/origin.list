@@ -2,8 +2,8 @@ full:origin-a.akamaihd.net
 full:rtm.tnt-ea.com
 full:cloudsync-prod.s3.amazonaws.com
 full:ssl-lvlt.cdn.ea.com
-dawngate.com
-eastore.com
-lordofultima.com
-origin.com
-origin.tv
+domain:dawngate.com
+domain:eastore.com
+domain:lordofultima.com
+domain:origin.com
+domain:origin.tv

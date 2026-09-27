@@ -1,6 +1,6 @@
-pycon.org
-pypa.io
-pypi.io
-pypi.org
-python.org
-pythonhosted.org
+domain:pycon.org
+domain:pypa.io
+domain:pypi.io
+domain:pypi.org
+domain:python.org
+domain:pythonhosted.org

@@ -17,7 +17,7 @@ full:time.amazonaws.cn
 full:time.izatcloud.net
 full:time.xtracloud.net
 full:xtratime.qcomgeo2.com
-ntp.org.cn
-cn.pool.ntp.org
-ntp.neu.edu.cn
-ntp.ntsc.ac.cn
+domain:ntp.org.cn
+domain:cn.pool.ntp.org
+domain:ntp.neu.edu.cn
+domain:ntp.ntsc.ac.cn

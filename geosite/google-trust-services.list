@@ -3,4 +3,4 @@ full:pki.google.com
 full:preprod-publicca.googleapis.com
 full:publicca.googleapis.com
 full:pki-goog.l.google.com
-pki.goog
+domain:pki.goog

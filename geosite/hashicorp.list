@@ -1,8 +1,8 @@
-consul.io
-hashicorp.com
-nomadproject.io
-packer.io
-terraform.io
-vagrantcloud.com
-vagrantup.com
-vaultproject.io
+domain:consul.io
+domain:hashicorp.com
+domain:nomadproject.io
+domain:packer.io
+domain:terraform.io
+domain:vagrantcloud.com
+domain:vagrantup.com
+domain:vaultproject.io

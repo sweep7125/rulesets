@@ -2,6 +2,6 @@ full:d1k2us671qcoau.cloudfront.net
 full:d2anahhhmp1ffz.cloudfront.net
 full:dfp6rglgjqszk.cloudfront.net
 full:api.viu.now.com
-viu.com
-viu.tv
+domain:viu.com
+domain:viu.tv
 regexp:^ewcdn[0-9]+\.nowe\.com$

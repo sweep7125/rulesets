@@ -487,5 +487,5 @@ full:uplaypc-s-ubisoft.cdn.ubionline.com.cn
 full:valorant.secure.dyn.riotcdn.net
 full:wildrift.secure.dyn.riotcdn.net
 full:tlu.dl.delivery.mp.microsoft.com
-dl.playstation.net
-egdownload.fastly-edge.com
+domain:dl.playstation.net
+domain:egdownload.fastly-edge.com

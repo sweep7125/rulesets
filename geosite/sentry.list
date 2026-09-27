@@ -1,4 +1,4 @@
-getsentry.com
-sentry-cdn.com
-sentry.dev
-sentry.io
+domain:getsentry.com
+domain:sentry-cdn.com
+domain:sentry.dev
+domain:sentry.io

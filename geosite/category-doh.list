@@ -122,6 +122,6 @@ full:dns.de.futuredns.eu.org
 full:dns.us.futuredns.eu.org
 full:family.dot.dns.yandex.net
 full:safe.dot.dns.yandex.net
-cloudflare-dns.com
-nextdns.io
-opendns.com
+domain:cloudflare-dns.com
+domain:nextdns.io
+domain:opendns.com

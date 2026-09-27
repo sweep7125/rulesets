@@ -25,7 +25,7 @@ full:ubistatic9-a.akamaihd.net
 full:ubisoft-orbit-savegames.s3.amazonaws.com
 full:ubisoft-uplay-savegames.s3.amazonaws.com
 full:ubisoft.siteintercept.qualtrics.com
-ubi.com
-ubisoft.com
-ubisoftconnect.com
-uplay.com
+domain:ubi.com
+domain:ubisoft.com
+domain:ubisoftconnect.com
+domain:uplay.com

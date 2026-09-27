@@ -1,5 +1,5 @@
 full:gitlab-assets.oss-cn-hongkong.aliyuncs.com
-gitlab-static.net
-gitlab.com
-gitlab.io
-gitlab.net
+domain:gitlab-static.net
+domain:gitlab.com
+domain:gitlab.io
+domain:gitlab.net

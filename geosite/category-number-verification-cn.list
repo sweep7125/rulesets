@@ -3,5 +3,5 @@ full:enrichgw.10010.com
 full:hap.10010.com
 full:hs.wosms.cn
 full:opencloud.wostore.cn
-cmpassport.com
+domain:cmpassport.com
 regexp:^nis.+\.10010\.com$

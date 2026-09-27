@@ -1,4 +1,4 @@
-crates.io
-docs.rs
-rust-lang.org
-rustup.rs
+domain:crates.io
+domain:docs.rs
+domain:rust-lang.org
+domain:rustup.rs

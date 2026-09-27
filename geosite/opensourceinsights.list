@@ -1,4 +1,4 @@
-deps.dev
-deps.info
-opensourceinsight.dev
-opensourceinsights.dev
+domain:deps.dev
+domain:deps.info
+domain:opensourceinsight.dev
+domain:opensourceinsights.dev

@@ -1,8 +1,8 @@
 full:epc-de-agent-proxy.germanywestcentral.cloudapp.azure.com
 full:eset-prod-ca48648d0ce7cadf.elb.eu-central-1.amazonaws.com
-e5.sk
-eset.com
-eset.eu
-eset.sk
-eset.systems
-esetsoftware.com
+domain:e5.sk
+domain:eset.com
+domain:eset.eu
+domain:eset.sk
+domain:eset.systems
+domain:esetsoftware.com
