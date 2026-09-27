@@ -226,6 +226,16 @@ jobs:
           get "https://raw.githubusercontent.com/sjhgvr/oisd/main/domainswild2_big.txt"   _inputs/oisd-big.src
           get "https://raw.githubusercontent.com/sjhgvr/oisd/main/domainswild2_small.txt" _inputs/oisd-small.src
 
+          # HaGeZi Threat Intelligence Feeds: temporary inputs for combined abuse lists.
+          get "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif.mini-onlydomains.txt" _inputs/tif-mini.src
+          get "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif.medium-onlydomains.txt" _inputs/tif-medium.src
+          get "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif-onlydomains.txt" _inputs/tif-full.src
+
+          test -s _inputs/oisd-big.src
+          test -s _inputs/tif-mini.src
+          test -s _inputs/tif-medium.src
+          test -s _inputs/tif-full.src
+
       - name: Normalize external DOMAIN sources → XRAY lists in geosite/
         run: |
           set -Eeuo pipefail
@@ -253,6 +263,22 @@ jobs:
           # OISD
           dom_from_clean_to_xray_suffix _inputs/oisd-big.src                    geosite/oisd-big
           dom_from_clean_to_xray_suffix _inputs/oisd-small.src                  geosite/oisd-small
+
+          # Merge before suffix optimization to collapse OISD/TIF overlap.
+          cat _inputs/oisd-big.src _inputs/tif-mini.src > _inputs/abuse-mini.src
+          test -s _inputs/abuse-mini.src
+          dom_from_clean_to_xray_suffix _inputs/abuse-mini.src geosite/abuse-mini
+          test -s geosite/abuse-mini.list
+
+          cat _inputs/oisd-big.src _inputs/tif-medium.src > _inputs/abuse-medium.src
+          test -s _inputs/abuse-medium.src
+          dom_from_clean_to_xray_suffix _inputs/abuse-medium.src geosite/abuse-medium
+          test -s geosite/abuse-medium.list
+
+          cat _inputs/oisd-big.src _inputs/tif-full.src > _inputs/abuse-full.src
+          test -s _inputs/abuse-full.src
+          dom_from_clean_to_xray_suffix _inputs/abuse-full.src geosite/abuse-full
+          test -s geosite/abuse-full.list
 
       - name: Normalize custom DOMAIN sources from data/geosite → geosite/
         run: |
@@ -301,6 +327,10 @@ jobs:
 
           # Spamhaus DROP IPv4 (official JSON feed)
           get "https://www.spamhaus.org/drop/drop_v4.json" _inputs/spamhaus-drop-v4.json
+          get "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/ips/tif.txt" _inputs/tif-ips.src
+
+          test -s _inputs/spamhaus-drop-v4.json
+          test -s _inputs/tif-ips.src
 
       - name: Normalize external IP sources → CIDR lists in geoip/
         run: |
@@ -314,8 +344,12 @@ jobs:
           jq -r 'select(.cidr? != null) | .cidr' \
             _inputs/spamhaus-drop-v4.json \
             > _inputs/spamhaus-drop-v4.src
+          test -s _inputs/spamhaus-drop-v4.src
 
-          ip_opt_geoip _inputs/spamhaus-drop-v4.src geoip/abuse-ban
+          cat _inputs/tif-ips.src _inputs/spamhaus-drop-v4.src > _inputs/abuse-ips.src
+          test -s _inputs/abuse-ips.src
+          ip_opt_geoip _inputs/abuse-ips.src geoip/abuse
+          test -s geoip/abuse.list
 
       - name: Normalize custom IP sources from data/geoip → geoip/
         run: |
