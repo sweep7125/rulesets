@@ -185,7 +185,7 @@ def emit_xray_lines(suf: Set[str], ful: Set[str]) -> List[str]:
     for f in ful:
         items.append((0, label_count(f), f"full:{f}"))
     for s in suf:
-        items.append((1, label_count(s), s))
+        items.append((1, label_count(s), f"domain:{s}"))
     items.sort(key=lambda t: (t[0], t[1], t[2]))
     return [x for _, _, x in items]
 
