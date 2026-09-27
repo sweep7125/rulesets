@@ -51,7 +51,7 @@ jobs:
           git fetch --no-tags --depth=1 origin sources
           git fetch --no-tags --depth=1 origin main
 
-      - name: Prepare only OISD Big as geosite category oisd_big
+      - name: Prepare four geosite categories
         run: |
           set -Eeuo pipefail
           rm -rf /tmp/community /tmp/out
@@ -76,19 +76,39 @@ jobs:
           test -s /tmp/community/data/oisd_big
           echo "OISD_SOURCE_PATH=${OISD_SOURCE_PATH}" >> "${GITHUB_ENV}"
 
-          [[ "$(find /tmp/community/data -type f)" == "/tmp/community/data/oisd_big" ]] || {
-            echo "Expected only geosite category oisd_big"
+          for category in abuse-mini abuse-medium abuse-full; do
+            git show "origin/sources:geosite/${category}.list" > "/tmp/community/data/${category}"
+            test -s "/tmp/community/data/${category}"
+          done
+
+          [[ "$(find /tmp/community/data -type f | wc -l)" -eq 4 ]] || {
+            echo "Expected exactly four geosite categories"
             exit 1
           }
 
-      - name: Compute OISD source and workflow hashes
+      - name: Prepare abuse geoip source
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/geoip
+          git show origin/sources:geoip/abuse.list > /tmp/geoip/abuse.list
+          test -s /tmp/geoip/abuse.list
+
+      - name: Compute geosite source and workflow hashes
         run: |
           set -Eeuo pipefail
 
           OISD_BLOB="$(git rev-parse "origin/sources:${OISD_SOURCE_PATH}")"
+          ABUSE_MINI_BLOB="$(git rev-parse origin/sources:geosite/abuse-mini.list)"
+          ABUSE_MEDIUM_BLOB="$(git rev-parse origin/sources:geosite/abuse-medium.list)"
+          ABUSE_FULL_BLOB="$(git rev-parse origin/sources:geosite/abuse-full.list)"
+          OPTIMIZER_BLOB="$(git rev-parse origin/main:.ci/optimize.py)"
           WORKFLOW_SHA="$(git show origin/main:.github/workflows/server.yml | sha256sum | awk '{print $1}')"
 
           echo "OISD_BLOB=${OISD_BLOB}" >> "${GITHUB_ENV}"
+          echo "ABUSE_MINI_BLOB=${ABUSE_MINI_BLOB}" >> "${GITHUB_ENV}"
+          echo "ABUSE_MEDIUM_BLOB=${ABUSE_MEDIUM_BLOB}" >> "${GITHUB_ENV}"
+          echo "ABUSE_FULL_BLOB=${ABUSE_FULL_BLOB}" >> "${GITHUB_ENV}"
+          echo "OPTIMIZER_BLOB=${OPTIMIZER_BLOB}" >> "${GITHUB_ENV}"
           echo "WORKFLOW_SHA=${WORKFLOW_SHA}" >> "${GITHUB_ENV}"
 
       - name: Checkout v2fly/domain-list-community builder
@@ -98,13 +118,22 @@ jobs:
           path: dlc
           fetch-depth: 1
 
+      - name: Checkout v2fly/geoip builder
+        uses: actions/checkout@v6
+        with:
+          repository: v2fly/geoip
+          path: v2geoip
+          fetch-depth: 1
+
       - name: Decide geosite build
         run: |
           set -Eeuo pipefail
 
           DLC_SHA="$(git -C dlc rev-parse HEAD)"
           GEOSITE_BUILD_HASH="$(
-            printf '%s\n%s\n%s\n' "${OISD_BLOB}" "${DLC_SHA}" "${WORKFLOW_SHA}" \
+            printf '%s\n%s\n%s\n%s\n%s\n%s\n%s\n' \
+              "${OISD_BLOB}" "${ABUSE_MINI_BLOB}" "${ABUSE_MEDIUM_BLOB}" "${ABUSE_FULL_BLOB}" \
+              "${OPTIMIZER_BLOB}" "${DLC_SHA}" "${WORKFLOW_SHA}" \
               | sha256sum | awk '{print $1}'
           )"
           echo "GEOSITE_BUILD_HASH=${GEOSITE_BUILD_HASH}" >> "${GITHUB_ENV}"
@@ -116,22 +145,55 @@ jobs:
             echo "GEOSITE_NEEDS_BUILD=0" >> "${GITHUB_ENV}"
           fi
 
-      - name: Setup Go for geosite builder
-        if: env.GEOSITE_NEEDS_BUILD == '1'
+      - name: Decide geoip build
+        run: |
+          set -Eeuo pipefail
+
+          GEOIP_BLOB="$(git rev-parse origin/sources:geoip/abuse.list)"
+          V2GEOIP_SHA="$(git -C v2geoip rev-parse HEAD)"
+          GEOIP_BUILD_HASH="$(
+            printf '%s\n%s\n%s\n' "${GEOIP_BLOB}" "${V2GEOIP_SHA}" "${WORKFLOW_SHA}" \
+              | sha256sum | awk '{print $1}'
+          )"
+          echo "GEOIP_BUILD_HASH=${GEOIP_BUILD_HASH}" >> "${GITHUB_ENV}"
+
+          PREV="$(cat geoip.hash 2>/dev/null || true)"
+          if [[ ! -s geoip.dat || "${GEOIP_BUILD_HASH}" != "${PREV}" ]]; then
+            echo "GEOIP_NEEDS_BUILD=1" >> "${GITHUB_ENV}"
+          else
+            echo "GEOIP_NEEDS_BUILD=0" >> "${GITHUB_ENV}"
+          fi
+
+      - name: Setup Go for server builders
+        if: env.GEOSITE_NEEDS_BUILD == '1' || env.GEOIP_NEEDS_BUILD == '1'
         uses: actions/setup-go@v6
         with:
-          go-version-file: dlc/go.mod
+          go-version-file: v2geoip/go.mod
           cache: true
-          cache-dependency-path: dlc/go.sum
+          cache-dependency-path: |
+            dlc/go.sum
+            v2geoip/go.sum
 
       - name: Build geosite.dat
         if: env.GEOSITE_NEEDS_BUILD == '1'
         run: |
           set -Eeuo pipefail
 
+          git show origin/main:.ci/optimize.py > /tmp/optimize.py
+          for category in oisd_big abuse-mini abuse-medium abuse-full; do
+            python3 /tmp/optimize.py domains \
+              "/tmp/community/data/${category}" "/tmp/community/data/${category}_xray" \
+              --input-type xray --target xray-optimized
+            mv "/tmp/community/data/${category}_xray.list" "/tmp/community/data/${category}"
+            test -s "/tmp/community/data/${category}"
+          done
+
           rm -rf dlc/data
           mkdir -p dlc/data
           cp /tmp/community/data/oisd_big dlc/data/oisd-big
+          cp /tmp/community/data/abuse-mini dlc/data/abuse-mini
+          cp /tmp/community/data/abuse-medium dlc/data/abuse-medium
+          cp /tmp/community/data/abuse-full dlc/data/abuse-full
 
           pushd dlc >/dev/null
           go run ./ -outputdir=/tmp/out
@@ -152,25 +214,48 @@ jobs:
           mv -f /tmp/out/dlc.dat ./geosite.dat
           printf '%s' "${GEOSITE_BUILD_HASH}" > ./geosite.hash
 
-      - name: Commit only geosite output
+      - name: Build geoip.dat
+        if: env.GEOIP_NEEDS_BUILD == '1'
+        run: |
+          set -Eeuo pipefail
+
+          pushd v2geoip >/dev/null
+          go build -o geoip
+          popd >/dev/null
+
+          jq -n --arg uri /tmp/geoip/abuse.list '{
+            input:[{type:"text",action:"add",args:{name:"abuse",uri:$uri,onlyIPType:"ipv4"}}],
+            output:[{type:"v2rayGeoIPDat",action:"output",args:{outputDir:"/tmp/out",outputName:"geoip.dat"}}]
+          }' > /tmp/geoip.config.json
+
+          ./v2geoip/geoip -c /tmp/geoip.config.json
+          test -s /tmp/out/geoip.dat
+          mv -f /tmp/out/geoip.dat ./geoip.dat
+          printf '%s' "${GEOIP_BUILD_HASH}" > ./geoip.hash
+
+      - name: Commit changed server outputs
         run: |
           set -Eeuo pipefail
 
           git config --local user.email "${COMMIT_USER_EMAIL}"
           git config --local user.name "${COMMIT_USER_NAME}"
 
-          git rm -f --ignore-unmatch geoip.dat geoip.hash
-          git add geosite.dat geosite.hash
-          git diff --staged --quiet && exit 0
+          git add geosite.dat geosite.hash geoip.dat geoip.hash
+          git diff --staged --name-only -- geosite.dat geosite.hash geoip.dat geoip.hash > /tmp/server-changed-outputs.txt
+          if [[ ! -s /tmp/server-changed-outputs.txt ]]; then
+            echo "SERVER_OUTPUTS_CHANGED=0" >> "${GITHUB_ENV}"
+            exit 0
+          fi
+          echo "SERVER_OUTPUTS_CHANGED=1" >> "${GITHUB_ENV}"
 
-          git commit -m "Update server geosite $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          git commit -m "Update server geofiles $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           git push
 
-      - name: Purge jsDelivr CDN
-        if: env.GEOSITE_NEEDS_BUILD == '1'
+      - name: Purge changed jsDelivr files
+        if: env.SERVER_OUTPUTS_CHANGED == '1'
         run: |
           set -Eeuo pipefail
 
-          for f in geosite.dat geosite.hash; do
+          while IFS= read -r f; do
             curl -fsS "https://purge.jsdelivr.net/gh/${{ github.repository }}@server/${f}"
-          done
+          done < /tmp/server-changed-outputs.txt
