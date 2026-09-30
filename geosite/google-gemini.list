@@ -8,6 +8,8 @@ full:notebooklm-pa.googleapis.com
 full:notebooklm.googleapis.com
 full:alkalicore-pa.clients6.google.com
 full:alkalimakersuite-pa.clients6.google.com
+full:geminiweb-pa.clients.google.com
+full:geminiweb-pa.clients6.google.com
 full:webchannel-alkalimakersuite-pa.clients6.google.com
 domain:ai.studio
 domain:antigravity-unleash.goog
@@ -41,3 +43,4 @@ domain:opal.google.com
 domain:proactivebackend-pa.googleapis.com
 domain:robinfrontend-pa.googleapis.com
 domain:stitch.withgoogle.com
+domain:labstailwind.pa.googleapis.com

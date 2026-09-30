@@ -19,6 +19,8 @@ full:production-openaicom-storage.azureedge.net
 full:servd-anthropic-website.b-cdn.net
 full:alkalicore-pa.clients6.google.com
 full:alkalimakersuite-pa.clients6.google.com
+full:geminiweb-pa.clients.google.com
+full:geminiweb-pa.clients6.google.com
 full:o33249.ingest.sentry.io
 full:openaicom-api-bdcpf8c6d2e9atf6.z01.azurefd.net
 full:ppl-ai-file-upload.s3.amazonaws.com
@@ -109,11 +111,13 @@ domain:manus.im
 domain:manuscdn.com
 domain:marscode.com
 domain:meta.ai
+domain:metaaivm.com
 domain:midjourney.com
 domain:minimax.io
 domain:mistral.ai
 domain:moonshot.ai
 domain:mozilla.ai
+domain:muse.ai
 domain:notebook.google
 domain:notebooklm.google
 domain:notegpt.io
@@ -126,6 +130,7 @@ domain:opal.google
 domain:openai.com
 domain:openart.ai
 domain:openclaw.ai
+domain:opencode.ai
 domain:openrouter.ai
 domain:openspec.dev
 domain:oystermercury.top
@@ -178,5 +183,6 @@ domain:turn.livekit.cloud
 domain:coderabbit.gallery.vsassets.io
 domain:gateway.ai.cloudflare.com
 domain:grazie.aws.intellij.net
+domain:labstailwind.pa.googleapis.com
 domain:openai.com.cdn.cloudflare.net
 regexp:^chatgpt-async-webps-prod-\S+-\d+\.webpubsub\.azure\.com$
