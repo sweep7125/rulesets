@@ -41,6 +41,7 @@ domain:bitbucket.org
 domain:bitcoin.org
 domain:bitru.org
 domain:bloody.com
+domain:bluearchiveyostar.com
 domain:bng.gg
 domain:booktracker.org
 domain:boosteroid.com
@@ -128,6 +129,7 @@ domain:forgecdn.net
 domain:fork.pet
 domain:forklog.com
 domain:formula1.com
+domain:freeanimehentai.net
 domain:g2a.com
 domain:geni.us
 domain:genius.com
@@ -145,6 +147,7 @@ domain:grok.com
 domain:gtagarage.com
 domain:gvt1.com
 domain:habr.com
+domain:hanime-cdn.com
 domain:hath.network
 domain:hbomax.com
 domain:hdrezka.ag
@@ -451,6 +454,7 @@ domain:xhamster.com
 domain:xhamsterlive.com
 domain:xn--mts47c3w9b1qr.cn
 domain:xn--mts47c3w9b1qr.net
+domain:yostarplat.com
 domain:youtu.be
 domain:youtube-nocookie.com
 domain:youtube.com
@@ -590,6 +594,7 @@ domain:discord-attachments-uploads-prd.storage.googleapis.com
 domain:download.screamingfrog.co.uk
 domain:ghostrc.game.idtech.services
 domain:openaicom-api-bdcpf8c6d2e9atf6.z01.azurefd.net
+domain:production.cloudfront.docker.com
 domain:shift.services.gearbox.com
 domain:snap-storage-cdn.l.google.com
 domain:tokenized.play.google.com
