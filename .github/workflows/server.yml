@@ -98,6 +98,11 @@ jobs:
           }
           ip_blob="$(git rev-parse origin/sources:geoip/abuse.list)"
 
+          # Xray-specific optimization depends on the version from main.
+          # Rebuild geosite.dat whenever the optimizer changes, even when
+          # all source lists are unchanged.
+          optimizer_blob="$(git rev-parse --verify origin/main:.ci/optimize.py)"
+
           # Query only the builder revisions. Checkout/build them if needed.
           dlc_sha="$(git ls-remote https://github.com/v2fly/domain-list-community.git HEAD | awk '{print $1}')"
           geoip_sha="$(git ls-remote https://github.com/v2fly/geoip.git HEAD | awk '{print $1}')"
@@ -114,7 +119,7 @@ jobs:
 
           geosite_hash="$(printf '%s\n' "$oisd_blob" "$mini_blob" "$medium_blob" \
             "$full_blob" "$tif_mini_blob" "$tif_medium_blob" "$tif_full_blob" \
-            "$dlc_sha" "$workflow_sha" | sha256sum | cut -d ' ' -f 1)"
+            "$optimizer_blob" "$dlc_sha" "$workflow_sha" | sha256sum | cut -d ' ' -f 1)"
           geoip_hash="$(printf '%s\n' "$ip_blob" "$geoip_sha" "$workflow_sha" \
             | sha256sum | cut -d ' ' -f 1)"
 
@@ -182,17 +187,34 @@ jobs:
               > "/tmp/server-inputs/geosite/${category}"
           done
 
-          # These seven lists are already normalized and minimized by the
-          # sources workflow. Re-running optimize.py is redundant.
-          # Fail explicitly if their format changes instead of silently dropping
-          # other rule types or changing their matching semantics.
           for category in oisd-big abuse-mini abuse-medium abuse-full tif-mini tif-medium tif-full; do
-            file="/tmp/server-inputs/geosite/${category}"
-            test -s "$file"
-            if LC_ALL=C grep -m 1 -v '^domain:' "$file"; then
-              echo "Unexpected non-domain rule in ${category}" >&2
-              exit 1
-            fi
+            test -s "/tmp/server-inputs/geosite/${category}"
+          done
+
+      - name: Optimize geosite inputs for Xray
+        if: steps.upstream.outputs.geosite_needs_build == '1'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          # The sources branch uses --target preserve so that downstream
+          # Mihomo rulesets retain their domain/full rules independently of
+          # keyword/regexp rules. Apply the Xray-only coverage reduction here.
+          # Always load the matching optimize.py from main, not from the
+          # checked-out server branch.
+          git show origin/main:.ci/optimize.py > /tmp/server-inputs/optimize.py
+          test -s /tmp/server-inputs/optimize.py
+
+          # Process one category at a time to limit peak memory usage.
+          for category in oisd-big abuse-mini abuse-medium abuse-full tif-mini tif-medium tif-full; do
+            src="/tmp/server-inputs/geosite/${category}"
+            dst="/tmp/server-inputs/geosite/${category}.xray"
+
+            python3 /tmp/server-inputs/optimize.py domains "$src" "$dst" \
+              --input-type xray --target xray-optimized
+
+            test -s "${dst}.list"
+            mv -f "${dst}.list" "$src"
           done
 
       - name: Prepare GeoIP input (only when changed)
