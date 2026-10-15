@@ -13,18 +13,18 @@ permissions:
   contents: write
 
 env:
-  MIHOMO_VERSION: "v1.19.24"
-  MIHOMO_SHA256: "a1aca7b07037d06d0093320386c54d86e4ed9979394a20034f3e86013a7ae6e7"
+  MIHOMO_VERSION: "v1.19.32"
+  MIHOMO_SHA256: "8451100836c9eda194331c2babfad490b2faf30cebc1a04b0e76fd8ac2d35d10"
   COMMIT_USER_NAME: "github-actions[bot]"
   COMMIT_USER_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Checkout main (partial clone)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 1
@@ -174,6 +174,24 @@ jobs:
           rm -f "$archive"
           "$RUNNER_TEMP/mihomo" -v
 
+          # Version-independent format test: the same binary must both write
+          # and read MRS. Do not hardcode a particular magic/version byte.
+          printf '+.example.com\n' > "$RUNNER_TEMP/mrs-smoke-domain.txt"
+          printf '192.0.2.0/24\n' > "$RUNNER_TEMP/mrs-smoke-ip.txt"
+          for kind in domain ipcidr; do
+            if [[ "$kind" == domain ]]; then
+              input="$RUNNER_TEMP/mrs-smoke-domain.txt"
+            else
+              input="$RUNNER_TEMP/mrs-smoke-ip.txt"
+            fi
+            "$RUNNER_TEMP/mihomo" convert-ruleset "$kind" text "$input" \
+              "$RUNNER_TEMP/mrs-smoke-${kind}.mrs"
+            "$RUNNER_TEMP/mihomo" convert-ruleset "$kind" mrs \
+              "$RUNNER_TEMP/mrs-smoke-${kind}.mrs" \
+              "$RUNNER_TEMP/mrs-smoke-${kind}.roundtrip.txt"
+            test -s "$RUNNER_TEMP/mrs-smoke-${kind}.roundtrip.txt"
+          done
+
       - name: Convert changed rulesets and publish atomically
         if: steps.plan.outputs.needs_build == 'true'
         shell: bash
@@ -272,9 +290,9 @@ jobs:
                       output_path = work / item['destination']
                       subprocess.run([binary, 'convert-ruleset', item['kind'], 'text',
                                       str(input_file), str(output_path)], check=True)
-                      with output_path.open('rb') as result:
-                          if result.read(4) != b'MRS\x01':
-                              raise ValueError(f'Invalid MRS header: {item["destination"]}')
+                      if not output_path.is_file() or output_path.stat().st_size == 0:
+                          raise ValueError(f'Empty MRS output: {item["destination"]}')
+                      # Trust successful compiler exit; do not hardcode a format version.
                       compiled[source] = item['destination']
                   else:
                       compiled[source] = None
