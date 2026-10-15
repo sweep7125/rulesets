@@ -37,7 +37,6 @@ jobs:
 
           if git fetch --no-tags --depth=1 origin "refs/heads/${BR}:refs/remotes/origin/${BR}" >/dev/null 2>&1; then
             git switch -C "${BR}" "refs/remotes/origin/${BR}"
-            git pull --ff-only || true
           else
             git switch --orphan "${BR}"
             git rm -r --ignore-unmatch . >/dev/null 2>&1 || true
@@ -105,22 +104,31 @@ jobs:
           ip_opt_geoip() {
             local src="$1"
             local out="$2"
-            local tmp
 
-            tmp="$(mktemp)"
-
-            # Только geoip/private сохраняет IPv6.
-            # Все остальные geoip/* получают только IPv4.
+            # geoip/private keeps IPv4 + IPv6, without a redundant copy.
             if [[ "$out" == "geoip/private" ]]; then
-              cp -f "$src" "$tmp"
-            else
-              grep -Ev '^[[:space:]]*($|#)' "$src" \
-                | grep -Ev ':' \
-                > "$tmp" || true
+              ip_opt "$src" "$out"
+              return
             fi
 
-            ip_opt "$tmp" "$out"
-            rm -f "$tmp"
+            local tmp status=0
+            tmp="$(mktemp)"
+
+            # A single grep pass instead of two, with errors distinguishable
+            # from an empty result (exit code 1).
+            LC_ALL=C grep -Ev '^[[:space:]]*($|#)|:' "$src" > "$tmp" || status=$?
+            if (( status > 1 )); then
+              rm -f "$tmp"
+              return "$status"
+            fi
+
+            if ip_opt "$tmp" "$out"; then
+              rm -f "$tmp"
+            else
+              status=$?
+              rm -f "$tmp"
+              return "$status"
+            fi
           }
 
           get() {
@@ -130,8 +138,17 @@ jobs:
               --retry 5 \
               --retry-delay 2 \
               --retry-connrefused \
-              --retry-all-errors \
               "$1" -o "$2"
+          }
+
+          # GNU xargs starts the next download as soon as a slot becomes free.
+          # Unlike fixed groups, one slow URL does not delay the next group.
+          get_parallel() {
+            (( $# % 2 == 0 )) || { echo "get_parallel requires URL/path pairs" >&2; return 2; }
+            (( $# > 0 )) || return 0
+
+            printf '%s\0' "$@" | xargs -0 -n 2 -P 4 \
+              bash -c 'source .ci/helpers.sh; get "$1" "$2"' _
           }
           SH
 
@@ -176,11 +193,15 @@ jobs:
             exit 1
           }
 
+          # Preflight collision check before launching parallel workers.
+          # Most community files are small: 2 workers reduce Python startup
+          # overhead without risking concurrent multi-million-domain inputs.
+          mapfile -d '' -t files < <(find "$DATA_DIR" -type f -print0 | LC_ALL=C sort -z)
+          (( ${#files[@]} > 0 )) || { echo "No community lists found" >&2; exit 1; }
           declare -A seen=()
 
-          while IFS= read -r -d '' src; do
-            rel="${src#${DATA_DIR}/}"
-            base="$(basename "$rel")"
+          for src in "${files[@]}"; do
+            base="${src##*/}"
             out="geosite/${base}"
 
             if [[ -n "${seen[$base]:-}" ]]; then
@@ -190,11 +211,11 @@ jobs:
               echo "Both would become: ${out}"
               exit 1
             fi
-
             seen["$base"]="$src"
+          done
 
-            dom_xray_preserve "$src" "$out"
-          done < <(find "$DATA_DIR" -type f -print0 | LC_ALL=C sort -z)
+          printf '%s\0' "${files[@]}" | xargs -0 -n 1 -P 2 \
+            bash -c 'source .ci/helpers.sh; dom_xray_preserve "$1" "geosite/${1##*/}"' _
 
           rm -rf community
 
@@ -203,33 +224,37 @@ jobs:
           set -Eeuo pipefail
           source .ci/helpers.sh
 
-          get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community.lst" _inputs/refilter-community-domains.src
-          get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/domains_all.lst" _inputs/refilter-domains.src
-          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-raw.lst" _inputs/russia-inside.src
-          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/google_ai.lst" _inputs/google-ai.src
+          # One queue for all inputs: at most 4 active downloads, no batches.
+          downloads=(
+            # Re-filter + Russia inside
+            "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community.lst" "_inputs/refilter-community-domains.src"
+            "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/domains_all.lst" "_inputs/refilter-domains.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-raw.lst" "_inputs/russia-inside.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/google_ai.lst" "_inputs/google-ai.src"
 
-          # allow-domains components of "Russia inside" + explicit Google AI
-          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/anime.lst"    _inputs/allow-anime.src
-          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/block.lst"    _inputs/allow-block.src
-          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/geoblock.lst" _inputs/allow-geoblock.src
-          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/news.lst"     _inputs/allow-news.src
-          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/porn.lst"     _inputs/allow-porn.src
+            # allow-domains categories
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/anime.lst" "_inputs/allow-anime.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/block.lst" "_inputs/allow-block.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/geoblock.lst" "_inputs/allow-geoblock.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/news.lst" "_inputs/allow-news.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/porn.lst" "_inputs/allow-porn.src"
 
-          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/discord.lst"    _inputs/allow-discord.src
-          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/hdrezka.lst"    _inputs/allow-hdrezka.src
-          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/meta.lst"       _inputs/allow-meta.src
-          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/tiktok.lst"     _inputs/allow-tiktok.src
-          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/twitter.lst"    _inputs/allow-twitter.src
-          get "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/youtube.lst"    _inputs/allow-youtube.src
+            # allow-domains services
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/discord.lst" "_inputs/allow-discord.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/hdrezka.lst" "_inputs/allow-hdrezka.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/meta.lst" "_inputs/allow-meta.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/tiktok.lst" "_inputs/allow-tiktok.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/twitter.lst" "_inputs/allow-twitter.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/youtube.lst" "_inputs/allow-youtube.src"
 
-          # OISD
-          get "https://raw.githubusercontent.com/sjhgvr/oisd/main/domainswild2_big.txt"   _inputs/oisd-big.src
-          get "https://raw.githubusercontent.com/sjhgvr/oisd/main/domainswild2_small.txt" _inputs/oisd-small.src
-
-          # HaGeZi Threat Intelligence Feeds: temporary inputs for combined abuse lists.
-          get "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif.mini-onlydomains.txt" _inputs/tif-mini.src
-          get "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif.medium-onlydomains.txt" _inputs/tif-medium.src
-          get "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif-onlydomains.txt" _inputs/tif-full.src
+            # OISD and TIF (shared by standalone and combined outputs)
+            "https://raw.githubusercontent.com/sjhgvr/oisd/main/domainswild2_big.txt" "_inputs/oisd-big.src"
+            "https://raw.githubusercontent.com/sjhgvr/oisd/main/domainswild2_small.txt" "_inputs/oisd-small.src"
+            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif.mini-onlydomains.txt" "_inputs/tif-mini.src"
+            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif.medium-onlydomains.txt" "_inputs/tif-medium.src"
+            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif-onlydomains.txt" "_inputs/tif-full.src"
+          )
+          get_parallel "${downloads[@]}"
 
           test -s _inputs/oisd-big.src
           test -s _inputs/tif-mini.src
@@ -264,21 +289,37 @@ jobs:
           dom_from_clean_to_xray_suffix _inputs/oisd-big.src                    geosite/oisd-big
           dom_from_clean_to_xray_suffix _inputs/oisd-small.src                  geosite/oisd-small
 
-          # Merge before suffix optimization to collapse OISD/TIF overlap.
-          cat _inputs/oisd-big.src _inputs/tif-mini.src > _inputs/abuse-mini.src
-          test -s _inputs/abuse-mini.src
-          dom_from_clean_to_xray_suffix _inputs/abuse-mini.src geosite/abuse-mini
-          test -s geosite/abuse-mini.list
+          # Standalone HaGeZi Threat Intelligence Feeds (suffix-minimized).
+          # Process sequentially: the full tier is large and CPU/RAM intensive.
+          # GNU time reports per-process peak resident memory in KiB when available.
+          for tier in mini medium full; do
+            if [[ -x /usr/bin/time ]]; then
+              /usr/bin/time -f "tif-${tier}: elapsed=%es peak_rss=%MKiB" \
+                python3 "$OPT_PY" domains "_inputs/tif-${tier}.src" "geosite/tif-${tier}" \
+                  --input-type clean --target suffix
+            else
+              dom_from_clean_to_xray_suffix "_inputs/tif-${tier}.src" "geosite/tif-${tier}"
+            fi
+            test -s "geosite/tif-${tier}.list"
+          done
 
-          cat _inputs/oisd-big.src _inputs/tif-medium.src > _inputs/abuse-medium.src
-          test -s _inputs/abuse-medium.src
-          dom_from_clean_to_xray_suffix _inputs/abuse-medium.src geosite/abuse-medium
-          test -s geosite/abuse-medium.list
-
-          cat _inputs/oisd-big.src _inputs/tif-full.src > _inputs/abuse-full.src
-          test -s _inputs/abuse-full.src
-          dom_from_clean_to_xray_suffix _inputs/abuse-full.src geosite/abuse-full
-          test -s geosite/abuse-full.list
+          # Retain the original abuse-* semantics: OISD Big + TIF tier.
+          # Normalize the combined sources one at a time, then immediately
+          # remove the large temporary concatenated input.
+          for tier in mini medium full; do
+            combined="_inputs/abuse-${tier}.src"
+            cat _inputs/oisd-big.src "_inputs/tif-${tier}.src" > "$combined"
+            test -s "$combined"
+            if [[ -x /usr/bin/time ]]; then
+              /usr/bin/time -f "abuse-${tier}: elapsed=%es peak_rss=%MKiB" \
+                python3 "$OPT_PY" domains "$combined" "geosite/abuse-${tier}" \
+                  --input-type clean --target suffix
+            else
+              dom_from_clean_to_xray_suffix "$combined" "geosite/abuse-${tier}"
+            fi
+            test -s "geosite/abuse-${tier}.list"
+            rm -f "$combined"
+          done
 
       - name: Normalize custom DOMAIN sources from data/geosite → geosite/
         run: |
@@ -322,11 +363,11 @@ jobs:
           set -Eeuo pipefail
           source .ci/helpers.sh
 
-          get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/ipsum.lst" _inputs/refilter-ips.src
-          get "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community_ips.lst" _inputs/refilter-community-ips.src
-
-          # Spamhaus DROP IPv4 (official JSON feed)
-          get "https://www.spamhaus.org/drop/drop_v4.json" _inputs/spamhaus-drop-v4.json
+          # Fetch the three independent IP sources in parallel.
+          get_parallel \
+            "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/ipsum.lst" "_inputs/refilter-ips.src" \
+            "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community_ips.lst" "_inputs/refilter-community-ips.src" \
+            "https://www.spamhaus.org/drop/drop_v4.json" "_inputs/spamhaus-drop-v4.json"
 
           test -s _inputs/spamhaus-drop-v4.json
 
