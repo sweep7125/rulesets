@@ -19,11 +19,11 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Checkout repo (default branch)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
@@ -45,7 +45,7 @@ jobs:
           fi
 
       - name: Checkout main helpers and custom data (sparse)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: main
           path: main-src
@@ -153,7 +153,7 @@ jobs:
           SH
 
       - name: Checkout v2fly/domain-list-community (data only)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: v2fly/domain-list-community
           path: community
@@ -164,7 +164,7 @@ jobs:
           filter: blob:none
 
       - name: Checkout Loyalsoldier/geoip release text files
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: Loyalsoldier/geoip
           ref: release
@@ -250,15 +250,11 @@ jobs:
             # OISD and TIF (shared by standalone and combined outputs)
             "https://raw.githubusercontent.com/sjhgvr/oisd/main/domainswild2_big.txt" "_inputs/oisd-big.src"
             "https://raw.githubusercontent.com/sjhgvr/oisd/main/domainswild2_small.txt" "_inputs/oisd-small.src"
-            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif.mini-onlydomains.txt" "_inputs/tif-mini.src"
-            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif.medium-onlydomains.txt" "_inputs/tif-medium.src"
             "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif-onlydomains.txt" "_inputs/tif-full.src"
           )
           get_parallel "${downloads[@]}"
 
           test -s _inputs/oisd-big.src
-          test -s _inputs/tif-mini.src
-          test -s _inputs/tif-medium.src
           test -s _inputs/tif-full.src
 
       - name: Normalize external DOMAIN sources → XRAY lists in geosite/
@@ -289,39 +285,33 @@ jobs:
           dom_from_clean_to_xray_suffix _inputs/oisd-big.src                    geosite/oisd-big
           dom_from_clean_to_xray_suffix _inputs/oisd-small.src                  geosite/oisd-small
 
-          # Standalone HaGeZi Threat Intelligence Feeds (suffix-minimized).
-          # Process sequentially: the full tier is large and CPU/RAM intensive.
-          # GNU time reports per-process peak resident memory in KiB when available.
-          for tier in mini medium full; do
-            if [[ -x /usr/bin/time ]]; then
-              /usr/bin/time -f "tif-${tier}: elapsed=%es peak_rss=%MKiB" \
-                python3 "$OPT_PY" domains "_inputs/tif-${tier}.src" "geosite/tif-${tier}" \
-                  --input-type clean --target suffix
-            else
-              dom_from_clean_to_xray_suffix "_inputs/tif-${tier}.src" "geosite/tif-${tier}"
-            fi
-            test -s "geosite/tif-${tier}.list"
-          done
+          # Preserve OISD Small, but build only the full TIF tier.
+          # Heavy source optimization runs one Python process at a time.
+          if [[ -x /usr/bin/time ]]; then
+            /usr/bin/time -f 'tif-full: elapsed=%es peak_rss=%MKiB' \
+              python3 "$OPT_PY" domains _inputs/tif-full.src geosite/tif-full \
+                --input-type clean --target suffix
+          else
+            dom_from_clean_to_xray_suffix _inputs/tif-full.src geosite/tif-full
+          fi
+          test -s geosite/tif-full.list
 
-          # Retain the original abuse-* semantics: OISD Big + TIF tier.
-          # Both inputs are already normalized and suffix-minimized, so
-          # merging their Xray rules is equivalent to optimizing raw sources.
-          # This avoids reparsing raw multi-million-domain files and
-          # temporarily concatenating those raw files on disk.
-          for tier in mini medium full; do
-            combined="_inputs/abuse-${tier}.optimized.src"
-            cat geosite/oisd-big.list "geosite/tif-${tier}.list" > "$combined"
-            test -s "$combined"
-            if [[ -x /usr/bin/time ]]; then
-              /usr/bin/time -f "abuse-${tier}: elapsed=%es peak_rss=%MKiB" \
-                python3 "$OPT_PY" domains "$combined" "geosite/abuse-${tier}" \
-                  --input-type xray --target preserve
-            else
-              dom_xray_preserve "$combined" "geosite/abuse-${tier}"
-            fi
-            test -s "geosite/abuse-${tier}.list"
-            rm -f "$combined"
-          done
+          # ABUSE Full = OISD Big + TIF Full. Work on previously optimized
+          # lists; avoid re-reading and sorting the large raw sources.
+          # The include paths are relative to the input manifest directory.
+          cat > geosite/.abuse-full-includes <<'EOF'
+          include:oisd-big.list
+          include:tif-full.list
+          EOF
+          if [[ -x /usr/bin/time ]]; then
+            /usr/bin/time -f 'abuse-full: elapsed=%es peak_rss=%MKiB' \
+              python3 "$OPT_PY" domains geosite/.abuse-full-includes geosite/abuse-full \
+                --input-type xray --target preserve
+          else
+            dom_xray_preserve geosite/.abuse-full-includes geosite/abuse-full
+          fi
+          rm -f geosite/.abuse-full-includes
+          test -s geosite/abuse-full.list
 
       - name: Normalize custom DOMAIN sources from data/geosite → geosite/
         run: |
