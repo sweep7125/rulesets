@@ -191,9 +191,9 @@ jobs:
 
           git show "origin/sources:${OISD_SOURCE_PATH}" > /tmp/server-inputs/geosite/oisd-big
           git show origin/sources:geosite/abuse-full.list > /tmp/server-inputs/geosite/abuse-full
-          # Keep the original sources name tif-full, but publish TIFF-FULL in geosite.dat.
-          git show origin/sources:geosite/tif-full.list > /tmp/server-inputs/geosite/tiff-full
-          for category in oisd-big abuse-full tiff-full; do
+          # Preserve the tif-full category name in geosite.dat.
+          git show origin/sources:geosite/tif-full.list > /tmp/server-inputs/geosite/tif-full
+          for category in oisd-big abuse-full tif-full; do
             test -s "/tmp/server-inputs/geosite/${category}"
           done
 
@@ -212,7 +212,7 @@ jobs:
           test -s /tmp/server-inputs/optimize.py
 
           # Process one category at a time to limit peak memory usage.
-          for category in oisd-big abuse-full tiff-full; do
+          for category in oisd-big abuse-full tif-full; do
             src="/tmp/server-inputs/geosite/${category}"
             dst="/tmp/server-inputs/geosite/${category}.xray"
 
@@ -276,7 +276,7 @@ jobs:
           # No binary protobuf patching: OISD-BIG remains hyphenated.
           # Only these three files are passed to the DLC builder.
           mkdir -p dlc/data
-          for category in oisd-big abuse-full tiff-full; do
+          for category in oisd-big abuse-full tif-full; do
             cp "/tmp/server-inputs/geosite/${category}" "dlc/data/${category}"
           done
           (
