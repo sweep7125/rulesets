@@ -20,11 +20,11 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Checkout repository (partial clone)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 1
@@ -63,6 +63,8 @@ jobs:
       - name: Resolve input revisions and decide builds
         id: upstream
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
 
@@ -80,17 +82,13 @@ jobs:
           echo "OISD_SOURCE_PATH=$oisd_path" >> "$GITHUB_ENV"
 
           oisd_blob="$(git rev-parse "origin/sources:${oisd_path}")"
-          for category in abuse-mini abuse-medium abuse-full tif-mini tif-medium tif-full; do
+          for category in abuse-full tif-full; do
             git rev-parse --verify -q "origin/sources:geosite/${category}.list" >/dev/null || {
               echo "Missing geosite/${category}.list" >&2
               exit 1
             }
           done
-          mini_blob="$(git rev-parse origin/sources:geosite/abuse-mini.list)"
-          medium_blob="$(git rev-parse origin/sources:geosite/abuse-medium.list)"
           full_blob="$(git rev-parse origin/sources:geosite/abuse-full.list)"
-          tif_mini_blob="$(git rev-parse origin/sources:geosite/tif-mini.list)"
-          tif_medium_blob="$(git rev-parse origin/sources:geosite/tif-medium.list)"
           tif_full_blob="$(git rev-parse origin/sources:geosite/tif-full.list)"
           git rev-parse --verify -q origin/sources:geoip/abuse.list >/dev/null || {
             echo 'Missing geoip/abuse.list' >&2
@@ -103,13 +101,24 @@ jobs:
           # all source lists are unchanged.
           optimizer_blob="$(git rev-parse --verify origin/main:.ci/optimize.py)"
 
-          # Query only the builder revisions. Checkout/build them if needed.
-          dlc_sha="$(git ls-remote https://github.com/v2fly/domain-list-community.git HEAD | awk '{print $1}')"
-          geoip_sha="$(git ls-remote https://github.com/v2fly/geoip.git HEAD | awk '{print $1}')"
-          [[ "$dlc_sha" =~ ^[0-9a-f]{40}$ && "$geoip_sha" =~ ^[0-9a-f]{40}$ ]] || {
-            echo 'Could not resolve upstream builder revisions' >&2
-            exit 1
+          # Latest published stable releases, not the potentially unstable
+          # default-branch HEAD. Resolve tags to immutable commit SHAs.
+          release_commit() {
+            local repo="$1" tag sha
+            tag="$(curl -fsSL --retry 3 --connect-timeout 10 --max-time 30 \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H 'Accept: application/vnd.github+json' \
+              "https://api.github.com/repos/${repo}/releases/latest" | jq -er '.tag_name')"
+            [[ -n "$tag" ]] || return 1
+            sha="$(git ls-remote "https://github.com/${repo}.git" "refs/tags/${tag}^{}" | awk '{print $1}')"
+            if [[ -z "$sha" ]]; then
+              sha="$(git ls-remote "https://github.com/${repo}.git" "refs/tags/${tag}" | awk '{print $1}')"
+            fi
+            [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || return 1
+            printf '%s\n' "$sha"
           }
+          dlc_sha="$(release_commit v2fly/domain-list-community)"
+          geoip_sha="$(release_commit v2fly/geoip)"
           echo "dlc_sha=$dlc_sha" >> "$GITHUB_OUTPUT"
           echo "geoip_sha=$geoip_sha" >> "$GITHUB_OUTPUT"
 
@@ -117,8 +126,7 @@ jobs:
           # original workflow, the canonical workflow lives on main.
           workflow_sha="$(git show origin/main:.github/workflows/server.yml | sha256sum | cut -d ' ' -f 1)"
 
-          geosite_hash="$(printf '%s\n' "$oisd_blob" "$mini_blob" "$medium_blob" \
-            "$full_blob" "$tif_mini_blob" "$tif_medium_blob" "$tif_full_blob" \
+          geosite_hash="$(printf '%s\n' "$oisd_blob" "$full_blob" "$tif_full_blob" \
             "$optimizer_blob" "$dlc_sha" "$workflow_sha" | sha256sum | cut -d ' ' -f 1)"
           geoip_hash="$(printf '%s\n' "$ip_blob" "$geoip_sha" "$workflow_sha" \
             | sha256sum | cut -d ' ' -f 1)"
@@ -182,12 +190,10 @@ jobs:
           mkdir -p /tmp/server-inputs/geosite /tmp/server-output
 
           git show "origin/sources:${OISD_SOURCE_PATH}" > /tmp/server-inputs/geosite/oisd-big
-          for category in abuse-mini abuse-medium abuse-full tif-mini tif-medium tif-full; do
-            git show "origin/sources:geosite/${category}.list" \
-              > "/tmp/server-inputs/geosite/${category}"
-          done
-
-          for category in oisd-big abuse-mini abuse-medium abuse-full tif-mini tif-medium tif-full; do
+          git show origin/sources:geosite/abuse-full.list > /tmp/server-inputs/geosite/abuse-full
+          # Keep the original sources name tif-full, but publish TIFF-FULL in geosite.dat.
+          git show origin/sources:geosite/tif-full.list > /tmp/server-inputs/geosite/tiff-full
+          for category in oisd-big abuse-full tiff-full; do
             test -s "/tmp/server-inputs/geosite/${category}"
           done
 
@@ -206,7 +212,7 @@ jobs:
           test -s /tmp/server-inputs/optimize.py
 
           # Process one category at a time to limit peak memory usage.
-          for category in oisd-big abuse-mini abuse-medium abuse-full tif-mini tif-medium tif-full; do
+          for category in oisd-big abuse-full tiff-full; do
             src="/tmp/server-inputs/geosite/${category}"
             dst="/tmp/server-inputs/geosite/${category}.xray"
 
@@ -228,7 +234,7 @@ jobs:
 
       - name: Checkout domain-list-community builder (when needed)
         if: steps.upstream.outputs.geosite_needs_build == '1'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: v2fly/domain-list-community
           ref: ${{ steps.upstream.outputs.dlc_sha }}
@@ -240,7 +246,7 @@ jobs:
 
       - name: Checkout GeoIP builder (when needed)
         if: steps.upstream.outputs.geoip_needs_build == '1'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: v2fly/geoip
           ref: ${{ steps.upstream.outputs.geoip_sha }}
@@ -253,7 +259,7 @@ jobs:
 
       - name: Setup Go (only when building)
         if: steps.upstream.outputs.geosite_needs_build == '1' || steps.upstream.outputs.geoip_needs_build == '1'
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           # The GeoIP builder currently needs a newer Go than DLC. When both
           # build, choose GeoIP's go.mod to satisfy both requirements.
@@ -267,33 +273,25 @@ jobs:
         run: |
           set -Eeuo pipefail
 
-          # The upstream builder only accepts [A-Z0-9!-] in category names.
-          # Keep OISD-BIG during build; patch exactly that protobuf string to
-          # OISD_BIG afterwards to preserve the existing public category name.
+          # No binary protobuf patching: OISD-BIG remains hyphenated.
+          # Only these three files are passed to the DLC builder.
           mkdir -p dlc/data
-          cp /tmp/server-inputs/geosite/* dlc/data/
+          for category in oisd-big abuse-full tiff-full; do
+            cp "/tmp/server-inputs/geosite/${category}" "dlc/data/${category}"
+          done
           (
             cd dlc
             go run . -outputdir=/tmp/server-output
           )
           test -s /tmp/server-output/dlc.dat
 
-          # In-place, constant-length replacement: avoid reading and copying
-          # the whole .dat in Python heap memory.
-          python3 - <<'PY'
-          import mmap
-          from pathlib import Path
-
-          path = Path('/tmp/server-output/dlc.dat')
-          old = b'\x0a\x08OISD-BIG'
-          new = b'\x0a\x08OISD_BIG'
-          with path.open('r+b') as fp, mmap.mmap(fp.fileno(), 0) as data:
-              pos = data.find(old)
-              if pos < 0 or data.find(old, pos + 1) >= 0:
-                  raise SystemExit('Expected exactly one OISD-BIG protobuf field')
-              data[pos:pos + len(old)] = new
-              data.flush()
-          PY
+          # GitHub refuses individual files over 100 MB. Catch this *before*
+          # creating a commit that remote will reject.
+          bytes="$(stat -c '%s' /tmp/server-output/dlc.dat)"
+          if (( bytes >= 100000000 )); then
+            echo "geosite.dat is ${bytes} bytes, at/above the GitHub 100 MB upload ceiling" >&2
+            exit 1
+          fi
 
           mv -f /tmp/server-output/dlc.dat geosite.dat
           printf '%s' "$GEOSITE_BUILD_HASH" > geosite.hash
