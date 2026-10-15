@@ -327,10 +327,8 @@ jobs:
 
           # Spamhaus DROP IPv4 (official JSON feed)
           get "https://www.spamhaus.org/drop/drop_v4.json" _inputs/spamhaus-drop-v4.json
-          get "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/ips/tif.txt" _inputs/tif-ips.src
 
           test -s _inputs/spamhaus-drop-v4.json
-          test -s _inputs/tif-ips.src
 
       - name: Normalize external IP sources → CIDR lists in geoip/
         run: |
@@ -346,9 +344,8 @@ jobs:
             > _inputs/spamhaus-drop-v4.src
           test -s _inputs/spamhaus-drop-v4.src
 
-          cat _inputs/tif-ips.src _inputs/spamhaus-drop-v4.src > _inputs/abuse-ips.src
-          test -s _inputs/abuse-ips.src
-          ip_opt_geoip _inputs/abuse-ips.src geoip/abuse
+          # Keep geoip/abuse category name; only Spamhaus DROP IPv4 is included.
+          ip_opt_geoip _inputs/spamhaus-drop-v4.src geoip/abuse
           test -s geoip/abuse.list
 
       - name: Normalize custom IP sources from data/geoip → geoip/
