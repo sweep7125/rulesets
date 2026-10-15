@@ -124,7 +124,7 @@ def _remove_wild_labels(base: str) -> str:
     parts = [p for p in base.split(".") if p and p != "*"]
     return ".".join(parts)
 
-@dataclass
+@dataclass(slots=True)
 class _TrieNode:
     children: Dict[str, "_TrieNode"] = field(default_factory=dict)
     suffix: bool = False
@@ -135,10 +135,22 @@ def _labels_rev(base: str) -> List[str]:
 
 def _trie_insert(root: _TrieNode, base: str, flag: str) -> None:
     node = root
-    for lab in _labels_rev(base):
-        node = node.children.setdefault(lab, _TrieNode())
+    for lab in reversed(base.split(".")):
+        # An ancestor suffix already covers this whole subtree.
+        if node.suffix:
+            return
+        child = node.children.get(lab)
+        if child is None:
+            child = _TrieNode()
+            node.children[lab] = child
+        node = child
+    if node.suffix:
+        return
     if flag == "suffix":
         node.suffix = True
+        node.full = False
+        # If the parent arrives after its subdomains, discard them now.
+        node.children.clear()
     elif flag == "full":
         node.full = True
 
@@ -156,20 +168,23 @@ def _prune(node: _TrieNode, has_suffix_above: bool = False) -> None:
         _prune(ch, next_has_suffix)
 
 def _trie_collect(node: _TrieNode, path_rev: List[str], out_suffix: Set[str], out_full: Set[str]) -> None:
-    base = ".".join(path_rev[::-1]) if path_rev else ""
-    if node.suffix and base:
-        out_suffix.add(base)
-    if node.full and base:
-        out_full.add(base)
+    if (node.suffix or node.full) and path_rev:
+        base = ".".join(reversed(path_rev))
+        if node.suffix:
+            out_suffix.add(base)
+        if node.full:
+            out_full.add(base)
     for lab, ch in node.children.items():
-        _trie_collect(ch, path_rev + [lab], out_suffix, out_full)
+        path_rev.append(lab)
+        _trie_collect(ch, path_rev, out_suffix, out_full)
+        path_rev.pop()
 
 def optimize_suffix_full(entries: Iterable[Tuple[str, str]]) -> Tuple[Set[str], Set[str]]:
     root = _TrieNode()
     for t, b in entries:
         if b:
             _trie_insert(root, b, t)
-    _prune(root, False)
+    # Covered subtrees are removed during insertion, so no pruning pass.
     E: Set[str] = set()
     S: Set[str] = set()
     _trie_collect(root, [], S, E)
@@ -589,29 +604,19 @@ def optimize_xray_coverage(
     remaining.extend(("regexp", value) for value in kept_regexps)
     return suffixes, fulls, remaining
 
-def build_xray_output(suffixes: Set[str], fulls: Set[str], other_rules: Iterable[Tuple[str, str]]) -> List[str]:
+def build_xray_output(suffixes: Set[str], fulls: Set[str], other_rules: Iterable[Tuple[str, str]]) -> Iterator[str]:
     kw_list, rx_list = dedup_other_rules(other_rules)
-    items: List[Tuple[str, str]] = []
-    items += [(b, "full") for b in fulls]
-    items += [(b, "domain") for b in suffixes]
-    items += [(v, "keyword") for v in kw_list]
-    items += [(v, "regexp") for v in rx_list]
-    rank = {"full": 0, "domain": 1, "keyword": 2, "regexp": 3}
-    def key(t: Tuple[str, str]) -> Tuple[int, int, str]:
-        val, kind = t
-        return (rank.get(kind, 99), label_count(val), val)
-    items.sort(key=key)
-    out: List[str] = []
-    for val, kind in items:
-        if kind == "full":
-            out.append(f"full:{val}")
-        elif kind == "domain":
-            out.append(f"domain:{val}")
-        elif kind == "keyword":
-            out.append(f"keyword:{val}")
-        elif kind == "regexp":
-            out.append(f"regexp:{val}")
-    return out
+    # Sorting one category at a time avoids a global (kind, domain) list
+    # followed by another list of formatted strings.
+    for kind, values in (
+        ("full", fulls),
+        ("domain", suffixes),
+        ("keyword", kw_list),
+        ("regexp", rx_list),
+    ):
+        for value in sorted(values, key=lambda item: (label_count(item), item)):
+            yield f"{kind}:{value}"
+
 
 def _collect_bases_from_tokens(tokens: Iterable[str]) -> List[str]:
     out: List[str] = []
@@ -641,78 +646,102 @@ def take_until_attr(text: str) -> str:
         keep.append(tok)
     return " ".join(keep).strip()
 
-def parse_xray_file_recursive(path: str, visited: Set[str]) -> Tuple[List[str], List[str], List[Tuple[str, str]]]:
+def iter_xray_file_recursive(path: str, visited: Set[str]) -> Iterator[Tuple[str, str]]:
     abspath = os.path.abspath(path)
     if abspath in visited:
-        return [], [], []
+        return
     if not os.path.exists(abspath):
-        print(f"include not found: {path}", file=sys.stderr); sys.exit(2)
+        print(f"include not found: {path}", file=sys.stderr)
+        sys.exit(2)
     visited.add(abspath)
     base_dir = os.path.dirname(abspath)
-    suffix_bases: List[str] = []
-    full_bases: List[str] = []
-    other_rules: List[Tuple[str, str]] = []
     for line in clean_stream(read_lines(abspath)):
         if line.startswith("include:"):
             inc = take_until_attr(line[len("include:"):])
             inc_path = os.path.join(base_dir, inc)
-            p2, e2, o2 = parse_xray_file_recursive(inc_path, visited)
-            suffix_bases.extend(p2); full_bases.extend(e2); other_rules.extend(o2); continue
+            yield from iter_xray_file_recursive(inc_path, visited)
+            continue
         if line.startswith("keyword:"):
             val = take_until_attr(line[len("keyword:"):])
-            if val: other_rules.append(("keyword", val)); continue
+            if val:
+                yield "keyword", val
+                continue
         if line.startswith("regexp:"):
             val = take_until_attr(line[len("regexp:"):])
-            if val: other_rules.append(("regexp", val)); continue
+            if val:
+                yield "regexp", val
+                continue
         if line.startswith("full:"):
-            val = take_until_attr(line[len("full:"):]); base = normalize_domain_base(val)
-            if base: full_bases.append(base); continue
+            val = take_until_attr(line[len("full:"):])
+            base = normalize_domain_base(val)
+            if base:
+                yield "full", base
+                continue
         if line.startswith("domain:"):
-            val = take_until_attr(line[len("domain:"):]); base = normalize_domain_base(val)
-            if base: suffix_bases.append(base); continue
-        bare = take_until_attr(line); base = normalize_domain_base(bare)
-        if base: suffix_bases.append(base)
-    return suffix_bases, full_bases, other_rules
+            val = take_until_attr(line[len("domain:"):])
+            base = normalize_domain_base(val)
+            if base:
+                yield "suffix", base
+                continue
+        bare = take_until_attr(line)
+        base = normalize_domain_base(bare)
+        if base:
+            yield "suffix", base
 
-def domains_from_hosts(cleaned: Iterable[str], target: str) -> List[str]:
-    bases = collect_clean_bases_from_hosts(cleaned)
-    entries = [("suffix", b) for b in bases] if target == "suffix" else [("full", b) for b in bases]
-    S, E = optimize_suffix_full(entries)
+
+def domains_from_hosts(cleaned: Iterable[str], target: str) -> Iterator[str]:
+    def entries() -> Iterator[Tuple[str, str]]:
+        kind = "suffix" if target == "suffix" else "full"
+        for line in cleaned:
+            parts = line.split()
+            if len(parts) >= 2 and is_hosts_prefix_token(parts[0]):
+                for token in parts[1:]:
+                    base = normalize_domain_base(strip_clean_prefixes(token))
+                    if base:
+                        yield kind, base
+    S, E = optimize_suffix_full(entries())
     return build_xray_output(S, E, [])
 
-def domains_from_clean(cleaned: Iterable[str], target: str) -> List[str]:
-    bases = collect_clean_bases_from_clean(cleaned)
-    entries = [("suffix", b) for b in bases] if target == "suffix" else [("full", b) for b in bases]
-    S, E = optimize_suffix_full(entries)
+def domains_from_clean(cleaned: Iterable[str], target: str) -> Iterator[str]:
+    def entries() -> Iterator[Tuple[str, str]]:
+        kind = "suffix" if target == "suffix" else "full"
+        for token in cleaned:
+            base = normalize_domain_base(strip_clean_prefixes(token))
+            if base:
+                yield kind, base
+    S, E = optimize_suffix_full(entries())
     return build_xray_output(S, E, [])
 
-def domains_from_mihomo(cleaned: Iterable[str]) -> List[str]:
-    entries: List[Tuple[str, str]] = []
-    for t in cleaned:
-        kind, base = split_leading_marker_mihomo(t)
-        if not base:
-            continue
-        if kind == "suffix":
-            b2 = _remove_wild_labels(base)
-            if b2:
-                entries.append(("suffix", b2))
-            continue
-        if kind == "exact":
-            if "*" in base:
+def domains_from_mihomo(cleaned: Iterable[str]) -> Iterator[str]:
+    def entries() -> Iterator[Tuple[str, str]]:
+        for t in cleaned:
+            kind, base = split_leading_marker_mihomo(t)
+            if not base:
+                continue
+            if kind == "suffix":
                 b2 = _remove_wild_labels(base)
                 if b2:
-                    entries.append(("suffix", b2))
-            else:
-                entries.append(("full", base))
-    S, E = optimize_suffix_full(entries)
+                    yield "suffix", b2
+                continue
+            if kind == "exact":
+                if "*" in base:
+                    b2 = _remove_wild_labels(base)
+                    if b2:
+                        yield "suffix", b2
+                else:
+                    yield "full", base
+    S, E = optimize_suffix_full(entries())
     return build_xray_output(S, E, [])
 
-def domains_from_xray(path: str, optimize_for_xray: bool = False) -> List[str]:
-    suffix_bases, full_bases, other_rules = parse_xray_file_recursive(path, set())
-    entries: List[Tuple[str, str]] = []
-    entries.extend(("suffix", b) for b in suffix_bases)
-    entries.extend(("full", b) for b in full_bases)
-    S, E = optimize_suffix_full(entries)
+def domains_from_xray(path: str, optimize_for_xray: bool = False) -> Iterator[str]:
+    other_rules: List[Tuple[str, str]] = []
+    def entries() -> Iterator[Tuple[str, str]]:
+        for kind, value in iter_xray_file_recursive(path, set()):
+            if kind in ("suffix", "full"):
+                yield kind, value
+            else:
+                other_rules.append((kind, value))
+    S, E = optimize_suffix_full(entries())
     if optimize_for_xray:
         S, E, other_rules = optimize_xray_coverage(S, E, other_rules)
     return build_xray_output(S, E, other_rules)
@@ -726,6 +755,8 @@ class _IPTrieNode:
 
 def _insert_network(root: _IPTrieNode, net: ipaddress._BaseNetwork) -> None:
     node = root
+    if node.covered:
+        return
     nint = int(net.network_address)
     plen = net.prefixlen
     total = net.max_prefixlen
@@ -763,7 +794,7 @@ def _compress_collect(node: _IPTrieNode, prefix_int: int, depth: int, acc: List[
         return True
     return False
 
-def _trie_aggregate(networks: List[ipaddress._BaseNetwork]) -> List[ipaddress._BaseNetwork]:
+def _trie_aggregate(networks: Iterable[ipaddress._BaseNetwork]) -> List[ipaddress._BaseNetwork]:
     v4_root = _IPTrieNode()
     v6_root = _IPTrieNode()
     for n in networks:
@@ -806,18 +837,12 @@ def _parse_ip_line_to_networks(t: str) -> List[ipaddress._BaseNetwork]:
         return []
 
 def parse_ips_to_cidrs(path: str) -> List[ipaddress._BaseNetwork]:
-    nets: List[ipaddress._BaseNetwork] = []
-    seen: Set[Tuple[int, int, int]] = set()
-    for raw in clean_stream(read_lines(path)):
-        for n in _parse_ip_line_to_networks(raw.strip()):
-            key = (n.version, int(n.network_address), n.prefixlen)
-            if key in seen:
-                continue
-            seen.add(key)
-            nets.append(n)
-    if not nets:
-        return []
-    return _trie_aggregate(nets)
+    def networks() -> Iterator[ipaddress._BaseNetwork]:
+        for raw in clean_stream(read_lines(path)):
+            yield from _parse_ip_line_to_networks(raw.strip())
+    # The prefix trie already handles identical/covered networks: a separate
+    # seen set plus a list of all input networks only increase peak memory.
+    return _trie_aggregate(networks())
 
 def cmd_domains(src: str, dst: str, input_type: str, target: str) -> None:
     if input_type in ("mihomo", "xray"):
@@ -825,13 +850,13 @@ def cmd_domains(src: str, dst: str, input_type: str, target: str) -> None:
         if target not in allowed:
             print(f"for input-type {input_type} only --target {' or '.join(allowed)} is allowed", file=sys.stderr); sys.exit(2)
         if input_type == "mihomo":
-            cleaned = list(clean_stream(read_lines(src)))
+            cleaned = clean_stream(read_lines(src))
             write_text_lines(dst, domains_from_mihomo(cleaned)); return
         write_text_lines(dst, domains_from_xray(src, optimize_for_xray=target == "xray-optimized")); return
     if input_type in ("clean", "hosts"):
         if target not in ("suffix", "exact"):
             print("for input-type clean/hosts only --target suffix or --target exact are allowed", file=sys.stderr); sys.exit(2)
-        cleaned = list(clean_stream(read_lines(src)))
+        cleaned = clean_stream(read_lines(src))
         if input_type == "clean":
             write_text_lines(dst, domains_from_clean(cleaned, target)); return
         write_text_lines(dst, domains_from_hosts(cleaned, target)); return
