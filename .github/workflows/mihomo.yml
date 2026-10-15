@@ -13,8 +13,8 @@ permissions:
   contents: write
 
 env:
-  DEBIAN_FRONTEND: noninteractive
   MIHOMO_VERSION: "v1.19.24"
+  MIHOMO_SHA256: "a1aca7b07037d06d0093320386c54d86e4ed9979394a20034f3e86013a7ae6e7"
   COMMIT_USER_NAME: "github-actions[bot]"
   COMMIT_USER_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
 
@@ -23,209 +23,327 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - name: Checkout repo
+      - name: Checkout main (partial clone)
         uses: actions/checkout@v6
         with:
+          ref: main
           fetch-depth: 1
+          filter: blob:none
 
-      - name: Switch to branch mihomo-rulesets (create if missing)
+      - name: Fetch source and destination metadata
+        shell: bash
         run: |
           set -Eeuo pipefail
-          BR="mihomo-rulesets"
+          git fetch --no-tags --depth=1 --filter=blob:none origin \
+            '+refs/heads/sources:refs/remotes/origin/sources' \
+            '+refs/heads/main:refs/remotes/origin/main'
 
-          git config --local user.name  "${COMMIT_USER_NAME}"
-          git config --local user.email "${COMMIT_USER_EMAIL}"
-
-          if git fetch --no-tags --depth=1 origin "refs/heads/${BR}:refs/remotes/origin/${BR}" >/dev/null 2>&1; then
-            git switch -C "${BR}" "refs/remotes/origin/${BR}"
+          if git ls-remote --exit-code --heads origin refs/heads/mihomo-rulesets >/dev/null; then
+            git fetch --no-tags --depth=1 --filter=blob:none origin \
+              '+refs/heads/mihomo-rulesets:refs/remotes/origin/mihomo-rulesets'
+            echo 'MRS_BRANCH_EXISTS=1' >> "$GITHUB_ENV"
           else
-            git switch --orphan "${BR}"
-            git rm -r --ignore-unmatch . >/dev/null 2>&1 || true
-            git commit --allow-empty -m "Initialize mihomo rules branch"
-            git push -u origin "HEAD:${BR}"
+            status=$?
+            if [[ "$status" -ne 2 ]]; then
+              echo "Failed to check destination branch (status $status)" >&2
+              exit 1
+            fi
+            echo 'MRS_BRANCH_EXISTS=0' >> "$GITHUB_ENV"
           fi
 
-      - name: Compute build hash & decide build (git tree hash)
+      - name: Plan incremental conversion
+        id: plan
+        shell: bash
         run: |
           set -Eeuo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
 
-          EMPTY_TREE="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+          def git(*args):
+              return subprocess.check_output(['git', *args])
 
-          git fetch --no-tags --depth=1 origin sources || true
-          git fetch --no-tags --depth=1 origin main || true
+          def old_file(name):
+              if os.environ['MRS_BRANCH_EXISTS'] != '1':
+                  return None
+              try:
+                  return git('show', f'origin/mihomo-rulesets:{name}')
+              except subprocess.CalledProcessError:
+                  return None
 
-          GEOSITE_TREE="$(git rev-parse "origin/sources^{tree}:geosite" 2>/dev/null || true)"
-          GEOIP_TREE="$(git rev-parse "origin/sources^{tree}:geoip" 2>/dev/null || true)"
-          [[ -n "${GEOSITE_TREE:-}" ]] || GEOSITE_TREE="${EMPTY_TREE}"
-          [[ -n "${GEOIP_TREE:-}" ]] || GEOIP_TREE="${EMPTY_TREE}"
+          inventory = []
+          used_names = set()
+          for kind in ('geosite', 'geoip'):
+              raw = git('ls-tree', '-r', '-z', f'origin/sources:{kind}')
+              for record in raw.split(b'\0'):
+                  if not record:
+                      continue
+                  header, path = record.split(b'\t', 1)
+                  mode, obj_type, oid = header.decode('ascii').split()
+                  if obj_type != 'blob':
+                      continue
+                  relative = path.decode('utf-8')
+                  if not relative.endswith('.list'):
+                      continue
+                  if any(c in relative for c in ('\n', '\r', '\t', '\\')):
+                      raise ValueError(f'Unsupported source path: {relative!r}')
+                  destination = f"{kind}-{relative[:-5].replace('/', '-')}.mrs"
+                  if destination in used_names:
+                      raise ValueError(f'Output name collision: {destination}')
+                  used_names.add(destination)
+                  inventory.append({
+                      'kind': 'domain' if kind == 'geosite' else 'ipcidr',
+                      'source': f'{kind}/{relative}',
+                      'oid': oid,
+                      'destination': destination,
+                  })
 
-          WORKFLOW_SHA="$(
-            git show "origin/main:.github/workflows/mihomo.yml" 2>/dev/null \
-              | sha256sum | awk '{print $1}' \
-              || printf '' | sha256sum | awk '{print $1}'
-          )"
+          inventory.sort(key=lambda item: item['source'])
+          if not inventory:
+              raise SystemExit('sources has no .list files')
 
-          BUILD_HASH="$(
-            printf '%s\n%s\n%s\n%s\n' \
-              "${GEOSITE_TREE}" \
-              "${GEOIP_TREE}" \
-              "${MIHOMO_VERSION}" \
-              "${WORKFLOW_SHA}" \
-            | sha256sum | awk '{print $1}'
-          )"
+          workflow_oid = git('rev-parse', 'origin/main:.github/workflows/mihomo.yml').decode().strip()
+          compiler = {'mihomo': os.environ['MIHOMO_VERSION'], 'workflow': workflow_oid}
+          old_bytes = old_file('mrs.manifest.json')
+          try:
+              previous = json.loads(old_bytes) if old_bytes is not None else {}
+          except (ValueError, TypeError):
+              previous = {}
+          compatible = previous.get('schema') == 1 and previous.get('compiler') == compiler
+          old_entries = previous.get('entries', {}) if compatible else {}
+          if not isinstance(old_entries, dict):
+              old_entries = {}
 
-          echo "MRS_BUILD_HASH=${BUILD_HASH}" >> "${GITHUB_ENV}"
+          current_files = set()
+          if os.environ['MRS_BRANCH_EXISTS'] == '1':
+              current_files = set(git('ls-tree', '-r', '--name-only', '-z', 'origin/mihomo-rulesets').decode().rstrip('\0').split('\0'))
 
-          PREV_HASH="$(cat mrs.hash 2>/dev/null || true)"
-          if [[ "${BUILD_HASH}" != "${PREV_HASH}" ]]; then
-            echo "MRS_NEEDS_BUILD=1" >> "${GITHUB_ENV}"
-          else
-            echo "MRS_NEEDS_BUILD=0" >> "${GITHUB_ENV}"
-          fi
+          convert = []
+          entries = {}
+          for item in inventory:
+              source, destination = item['source'], item['destination']
+              old = old_entries.get(source)
+              if (not isinstance(old, dict) or old.get('oid') != item['oid']
+                  or old.get('destination') != destination
+                  or (old.get('output') is not None and old.get('output') not in current_files)):
+                  convert.append(item)
+              else:
+                  entries[source] = old
 
-      - name: Install mihomo (fixed version)
-        if: env.MRS_NEEDS_BUILD == '1'
-        env:
-          GH_TOKEN: ${{ github.token }}
+          target_names = {item['destination'] for item in inventory}
+          expected_existing = {entry['output'] for entry in entries.values() if entry.get('output')}
+          rebuilding_names = {entry['destination'] for entry in convert}
+          obsolete = sorted(name for name in current_files if name.endswith('.mrs')
+                            and name not in expected_existing and name not in rebuilding_names)
+          # Previously empty/unsupported-only categories have output=null in the manifest.
+          payload = json.dumps({'compiler': compiler, 'inventory': inventory},
+                               sort_keys=True, separators=(',', ':')).encode()
+          build_hash = hashlib.sha256(payload).hexdigest()
+          old_hash = (old_file('mrs.hash') or b'').decode().strip()
+          needs_commit = bool(convert or obsolete or old_hash != build_hash or not compatible)
+
+          work = Path(os.environ['RUNNER_TEMP'])
+          (work / 'mrs-plan.json').write_text(json.dumps({
+              'schema': 1, 'compiler': compiler, 'inventory': inventory,
+              'convert': convert, 'entries': entries,
+              'obsolete': obsolete, 'hash': build_hash,
+          }, sort_keys=True), encoding='utf-8')
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f"needs_build={'true' if needs_commit else 'false'}\n")
+              output.write(f"needs_mihomo={'true' if convert else 'false'}\n")
+          print(f'Categories: {len(inventory)}; recompile: {len(convert)}; obsolete: {len(obsolete)}')
+          PY
+
+      - name: Download pinned Mihomo (without APT)
+        if: steps.plan.outputs.needs_mihomo == 'true'
+        shell: bash
         run: |
           set -Eeuo pipefail
+          archive="$RUNNER_TEMP/mihomo.gz"
+          curl -fL --retry 4 --retry-delay 2 --connect-timeout 15 \
+            --max-time 180 \
+            "https://github.com/MetaCubeX/mihomo/releases/download/${MIHOMO_VERSION}/mihomo-linux-amd64-${MIHOMO_VERSION}.gz" \
+            -o "$archive"
+          echo "${MIHOMO_SHA256}  ${archive}" | sha256sum --check --status
+          gzip -dc "$archive" > "$RUNNER_TEMP/mihomo"
+          chmod +x "$RUNNER_TEMP/mihomo"
+          rm -f "$archive"
+          "$RUNNER_TEMP/mihomo" -v
 
-          rm -f /tmp/mihomo-linux-amd64*.deb
-
-          command -v gh >/dev/null 2>&1
-
-          gh release download "${MIHOMO_VERSION}" \
-            -R MetaCubeX/mihomo \
-            -p 'mihomo-linux-amd64*.deb' \
-            -D /tmp
-
-          deb="$(ls -1 /tmp/mihomo-linux-amd64*.deb | head -n1)"
-          test -n "${deb}"
-
-          sudo apt-get update -y
-          sudo apt-get install -y "${deb}"
-
-          rm -f /tmp/mihomo-linux-amd64*.deb
-
-          mihomo -v
-
-      - name: Build *.mrs to repository root (no python)
-        if: env.MRS_NEEDS_BUILD == '1'
+      - name: Convert changed rulesets and publish atomically
+        if: steps.plan.outputs.needs_build == 'true'
+        shell: bash
         run: |
           set -Eeuo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import subprocess
+          import tempfile
+          from pathlib import Path
 
-          git rm -r --ignore-unmatch . >/dev/null 2>&1 || true
-          rm -f mrs.hash
+          def git(*args, env=None, input_data=None):
+              return subprocess.check_output(['git', *args], env=env, input=input_data)
 
-          geosite_list="$(git ls-tree -r --name-only origin/sources:geosite 2>/dev/null || true)"
-          if [[ -n "${geosite_list}" ]]; then
-            while IFS= read -r f; do
-              [[ -n "${f}" ]] || continue
-              base="${f%.list}"
-              safe="${base//\//-}"
+          work = Path(os.environ['RUNNER_TEMP'])
+          plan = json.loads((work / 'mrs-plan.json').read_text(encoding='utf-8'))
+          compiled = {}
+          binary = str(work / 'mihomo')
+          # During an initial/full rebuild, check out source trees together to
+          # batch the partial-clone blob downloads instead of fetching one by one.
+          source_checkout = None
+          if len(plan['convert']) >= 32:
+              source_checkout = work / 'mrs-sources-checkout'
+              subprocess.run(['git', 'worktree', 'add', '--detach', '--no-checkout',
+                              str(source_checkout), 'origin/sources'], check=True)
+              subprocess.run(['git', '-C', str(source_checkout), 'sparse-checkout',
+                              'set', 'geosite', 'geoip'], check=True)
+              subprocess.run(['git', '-C', str(source_checkout), 'checkout',
+                              '--detach', '--force', 'origin/sources'], check=True)
+          hostname = re.compile(r'(?=.{1,253}\Z)[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\Z')
 
-              tmp="$(mktemp)"
-              git show "origin/sources:geosite/${f}" | awk '
-                function trim(s) {
-                  sub(/^[ \t]+/, "", s)
-                  sub(/[ \t]+$/, "", s)
-                  return s
-                }
+          def prepare_domains(source, destination):
+              count = 0
+              with destination.open('w', encoding='utf-8') as out:
+                  for lineno, line in enumerate(source, 1):
+                      s = line.strip()
+                      if not s or s.startswith('#'):
+                          continue
+                      typ, sep, value = s.partition(':')
+                      if typ in ('regexp', 'keyword') and sep:
+                          continue   # MRS domain cannot represent these types.
+                      if typ == 'include' and sep:
+                          raise ValueError('Unresolved include: from sources')
+                      if sep:
+                          if typ not in ('domain', 'full'):
+                              raise ValueError(f'Unknown rule type {typ!r} at line {lineno}')
+                      else:
+                          typ, value = 'domain', s
+                      value = value.split('#', 1)[0].strip().lower()
+                      if not hostname.fullmatch(value) or '..' in value or any(
+                          len(label) > 63 or label.startswith('-') or label.endswith('-')
+                          for label in value.split('.')
+                      ):
+                          raise ValueError(f'Invalid domain at line {lineno}: {value!r}')
+                      # Clash wildcard syntax: +. includes the apex and subdomains.
+                      out.write(('' if typ == 'full' else '+.') + value + '\n')
+                      count += 1
+              return count
 
-                function strip_tail(s) {
-                  gsub(/\r/, "", s)
-                  sub(/[ \t]*#.*/, "", s)
-                  sub(/[ \t]*\/\/.*/, "", s)
-                  sub(/[ \t]*@.*/, "", s)
-                  return trim(s)
-                }
+          def prepare_ips(source, destination, keep_ipv6):
+              count = 0
+              with destination.open('w', encoding='utf-8') as out:
+                  for line in source:
+                      s = line.partition('#')[0].strip()
+                      if not s or (':' in s and not keep_ipv6):
+                          continue
+                      out.write(s + '\n')
+                      count += 1
+              return count
 
-                function emit_exact(v) {
-                  v = strip_tail(v)
-                  gsub(/[ \t]+/, "", v)
-                  v = tolower(v)
-                  sub(/^\./, "", v)
-                  if (v != "") print v
-                }
+          for item in plan['convert']:
+              source = item['source']
+              with tempfile.TemporaryDirectory(dir=work) as directory:
+                  input_file = Path(directory) / 'input.txt'
+                  keep6 = source == 'geoip/private.list'
 
-                function emit_suffix(v) {
-                  v = strip_tail(v)
-                  gsub(/[ \t]+/, "", v)
-                  v = tolower(v)
-                  sub(/^\./, "", v)
-                  if (v != "") {
-                    v = "+." v
-                    sub(/\.$/, ".*", v)
-                    print v
-                  }
-                }
+                  def convert_lines(lines):
+                      if item['kind'] == 'domain':
+                          return prepare_domains(lines, input_file)
+                      return prepare_ips(lines, input_file, keep6)
 
-                {
-                  s = strip_tail($0)
-                  if (s == "") next
-                  s = tolower(s)
+                  if source_checkout is not None:
+                      with (source_checkout / source).open('r', encoding='utf-8') as inp:
+                          count = convert_lines(inp)
+                  else:
+                      # Stream Git output directly: no second copy of a huge TIF.
+                      with subprocess.Popen(['git', 'show', f'origin/sources:{source}'],
+                                            stdout=subprocess.PIPE, text=True,
+                                            encoding='utf-8') as proc:
+                          count = convert_lines(proc.stdout)
+                          if proc.wait() != 0:
+                              raise RuntimeError(f'Could not read {source}')
+                  if count:
+                      output_path = work / item['destination']
+                      subprocess.run([binary, 'convert-ruleset', item['kind'], 'text',
+                                      str(input_file), str(output_path)], check=True)
+                      with output_path.open('rb') as result:
+                          if result.read(4) != b'MRS\x01':
+                              raise ValueError(f'Invalid MRS header: {item["destination"]}')
+                      compiled[source] = item['destination']
+                  else:
+                      compiled[source] = None
+              print(f"Converted {source}: {count} supported rules")
 
-                  if (s ~ /^include:/) next
-                  if (s ~ /^regexp:/) next
+          for item in plan['convert']:
+              plan['entries'][item['source']] = {
+                  'oid': item['oid'], 'destination': item['destination'],
+                  'output': compiled[item['source']],
+              }
 
-                  if (s ~ /^full:/) {
-                    sub(/^full:/, "", s)
-                    emit_exact(s)
-                    next
-                  }
+          manifest = {
+              'schema': 1, 'compiler': plan['compiler'],
+              'entries': dict(sorted(plan['entries'].items())),
+          }
 
-                  if (s ~ /^domain:/) {
-                    sub(/^domain:/, "", s)
-                    emit_suffix(s)
-                    next
-                  }
+          # Build a tree from the destination's previous tree, without checking
+          # out all its large .mrs blobs or touching the checked-out main branch.
+          index_path = work / 'mrs-publish.index'
+          index_path.unlink(missing_ok=True)
+          env = os.environ.copy()
+          env['GIT_INDEX_FILE'] = str(index_path)
+          previous_commit = None
+          if os.environ['MRS_BRANCH_EXISTS'] == '1':
+              previous_commit = git('rev-parse', 'origin/mihomo-rulesets').decode().strip()
+              git('read-tree', 'origin/mihomo-rulesets', env=env)
+          else:
+              git('read-tree', '--empty', env=env)
 
-                  if (s ~ /^keyword:/) {
-                    sub(/^keyword:/, "", s)
-                    emit_suffix(s)
-                    next
-                  }
+          expected = {v['output'] for v in manifest['entries'].values() if v['output']}
+          old_paths = git('ls-files', '-z', env=env).decode().rstrip('\0').split('\0')
+          for path in old_paths:
+              if path and path not in expected and path not in ('mrs.hash', 'mrs.manifest.json'):
+                  git('update-index', '--force-remove', '--', path, env=env)
 
-                  if (s ~ /^[a-z0-9_-]+:/) next
+          for item in plan['convert']:
+              destination = compiled[item['source']]
+              if destination:
+                  oid = git('hash-object', '-w', str(work / destination)).decode().strip()
+                  git('update-index', '--add', '--cacheinfo',
+                      f'100644,{oid},{destination}', env=env)
+              else:
+                  # Remove a formerly nonempty ruleset when it becomes empty.
+                  git('update-index', '--force-remove', '--', item['destination'], env=env)
 
-                  emit_suffix(s)
-                }
-              ' > "${tmp}"
+          meta = {
+              'mrs.hash': (plan['hash'] + '\n').encode(),
+              'mrs.manifest.json': (json.dumps(manifest, sort_keys=True, indent=2) + '\n').encode(),
+          }
+          for name, contents in meta.items():
+              oid = git('hash-object', '-w', '--stdin', input_data=contents).decode().strip()
+              git('update-index', '--add', '--cacheinfo', f'100644,{oid},{name}', env=env)
 
-              mihomo convert-ruleset domain text "${tmp}" "geosite-${safe}.mrs"
-              rm -f "${tmp}"
-            done <<< "${geosite_list}"
-          fi
-
-          geoip_list="$(git ls-tree -r --name-only origin/sources:geoip 2>/dev/null || true)"
-          if [[ -n "${geoip_list}" ]]; then
-            while IFS= read -r f; do
-              [[ -n "${f}" ]] || continue
-
-              bn="$(basename "${f}")"
-              base="${bn%.list}"
-              safe="${f%.list}"
-              safe="${safe//\//-}"
-
-              if [[ "${base}" == "private" ]]; then
-                mihomo convert-ruleset ipcidr text <(git show "origin/sources:geoip/${f}") "geoip-${safe}.mrs"
-              else
-                mihomo convert-ruleset ipcidr text <(git show "origin/sources:geoip/${f}" | grep -v ':') "geoip-${safe}.mrs"
-              fi
-            done <<< "${geoip_list}"
-          fi
-
-          printf '%s' "${MRS_BUILD_HASH}" > mrs.hash
-
-          git add -A
-
-      - name: Commit updates
-        run: |
-          set -Eeuo pipefail
-
-          git config --local user.email "${COMMIT_USER_EMAIL}"
-          git config --local user.name  "${COMMIT_USER_NAME}"
-
-          git diff --staged --quiet && exit 0
-          git commit -m "Update mihomo rulesets (*.mrs) $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-          git push || true
+          new_tree = git('write-tree', env=env).decode().strip()
+          if previous_commit and new_tree == git('rev-parse', f'{previous_commit}^{{tree}}').decode().strip():
+              print('No content changes to publish')
+          else:
+              commit_env = env.copy()
+              commit_env.update({
+                  'GIT_AUTHOR_NAME': os.environ['COMMIT_USER_NAME'],
+                  'GIT_AUTHOR_EMAIL': os.environ['COMMIT_USER_EMAIL'],
+                  'GIT_COMMITTER_NAME': os.environ['COMMIT_USER_NAME'],
+                  'GIT_COMMITTER_EMAIL': os.environ['COMMIT_USER_EMAIL'],
+              })
+              args = ['commit-tree', new_tree, '-m', 'Update Mihomo rulesets']
+              if previous_commit:
+                  args += ['-p', previous_commit]
+              new_commit = git(*args, env=commit_env).decode().strip()
+              subprocess.run(['git', 'push', 'origin',
+                              f'{new_commit}:refs/heads/mihomo-rulesets'], check=True)
+              print(f'Published {len(plan["convert"])} compiled categories')
+          PY
