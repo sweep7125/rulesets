@@ -304,18 +304,20 @@ jobs:
           done
 
           # Retain the original abuse-* semantics: OISD Big + TIF tier.
-          # Normalize the combined sources one at a time, then immediately
-          # remove the large temporary concatenated input.
+          # Both inputs are already normalized and suffix-minimized, so
+          # merging their Xray rules is equivalent to optimizing raw sources.
+          # This avoids reparsing raw multi-million-domain files and
+          # temporarily concatenating those raw files on disk.
           for tier in mini medium full; do
-            combined="_inputs/abuse-${tier}.src"
-            cat _inputs/oisd-big.src "_inputs/tif-${tier}.src" > "$combined"
+            combined="_inputs/abuse-${tier}.optimized.src"
+            cat geosite/oisd-big.list "geosite/tif-${tier}.list" > "$combined"
             test -s "$combined"
             if [[ -x /usr/bin/time ]]; then
               /usr/bin/time -f "abuse-${tier}: elapsed=%es peak_rss=%MKiB" \
                 python3 "$OPT_PY" domains "$combined" "geosite/abuse-${tier}" \
-                  --input-type clean --target suffix
+                  --input-type xray --target preserve
             else
-              dom_from_clean_to_xray_suffix "$combined" "geosite/abuse-${tier}"
+              dom_xray_preserve "$combined" "geosite/abuse-${tier}"
             fi
             test -s "geosite/abuse-${tier}.list"
             rm -f "$combined"
