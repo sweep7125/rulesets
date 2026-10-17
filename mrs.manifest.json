@@ -6,7 +6,7 @@
   "entries": {
     "geoip/abuse.list": {
       "destination": "geoip-abuse.mrs",
-      "oid": "cc6791ec370cd163def22a498eb720ee6cbcd721",
+      "oid": "230d38abb0b8b5c2a54292ec98e303b9eb56e597",
       "output": "geoip-abuse.mrs"
     },
     "geoip/ad.list": {
@@ -1456,7 +1456,7 @@
     },
     "geosite/abuse-full.list": {
       "destination": "geosite-abuse-full.mrs",
-      "oid": "7196218ed108ff4c3a6970b2b6fc3976380cd79f",
+      "oid": "71c6f00d3012b53c5cee5d18a846c208c83c162f",
       "output": "geosite-abuse-full.mrs"
     },
     "geosite/accuweather.list": {
@@ -6431,12 +6431,12 @@
     },
     "geosite/oisd-big.list": {
       "destination": "geosite-oisd-big.mrs",
-      "oid": "6988d05fb183f2cb455ef67e3a9fdb7a22bbfb29",
+      "oid": "2f3139d148d4b24efe6cf9ef7d8fe9ed0acfb7be",
       "output": "geosite-oisd-big.mrs"
     },
     "geosite/oisd-small.list": {
       "destination": "geosite-oisd-small.mrs",
-      "oid": "61278dabcfa8f5beff92b9a8778578b85981c71d",
+      "oid": "91ae3714fdd57394b4daebdaeb30af34c61ad0ca",
       "output": "geosite-oisd-small.mrs"
     },
     "geosite/ok.list": {
@@ -8101,7 +8101,7 @@
     },
     "geosite/tif-full.list": {
       "destination": "geosite-tif-full.mrs",
-      "oid": "6b4a31f6ff85843d601b9126037c1cd7e5c90673",
+      "oid": "2eafed19b9e2ea64d035036be82bfc239bc1f353",
       "output": "geosite-tif-full.mrs"
     },
     "geosite/tiktok.list": {
