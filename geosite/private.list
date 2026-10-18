@@ -10,6 +10,8 @@ full:setmeup.arubanetworks.com
 full:www.asusrouter.com
 full:www.miwifi.com
 full:www.routerlogin.com
+full:localhost.weixin.qq.com
+full:localhost.work.weixin.qq.com
 domain:example
 domain:internal
 domain:invalid
