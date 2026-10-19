@@ -79,7 +79,6 @@ full:ds0h3roq6wcgc.cloudfront.net
 full:dstnzhnatv9pz.cloudfront.net
 full:dykkng5hnh52u.cloudfront.net
 full:eaassets-a.akamaihd.net
-full:flightsimulator.azureedge.net
 full:gamedownloads-rockstargames-com.akamaized.net
 full:gog-cdn.akamaized.net
 full:gog.qtlglb.com
@@ -324,7 +323,6 @@ domain:armaplatform.com
 domain:artstation.com
 domain:artstationmedia.com
 domain:artstorm.com
-domain:asobostudio.com
 domain:att.tv
 domain:atttvnow.com
 domain:attwatchtv.com
@@ -674,7 +672,6 @@ domain:fireemblemawakening.com
 domain:fireside.fm
 domain:firesidegatherings.com
 domain:fitgirl-repacks.site
-domain:flightsimulator.com
 domain:flipnotestudio.com
 domain:forgecdn.net
 domain:formula1.com
@@ -1302,6 +1299,7 @@ domain:protondb.com
 domain:pscdn.co
 domain:ptzwx.com
 domain:pubg.com
+domain:pv-cdn.net
 domain:pvp.net
 domain:pvp.tv
 domain:pvzgw2.com

@@ -841,7 +841,6 @@ domain:artcampro.com
 domain:as-hp.ca
 domain:askfacebook.net
 domain:askfacebook.org
-domain:asobostudio.com
 domain:asp-cc.com
 domain:asp.net
 domain:aspnetcdn.com
@@ -2906,7 +2905,6 @@ domain:flatt.tech
 domain:flic.kr
 domain:flickr.com
 domain:flickr.net
-domain:flightsimulator.com
 domain:flipshare.com
 domain:flipwithsurface.com
 domain:flow.dev
@@ -5413,6 +5411,7 @@ domain:publicsuffix.org
 domain:publishproxy.com
 domain:pullstring.net
 domain:pushgrow.io
+domain:pv-cdn.net
 domain:pwabuilder.com
 domain:pxt.io
 domain:pyrobot.org
