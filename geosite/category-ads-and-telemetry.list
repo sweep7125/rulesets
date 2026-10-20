@@ -28,6 +28,7 @@ full:heads-ak-spotify-com.akamaized.net
 full:heads4-ak-spotify-com.akamaized.net
 full:img-prod-cms-rt-microsoft-com.akamaized.net
 full:img-s-msn-com.akamaized.net
+full:kp-config-smart-tv.akamaized.net
 full:mozilla-ohttp.fastly-edge.com
 full:mwf-service.akamaized.net
 full:officecdn-microsoft-com.akamaized.net
@@ -4529,6 +4530,8 @@ domain:krcom.cn
 domain:ksapisrv.com
 domain:kskwai.com
 domain:kspkg.com
+domain:ktalk.host
+domain:ktalk.ru
 domain:ktv.com
 domain:kuaiduizuoye.com
 domain:kuailepipixia.com
@@ -5219,6 +5222,7 @@ domain:mszdld.cn
 domain:mszdld.com
 domain:mszdld.net
 domain:mting.info
+domain:mts-link.ru
 domain:mts-ws.net
 domain:mts.ru
 domain:mtsbank.ru

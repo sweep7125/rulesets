@@ -1,4 +1,6 @@
+full:kp-config-smart-tv.akamaized.net
 full:mvideo.edna.io
+full:kp-configs-smart-tv.s3.eu-central-1.amazonaws.com
 domain:moscow
 domain:ru
 domain:su
@@ -69,6 +71,13 @@ domain:beget.pro
 domain:beget.tech
 domain:begetcdn.cloud
 domain:best2pay.net
+domain:bitrix.info
+domain:bitrix24.com
+domain:bitrix24.net
+domain:bitrix24.tech
+domain:bitrix24public.com
+domain:bitrixphone.com
+domain:bitrixsoft.com
 domain:bizmrg.com
 domain:bk6bba-resources.com
 domain:book1917.live
@@ -225,6 +234,7 @@ domain:groupib.us
 domain:gw2ru.com
 domain:haicomdc.com
 domain:hayya.ae
+domain:hellodoc.app
 domain:hh.by
 domain:hh.kz
 domain:home.bank
@@ -287,6 +297,7 @@ domain:jivochat.de
 domain:jivochat.es
 domain:jivochat.ng
 domain:jivosite.com
+domain:joyreactor.cc
 domain:jump.taxi
 domain:justveryok.com
 domain:kaspersky-labs.com
@@ -319,6 +330,7 @@ domain:kontur-inc.com
 domain:kontur.host
 domain:koronapay.com
 domain:koshelek.app
+domain:ktalk.host
 domain:ktech.team
 domain:lenta.com
 domain:lenta.tech
@@ -329,6 +341,7 @@ domain:mail-carrotquest.io
 domain:mailicq.org
 domain:maritimebank.com
 domain:mcs.st
+domain:medrocket.me
 domain:medsi.com
 domain:medsi.pro
 domain:megafon.com
@@ -421,6 +434,7 @@ domain:pobeda.page
 domain:polza.ai
 domain:popmechanic.io
 domain:poudobnee.com
+domain:pravmir.com
 domain:premier.one
 domain:premiumlive.site
 domain:priovtb.com
@@ -445,6 +459,7 @@ domain:reg.com
 domain:renins.com
 domain:reso-med.com
 domain:restream-media.net
+domain:robohall.tech
 domain:robotext.io
 domain:rocketozon.by
 domain:roistat.com

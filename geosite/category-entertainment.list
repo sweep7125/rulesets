@@ -92,6 +92,7 @@ full:images-eu.ssl-images-amazon.com
 full:images-fe.ssl-images-amazon.com
 full:images-na.ssl-images-amazon.com
 full:itunesconnect.apple.com
+full:kp-config-smart-tv.akamaized.net
 full:lazer.ppy.sh
 full:linear-abematv.akamaized.net
 full:lolstatic-a.akamaihd.net
@@ -210,6 +211,7 @@ full:webvodad-hamivideo.cdn.hinet.net
 full:a4e8s8k3.map2.ssl.hwcdn.net
 full:efe8f8a4-abd5-44c9-bf5c-cd217442c52f.t.ssp.hinet.net
 full:iosapps.itunes.g.aaplimg.com
+full:kp-configs-smart-tv.s3.eu-central-1.amazonaws.com
 full:osxapps.itunes.g.aaplimg.com
 full:prodforza.blob.core.windows.net
 full:roblox-load-generator-configuration.s3.us-east-2.amazonaws.com
@@ -1906,6 +1908,7 @@ domain:kinopoisk-ru.clstorage.net
 domain:kkbox.com.tw
 domain:kktv.com.tw
 domain:konami.co.jp
+domain:kp.yandex.net
 domain:leagueoflegends.co.kr
 domain:legendofzelda.com.cn
 domain:litvfreepc.akamaized.net
