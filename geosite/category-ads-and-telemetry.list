@@ -85,6 +85,7 @@ full:init-s01st-lb.push-apple.com.akadns.net
 full:iphone-ld.origin-apple.com.akadns.net
 full:mesu-cdn.apple.com.akadns.net
 full:mesu-china.apple.com.akadns.net
+full:o33249.ingest.us.sentry.io
 full:oscdn.origin-apple.com.akadns.net
 full:stocks-sparkline-lb.apple.com.akadns.net
 full:store.apple.com.edgekey.net
@@ -1035,8 +1036,10 @@ domain:authorxml.com
 domain:auto-validation.com
 domain:autodraw.com
 domain:autonavi.com
+domain:avito.com
 domain:avito.ru
 domain:avito.st
+domain:avito.tech
 domain:awemeughun.com
 domain:awemeuglang.com
 domain:awemeugsoul.com
