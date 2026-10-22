@@ -61,6 +61,8 @@ domain:bitstamp.net
 domain:bittrex.com
 domain:blast.io
 domain:blockchain.com
+domain:blockchair.com
+domain:blockchair.net
 domain:blockfrost.io
 domain:bmwweb.solutions
 domain:bnappweb.black
@@ -100,10 +102,12 @@ domain:coinonecorp.com
 domain:coredao.org
 domain:crypto.com
 domain:cryptocompare.com
+domain:cryptoid.info
 domain:cryptomus.com
 domain:curve.fi
 domain:cyberx.com
 domain:debank.com
+domain:delets.cash
 domain:delets.online
 domain:deribit.com
 domain:devcon.org
@@ -148,6 +152,7 @@ domain:kraken.com
 domain:kraken.onl
 domain:kucoin.com
 domain:kucoin.plus
+domain:kurs.expert
 domain:lighter.exchange
 domain:lighter.xyz
 domain:litecoin.org

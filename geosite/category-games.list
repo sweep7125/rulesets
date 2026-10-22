@@ -371,6 +371,7 @@ domain:gaijin.net
 domain:gaijinent.com
 domain:game-repack.site
 domain:gameabc.com
+domain:gamebanana.com
 domain:gamebonfire.com
 domain:gameitop.com
 domain:gameloop.com
@@ -729,6 +730,7 @@ domain:qqgameapp.com
 domain:quiltmc.org
 domain:quixel.com
 domain:quixel.se
+domain:r2modman.com
 domain:radgametools.com
 domain:ravensoftware.com
 domain:rayark.download
@@ -864,6 +866,7 @@ domain:steamdb.info
 domain:steamdeck.com
 domain:steamgames.com
 domain:steaminventoryhelper.com
+domain:steamos.cloud
 domain:steampowered.com
 domain:steamserver.net
 domain:steamstatic.com
@@ -922,6 +925,8 @@ domain:thesims3.com
 domain:thesims4.com
 domain:thesimssocial.com
 domain:thewonderful101.com
+domain:thunderstore.io
+domain:thunderstore.org
 domain:tiancity.com
 domain:tiancitycdn.com
 domain:tiberiumalliances.com
@@ -999,10 +1004,12 @@ domain:worldoftanks.com
 domain:worldoftanks.eu
 domain:worldofwarcraft.com
 domain:worldofwarplanes.com
+domain:worldofwarships.asia
 domain:worldofwarships.com
 domain:worldseriesofwarzone.com
 domain:wotblitz.com
 domain:wowsblitz.com
+domain:wplace.live
 domain:wtmobile.com
 domain:wutheringwaves.cn
 domain:xbox.co
