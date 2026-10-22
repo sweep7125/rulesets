@@ -6,7 +6,7 @@
   "entries": {
     "geoip/abuse.list": {
       "destination": "geoip-abuse.mrs",
-      "oid": "97c131f1436c3e8efdfec8ea6b22475b1f5065de",
+      "oid": "b891aabf5a462efa99b0c604580d4af5ae7647b3",
       "output": "geoip-abuse.mrs"
     },
     "geoip/ad.list": {
@@ -16,7 +16,7 @@
     },
     "geoip/ae.list": {
       "destination": "geoip-ae.mrs",
-      "oid": "276d5d133fd5869f613b260f10cc99fa81b66cdb",
+      "oid": "cfdf71c6563d073e0f2067c8e4fbb23607182450",
       "output": "geoip-ae.mrs"
     },
     "geoip/af.list": {
@@ -26,27 +26,27 @@
     },
     "geoip/ag.list": {
       "destination": "geoip-ag.mrs",
-      "oid": "baf996bf040fb56740b59b4691ce49efdcd13cb9",
+      "oid": "582c9366e9cb9f874309cdf358d14e4a079dfa1f",
       "output": "geoip-ag.mrs"
     },
     "geoip/ai.list": {
       "destination": "geoip-ai.mrs",
-      "oid": "8ef2e59348cf8c850e0d643f7e83386eebec1b19",
+      "oid": "e03784e2460af1d843bf34a9d75faaacd9dd797c",
       "output": "geoip-ai.mrs"
     },
     "geoip/al.list": {
       "destination": "geoip-al.mrs",
-      "oid": "216123bd155bf0b0cb6e35b9fdb984d3ce9a6f0c",
+      "oid": "ef0e95a4ed6c21405a980ab167db8aaa8125b452",
       "output": "geoip-al.mrs"
     },
     "geoip/am.list": {
       "destination": "geoip-am.mrs",
-      "oid": "3bbc8c9471fc77def5e198663cfa1922c988c890",
+      "oid": "a4b2281d4d90198f3cfaa1363a8ad01f75ab631e",
       "output": "geoip-am.mrs"
     },
     "geoip/ao.list": {
       "destination": "geoip-ao.mrs",
-      "oid": "cc5395b29a177738576ed0156ca1fe5782a667f6",
+      "oid": "91ef3cdb25fe98f598f8deff78c29158a6d07528",
       "output": "geoip-ao.mrs"
     },
     "geoip/aq.list": {
@@ -56,7 +56,7 @@
     },
     "geoip/ar.list": {
       "destination": "geoip-ar.mrs",
-      "oid": "f7dd1257f4283ad792f4c3815b3c543a8650cb7c",
+      "oid": "673dda2f29f9857844d62ab5c009ba893f8f303d",
       "output": "geoip-ar.mrs"
     },
     "geoip/as.list": {
@@ -66,12 +66,12 @@
     },
     "geoip/at.list": {
       "destination": "geoip-at.mrs",
-      "oid": "d18241e09ee6b9a7aff491be105a62815cd927f9",
+      "oid": "266d2966bd93372246a969e4c1d355de73e3c28f",
       "output": "geoip-at.mrs"
     },
     "geoip/au.list": {
       "destination": "geoip-au.mrs",
-      "oid": "8c07e89a32776db602d404ec1526a4e32fec814f",
+      "oid": "7df6237ed2dd39d5c62223cd922179f0f423703d",
       "output": "geoip-au.mrs"
     },
     "geoip/aw.list": {
@@ -86,27 +86,27 @@
     },
     "geoip/az.list": {
       "destination": "geoip-az.mrs",
-      "oid": "6b537d0322ab17862bf826f9bcaeb241b544f768",
+      "oid": "0c1faa688e2a0aee406a267ea42a214f4251adfc",
       "output": "geoip-az.mrs"
     },
     "geoip/ba.list": {
       "destination": "geoip-ba.mrs",
-      "oid": "4ec6339561c87aa0d79e11c73da3f2846fbb5058",
+      "oid": "d008038780d434a769a9e1c0ccfaf995b3d36ffd",
       "output": "geoip-ba.mrs"
     },
     "geoip/bb.list": {
       "destination": "geoip-bb.mrs",
-      "oid": "c1d336f13e6f3629064d6d8a937f3269748ad43c",
+      "oid": "602a0cff1e18bddb10e7358286724eea646c9606",
       "output": "geoip-bb.mrs"
     },
     "geoip/bd.list": {
       "destination": "geoip-bd.mrs",
-      "oid": "6f9fa02b69362dcfb47b0b6b944260a24b53cdca",
+      "oid": "2a75058a8c4391c1fee4dc8124597dc09dea3fa6",
       "output": "geoip-bd.mrs"
     },
     "geoip/be.list": {
       "destination": "geoip-be.mrs",
-      "oid": "af9fb747f529ad3b9e20efa8cef64728c52dd158",
+      "oid": "bde709c3f29b9f79e30cab2a8710f541420ad6e3",
       "output": "geoip-be.mrs"
     },
     "geoip/bf.list": {
@@ -116,12 +116,12 @@
     },
     "geoip/bg.list": {
       "destination": "geoip-bg.mrs",
-      "oid": "9fe9ededdf7cace864884d48009085ce4cc3e928",
+      "oid": "457389660f0a6ac211c3c7baddd58feb35e7c08b",
       "output": "geoip-bg.mrs"
     },
     "geoip/bh.list": {
       "destination": "geoip-bh.mrs",
-      "oid": "df98c06caff55829c4348d988f36e2a0eac9cb9e",
+      "oid": "630a8c71a74597c4a9ebd0957c7b8890ce5948d6",
       "output": "geoip-bh.mrs"
     },
     "geoip/bi.list": {
@@ -131,7 +131,7 @@
     },
     "geoip/bj.list": {
       "destination": "geoip-bj.mrs",
-      "oid": "c2dfa45bb7b216da17043a00959e3d13e52fec5c",
+      "oid": "a8eb79e64dcfb320eafaa82012cba4f3362aa7bc",
       "output": "geoip-bj.mrs"
     },
     "geoip/bl.list": {
@@ -141,17 +141,17 @@
     },
     "geoip/bm.list": {
       "destination": "geoip-bm.mrs",
-      "oid": "b2b589c5b48a668d98efe59c98f122f8a02e59ea",
+      "oid": "56a662478120f85841cdf08e3a693ac73e04c0cb",
       "output": "geoip-bm.mrs"
     },
     "geoip/bn.list": {
       "destination": "geoip-bn.mrs",
-      "oid": "b1f8feb6cbd36a9a7c7907b3925fd79641830ab9",
+      "oid": "74b0b92b145e46238b29691ec3f4da5a269fbf55",
       "output": "geoip-bn.mrs"
     },
     "geoip/bo.list": {
       "destination": "geoip-bo.mrs",
-      "oid": "2036e84b0b81a1defbb253c398af47aa53877d50",
+      "oid": "e5519333523c639996c725f398031c2aa2f9f831",
       "output": "geoip-bo.mrs"
     },
     "geoip/bq.list": {
@@ -161,7 +161,7 @@
     },
     "geoip/br.list": {
       "destination": "geoip-br.mrs",
-      "oid": "2d1ff22cdcaa54e64831232f3233b18b10b016d5",
+      "oid": "35a565c03bd025a41b3d980960d6f5dbdec84ee3",
       "output": "geoip-br.mrs"
     },
     "geoip/bs.list": {
@@ -171,7 +171,7 @@
     },
     "geoip/bt.list": {
       "destination": "geoip-bt.mrs",
-      "oid": "44c6a8c06b7b6864109f531878c7839fb0252986",
+      "oid": "b82bf819ba5dee21de8429f57e18db9b1c353444",
       "output": "geoip-bt.mrs"
     },
     "geoip/bv.list": {
@@ -196,7 +196,7 @@
     },
     "geoip/ca.list": {
       "destination": "geoip-ca.mrs",
-      "oid": "586bef4d09b3a045b7fbe3a3b7a2af713cfcde40",
+      "oid": "808e23b4f373002ef9f187d7854acfb13b6faf02",
       "output": "geoip-ca.mrs"
     },
     "geoip/cc.list": {
@@ -206,7 +206,7 @@
     },
     "geoip/cd.list": {
       "destination": "geoip-cd.mrs",
-      "oid": "9b90269452f6e045abae991185890d40b525cf55",
+      "oid": "c6ea0f09bbdb3b58317a3c3826cf31cb7c85f088",
       "output": "geoip-cd.mrs"
     },
     "geoip/cf.list": {
@@ -221,12 +221,12 @@
     },
     "geoip/ch.list": {
       "destination": "geoip-ch.mrs",
-      "oid": "642f467f6cbedad3ea58389271d563771bbc3b1e",
+      "oid": "259464644f72ddd1011cedd6a38baccaef3db445",
       "output": "geoip-ch.mrs"
     },
     "geoip/ci.list": {
       "destination": "geoip-ci.mrs",
-      "oid": "c802a6077bc631001333dd7087dedccd4211aa0a",
+      "oid": "a3e99e226076f0d78c1d09ca86a6c9110772a4b1",
       "output": "geoip-ci.mrs"
     },
     "geoip/ck.list": {
@@ -236,12 +236,12 @@
     },
     "geoip/cl.list": {
       "destination": "geoip-cl.mrs",
-      "oid": "9bd077a12bfd2f3da782706031d38cb1471296a1",
+      "oid": "5776696d6546c2531f17d7520f6ec57627ef698c",
       "output": "geoip-cl.mrs"
     },
     "geoip/cloudflare.list": {
       "destination": "geoip-cloudflare.mrs",
-      "oid": "a00c9ad1014e46eef45f55ac953b6cf5b03a3ef6",
+      "oid": "4934ff1ac0ae2e0f99b3c7ed2299b5b214565f21",
       "output": "geoip-cloudflare.mrs"
     },
     "geoip/cloudfront.list": {
@@ -251,22 +251,22 @@
     },
     "geoip/cm.list": {
       "destination": "geoip-cm.mrs",
-      "oid": "e60b3418b4765e2c5a2821c09be0afbf1d46ab61",
+      "oid": "0c7c3ac7884257ec8c7ca5c32285a25865e3d341",
       "output": "geoip-cm.mrs"
     },
     "geoip/cn.list": {
       "destination": "geoip-cn.mrs",
-      "oid": "40a4f33a85e2de9d2350d5597cba3e6fdc51594f",
+      "oid": "ecf47e731d2c279a6016039e2a50012ff073497f",
       "output": "geoip-cn.mrs"
     },
     "geoip/co.list": {
       "destination": "geoip-co.mrs",
-      "oid": "b6ddc27019a654d84de929c04dd9b6295fd5b319",
+      "oid": "54109cc04a6d93003415294b2560d40352aded4a",
       "output": "geoip-co.mrs"
     },
     "geoip/cr.list": {
       "destination": "geoip-cr.mrs",
-      "oid": "b04f11b34caf7173026cc7f0c1eb4b01bab4fb9f",
+      "oid": "d523d98a1b9cf3860eb648040f29c47bc73b15ec",
       "output": "geoip-cr.mrs"
     },
     "geoip/cu.list": {
@@ -291,17 +291,17 @@
     },
     "geoip/cy.list": {
       "destination": "geoip-cy.mrs",
-      "oid": "d2edf775c83a774b0e20291af5a69a01260d4a6f",
+      "oid": "fd163dd1311cba33e028f4b58cc6109129f1af4a",
       "output": "geoip-cy.mrs"
     },
     "geoip/cz.list": {
       "destination": "geoip-cz.mrs",
-      "oid": "201dc130395fa0001b871c84a1bf0f9b5313e981",
+      "oid": "01ec4d25d14979397a09ebfe5e10d30ff88370fc",
       "output": "geoip-cz.mrs"
     },
     "geoip/de.list": {
       "destination": "geoip-de.mrs",
-      "oid": "ee4b478b128d19e987327f1df019a5bb2b23d43c",
+      "oid": "5c1ff9b36d6aa8cb902b9121b37580d6e6c9f20f",
       "output": "geoip-de.mrs"
     },
     "geoip/dj.list": {
@@ -311,17 +311,17 @@
     },
     "geoip/dk.list": {
       "destination": "geoip-dk.mrs",
-      "oid": "ebb0d29f60e350a527780bcb57cebc432f220e86",
+      "oid": "4c67764e18a0de908b1c1a51dcb3fabddc4d1037",
       "output": "geoip-dk.mrs"
     },
     "geoip/dm.list": {
       "destination": "geoip-dm.mrs",
-      "oid": "108a663fa7578fb2bc3734d78e14534ca6bbc6d4",
+      "oid": "5603693a0a360fbe35353bab558deb5bbcfda9cf",
       "output": "geoip-dm.mrs"
     },
     "geoip/do.list": {
       "destination": "geoip-do.mrs",
-      "oid": "d17b75e36447fb9ed9e590834b2a951b243a4030",
+      "oid": "7fd829cee94dcb673a869a0d13aa1b51501c9c75",
       "output": "geoip-do.mrs"
     },
     "geoip/dz.list": {
@@ -331,17 +331,17 @@
     },
     "geoip/ec.list": {
       "destination": "geoip-ec.mrs",
-      "oid": "ee0a83e313ad347f07ef4643518be9837bd75421",
+      "oid": "beebafc140cc68b6b9ad986fa342d9270222fb27",
       "output": "geoip-ec.mrs"
     },
     "geoip/ee.list": {
       "destination": "geoip-ee.mrs",
-      "oid": "126902c00651b2347dbc24db100032df5d67c2d7",
+      "oid": "6cce83ba71ce9c7e5ba0ce4937f091e0c1c99556",
       "output": "geoip-ee.mrs"
     },
     "geoip/eg.list": {
       "destination": "geoip-eg.mrs",
-      "oid": "690add789e4fc8341411b09fbaaaf4f95cfdeba5",
+      "oid": "69d9f8d18de62e016a59a16f9e4b5ec5d8369b74",
       "output": "geoip-eg.mrs"
     },
     "geoip/eh.list": {
@@ -356,17 +356,17 @@
     },
     "geoip/es.list": {
       "destination": "geoip-es.mrs",
-      "oid": "e8490c085e9455176461c87ac8c2a9e29d8fec88",
+      "oid": "43add366c4a64789f6c4d84047fd659fe23438f7",
       "output": "geoip-es.mrs"
     },
     "geoip/et.list": {
       "destination": "geoip-et.mrs",
-      "oid": "f1cd8167916eae84be74d1188bc247b3c14d47e2",
+      "oid": "3167e13945ff60aac3197d2873d6d4c0eaffde2b",
       "output": "geoip-et.mrs"
     },
     "geoip/facebook.list": {
       "destination": "geoip-facebook.mrs",
-      "oid": "228201665901b7f3a6577ea0a5fac0275bdfe906",
+      "oid": "afd23e6ba72221bb656a7331cd3cac2e0a101384",
       "output": "geoip-facebook.mrs"
     },
     "geoip/fastly.list": {
@@ -376,7 +376,7 @@
     },
     "geoip/fi.list": {
       "destination": "geoip-fi.mrs",
-      "oid": "b41e22318224c5af234eed9585ef764377fc4218",
+      "oid": "5f94c1b611768190a54aa380a93c4c1955bc23ae",
       "output": "geoip-fi.mrs"
     },
     "geoip/fj.list": {
@@ -401,7 +401,7 @@
     },
     "geoip/fr.list": {
       "destination": "geoip-fr.mrs",
-      "oid": "010421231fe480f45284355d46a748257adfbfba",
+      "oid": "7f8cdbe5ec0848aafc9b27e46a0cbbc636024fe8",
       "output": "geoip-fr.mrs"
     },
     "geoip/ga.list": {
@@ -411,7 +411,7 @@
     },
     "geoip/gb.list": {
       "destination": "geoip-gb.mrs",
-      "oid": "ca76c1e78725d8e6a05bb7e1b2de4b1e1832e859",
+      "oid": "4d002938b05d1a4267055edd9d538567fc8f45a2",
       "output": "geoip-gb.mrs"
     },
     "geoip/gd.list": {
@@ -421,27 +421,27 @@
     },
     "geoip/ge.list": {
       "destination": "geoip-ge.mrs",
-      "oid": "38d272c84fb435f6e4baa47946e49a65489f6012",
+      "oid": "2388e15606c0a4b308ce57b3d52c40eeacbc83be",
       "output": "geoip-ge.mrs"
     },
     "geoip/gf.list": {
       "destination": "geoip-gf.mrs",
-      "oid": "1352fecd7bdb0650ef87989a480c15327f7ce498",
+      "oid": "891b271c6cf350401891415b67aceb17993fc535",
       "output": "geoip-gf.mrs"
     },
     "geoip/gg.list": {
       "destination": "geoip-gg.mrs",
-      "oid": "1d83c75c295d8b27a614297e820484b3673b0bef",
+      "oid": "11b405d31d2ad61818bae20571b7870bf7337f39",
       "output": "geoip-gg.mrs"
     },
     "geoip/gh.list": {
       "destination": "geoip-gh.mrs",
-      "oid": "2f0866f6e5d9b2491a8b5d5ac22e1163260dd43c",
+      "oid": "1f132036e20c791b1996f5619c9700bb48da45b8",
       "output": "geoip-gh.mrs"
     },
     "geoip/gi.list": {
       "destination": "geoip-gi.mrs",
-      "oid": "acae05c510c697311033f869fb1ed09e9e21b6fe",
+      "oid": "9dfe1af4d009e40a5699d802446edc4c86a604c1",
       "output": "geoip-gi.mrs"
     },
     "geoip/gl.list": {
@@ -451,7 +451,7 @@
     },
     "geoip/gm.list": {
       "destination": "geoip-gm.mrs",
-      "oid": "491595567ab790730852bed6a1e6d86b24c65764",
+      "oid": "59e30a1fd35525783fefc7b7ecba8c4838883bed",
       "output": "geoip-gm.mrs"
     },
     "geoip/gn.list": {
@@ -461,12 +461,12 @@
     },
     "geoip/google.list": {
       "destination": "geoip-google.mrs",
-      "oid": "6411413b14a800d721c7dafad778d489f8f17305",
+      "oid": "535c98ded75024898e8edc4b7c756974d0ef445e",
       "output": "geoip-google.mrs"
     },
     "geoip/gp.list": {
       "destination": "geoip-gp.mrs",
-      "oid": "fdd11345c0b06394554aa9ee37b16300f69ba36a",
+      "oid": "36d592b5ca2728f39a10214bb267481bc33a0165",
       "output": "geoip-gp.mrs"
     },
     "geoip/gq.list": {
@@ -476,7 +476,7 @@
     },
     "geoip/gr.list": {
       "destination": "geoip-gr.mrs",
-      "oid": "ab013116101855aec0093709ed1ed0370c995f66",
+      "oid": "82b31342fcdc652e2d989c79cdb6fde7fd6f0181",
       "output": "geoip-gr.mrs"
     },
     "geoip/gs.list": {
@@ -491,7 +491,7 @@
     },
     "geoip/gu.list": {
       "destination": "geoip-gu.mrs",
-      "oid": "0e83518087cb6d089fc6a472209c84b9ff6c497a",
+      "oid": "ce6057b72931f80e9c8408ec4f4b2f4363ffc4d1",
       "output": "geoip-gu.mrs"
     },
     "geoip/gw.list": {
@@ -506,7 +506,7 @@
     },
     "geoip/hk.list": {
       "destination": "geoip-hk.mrs",
-      "oid": "ce2abce88f9b49e1abe14f8290871d5c76e5bd0c",
+      "oid": "3e542f135a0576fbabe4946016006f3d0cf7273b",
       "output": "geoip-hk.mrs"
     },
     "geoip/hm.list": {
@@ -521,7 +521,7 @@
     },
     "geoip/hr.list": {
       "destination": "geoip-hr.mrs",
-      "oid": "ee87d214d622dd34c90ec8b9f878778b845a290f",
+      "oid": "0796295fabd9f541185964d34e98ea02ab7c388b",
       "output": "geoip-hr.mrs"
     },
     "geoip/ht.list": {
@@ -531,32 +531,32 @@
     },
     "geoip/hu.list": {
       "destination": "geoip-hu.mrs",
-      "oid": "54d9cb13099f896601fdb15f73685f09d23dc55f",
+      "oid": "d4faf791cd4a3182cd74735a0a698d8a87fc043b",
       "output": "geoip-hu.mrs"
     },
     "geoip/id.list": {
       "destination": "geoip-id.mrs",
-      "oid": "87fbe4c02504447366c50a1c8cdefbbe7c96a46a",
+      "oid": "bc67700aaa3067f0552025aa7bad94a015be2e5b",
       "output": "geoip-id.mrs"
     },
     "geoip/ie.list": {
       "destination": "geoip-ie.mrs",
-      "oid": "33ab214460700185b9121b4749482c87e3f8e9f3",
+      "oid": "d9408b9e58c0c0a8828c1f71dd4757e438635374",
       "output": "geoip-ie.mrs"
     },
     "geoip/il.list": {
       "destination": "geoip-il.mrs",
-      "oid": "8eefdd0661481f46eed1ae24ac6cdb2031fe8b65",
+      "oid": "0f51f083a2080f5638cf805a4b004f2dfe1fd718",
       "output": "geoip-il.mrs"
     },
     "geoip/im.list": {
       "destination": "geoip-im.mrs",
-      "oid": "3080b04cca8d5b1f7dff31b64c5715363af5b7fc",
+      "oid": "dece50fffd88cd35ccd199372b89657afe720e72",
       "output": "geoip-im.mrs"
     },
     "geoip/in.list": {
       "destination": "geoip-in.mrs",
-      "oid": "6684a2959e9cf5b2ae1e0aa35a1e59b99f2b1c44",
+      "oid": "15a6a916fc3fa9404c9d981d1c1621ddf884e17f",
       "output": "geoip-in.mrs"
     },
     "geoip/io.list": {
@@ -566,27 +566,27 @@
     },
     "geoip/iq.list": {
       "destination": "geoip-iq.mrs",
-      "oid": "f4bd6219115e3725870f60f2daad631b73abb56c",
+      "oid": "9e1e37c881a4c5de25ab063528ee9d159a5105f5",
       "output": "geoip-iq.mrs"
     },
     "geoip/ir.list": {
       "destination": "geoip-ir.mrs",
-      "oid": "c59a281de972f60c66ed380bf34f971a395ac384",
+      "oid": "009e9501006d88e1e8befe9692bff952ee50ca08",
       "output": "geoip-ir.mrs"
     },
     "geoip/is.list": {
       "destination": "geoip-is.mrs",
-      "oid": "17196a6d40f79433cfc9835606f5c6993b447a11",
+      "oid": "5a25fba71aebac8f38884936f229299e7a450baa",
       "output": "geoip-is.mrs"
     },
     "geoip/it.list": {
       "destination": "geoip-it.mrs",
-      "oid": "61c10e36abb6a40b4139746086719eb6e68b2d2d",
+      "oid": "5a64781134d74578b26967f825304647ae21328d",
       "output": "geoip-it.mrs"
     },
     "geoip/je.list": {
       "destination": "geoip-je.mrs",
-      "oid": "f77e8b7b0df1f6b730ef8d5f5652b3ae1f1d76cc",
+      "oid": "f95906915dfb2731c79bd6189ccc83af5d7c1934",
       "output": "geoip-je.mrs"
     },
     "geoip/jm.list": {
@@ -596,27 +596,27 @@
     },
     "geoip/jo.list": {
       "destination": "geoip-jo.mrs",
-      "oid": "e0fdc25e4aec0886f4fa10f5ff7a8d4dd8d39529",
+      "oid": "acc85bca6ca0c9e8e8c0cdf75c8e490a1be025ca",
       "output": "geoip-jo.mrs"
     },
     "geoip/jp.list": {
       "destination": "geoip-jp.mrs",
-      "oid": "faf3e773fe9df70917ea7b8c748276be8d51fe4c",
+      "oid": "d58eb99acc3714192b415c90fb84a933ea09e972",
       "output": "geoip-jp.mrs"
     },
     "geoip/ke.list": {
       "destination": "geoip-ke.mrs",
-      "oid": "8f10d00e4657191018a5a652abdfc02346a3b19e",
+      "oid": "6fb51214e8b1ee79715fd6c769ce5d61b35e8a2f",
       "output": "geoip-ke.mrs"
     },
     "geoip/kg.list": {
       "destination": "geoip-kg.mrs",
-      "oid": "9c144306e58f972f324743af13cca6643e57730c",
+      "oid": "de8a861603f143c6caf8a727bf3160a09e01cb0b",
       "output": "geoip-kg.mrs"
     },
     "geoip/kh.list": {
       "destination": "geoip-kh.mrs",
-      "oid": "056095e697f0f4fa451189e2a745936019bb4ce5",
+      "oid": "6db6e60ff38d1cb52408f5bba850030fca35656e",
       "output": "geoip-kh.mrs"
     },
     "geoip/ki.list": {
@@ -631,7 +631,7 @@
     },
     "geoip/kn.list": {
       "destination": "geoip-kn.mrs",
-      "oid": "f506ff635a5027f5bb4cefbde5fb8d09460f6434",
+      "oid": "3cfceeb66bbef3276ded903d16c717502f11ec82",
       "output": "geoip-kn.mrs"
     },
     "geoip/kp.list": {
@@ -641,7 +641,7 @@
     },
     "geoip/kr.list": {
       "destination": "geoip-kr.mrs",
-      "oid": "e37adab68b2eb344568c9c9ede63cf51fa41dba6",
+      "oid": "c9d8ff57541a74125cc95156318cb88311ce7098",
       "output": "geoip-kr.mrs"
     },
     "geoip/kw.list": {
@@ -656,7 +656,7 @@
     },
     "geoip/kz.list": {
       "destination": "geoip-kz.mrs",
-      "oid": "0cd0d364b5c1a9a0ab6e0e58aefc240c50ee813e",
+      "oid": "a15680d699bf0fa224b570af3083d1ef17c6d08d",
       "output": "geoip-kz.mrs"
     },
     "geoip/la.list": {
@@ -666,27 +666,27 @@
     },
     "geoip/lb.list": {
       "destination": "geoip-lb.mrs",
-      "oid": "29d8702589c440f111dc4c10573d36630629f387",
+      "oid": "207c6b82a9b1c0c076f83ec8348b9b17e8c0a0f0",
       "output": "geoip-lb.mrs"
     },
     "geoip/lc.list": {
       "destination": "geoip-lc.mrs",
-      "oid": "ce31f02ea6a6173f5c283f0f4a2201c28f12d5d6",
+      "oid": "5bbe23048a74d0250e5d0d2f60fecda87b4e9bd8",
       "output": "geoip-lc.mrs"
     },
     "geoip/li.list": {
       "destination": "geoip-li.mrs",
-      "oid": "b535800b2f5a457204d9c92998d156ea02edc1d8",
+      "oid": "bcc25c58d73e2cb0e5c4878e64ef31a489c0a866",
       "output": "geoip-li.mrs"
     },
     "geoip/lk.list": {
       "destination": "geoip-lk.mrs",
-      "oid": "0dc5a38ee4eeab8529123f5d051554f5b5486c22",
+      "oid": "998eba2eca6ad2f4c98ed615607ccf99c8bff63d",
       "output": "geoip-lk.mrs"
     },
     "geoip/lr.list": {
       "destination": "geoip-lr.mrs",
-      "oid": "4f1db9cc49a8a10c24bef756905cf0756a637017",
+      "oid": "204771d785027ecdf3572a899404201bffc1c96f",
       "output": "geoip-lr.mrs"
     },
     "geoip/ls.list": {
@@ -696,37 +696,37 @@
     },
     "geoip/lt.list": {
       "destination": "geoip-lt.mrs",
-      "oid": "84912f81051cbff764107080bd10ab593f8272c3",
+      "oid": "584cc79b36e1ce451d4717a5c36f61f5be18a0d7",
       "output": "geoip-lt.mrs"
     },
     "geoip/lu.list": {
       "destination": "geoip-lu.mrs",
-      "oid": "d9a98805e186af9a71d00e2624ae2155eb387456",
+      "oid": "da47f9d71d3d4eb798e7f1e6dc763c9d8d458c85",
       "output": "geoip-lu.mrs"
     },
     "geoip/lv.list": {
       "destination": "geoip-lv.mrs",
-      "oid": "028f081311e9280165f1f9517ef21a9162887e66",
+      "oid": "c97e1fcb81e9894e3187848e3ddbc6fa931eab77",
       "output": "geoip-lv.mrs"
     },
     "geoip/ly.list": {
       "destination": "geoip-ly.mrs",
-      "oid": "40fd406117f1f4a8aefba5c9d16ae40e41c77d11",
+      "oid": "d1e39a91ad3a6a32575c37a9b4db9a0aae816a77",
       "output": "geoip-ly.mrs"
     },
     "geoip/ma.list": {
       "destination": "geoip-ma.mrs",
-      "oid": "d7525fd53dc484c1f0fe657ae722a7ee555fd381",
+      "oid": "3ff17e48a8c28fcf0674e340d143dc45db8395c0",
       "output": "geoip-ma.mrs"
     },
     "geoip/mc.list": {
       "destination": "geoip-mc.mrs",
-      "oid": "3d1279d00fc8f1c489e8a83c93239ff85927a6ae",
+      "oid": "b90e4b0bc602216eadce465ac42ee3b456717fd0",
       "output": "geoip-mc.mrs"
     },
     "geoip/md.list": {
       "destination": "geoip-md.mrs",
-      "oid": "7a1cac156907348f008e3487327c0b8ab3e047f8",
+      "oid": "fe8cc899f933863b4aa9958af8a7f6931fe0f1c0",
       "output": "geoip-md.mrs"
     },
     "geoip/me.list": {
@@ -736,12 +736,12 @@
     },
     "geoip/mf.list": {
       "destination": "geoip-mf.mrs",
-      "oid": "9609682f5be33c0cd9af718f0445518cde2384b0",
+      "oid": "90e3645d594fac881097bc0df11d3b0252c3fb14",
       "output": "geoip-mf.mrs"
     },
     "geoip/mg.list": {
       "destination": "geoip-mg.mrs",
-      "oid": "e9e6a5401852fd22d3052b7789a6d83b72bc3fc4",
+      "oid": "9ffc0544b39dfcf599c10fa33b184a5b745a35cb",
       "output": "geoip-mg.mrs"
     },
     "geoip/mh.list": {
@@ -751,7 +751,7 @@
     },
     "geoip/mk.list": {
       "destination": "geoip-mk.mrs",
-      "oid": "dc9b8464fbcf1e3198246e6ede6ef3f59aa9660d",
+      "oid": "af70a3620b40a9f0c10e895a499c47ea884a55e9",
       "output": "geoip-mk.mrs"
     },
     "geoip/ml.list": {
@@ -761,12 +761,12 @@
     },
     "geoip/mm.list": {
       "destination": "geoip-mm.mrs",
-      "oid": "027bbd432c2ac54bb3a602d15ea6e728a32fc798",
+      "oid": "302b37db1be08822f22570d75f48479333dee853",
       "output": "geoip-mm.mrs"
     },
     "geoip/mn.list": {
       "destination": "geoip-mn.mrs",
-      "oid": "815ad53286d412fa838e652a1aebcd6faa54e619",
+      "oid": "a35f2a3c009379bb3717a5aab35770ddfd28cf4f",
       "output": "geoip-mn.mrs"
     },
     "geoip/mo.list": {
@@ -776,12 +776,12 @@
     },
     "geoip/mp.list": {
       "destination": "geoip-mp.mrs",
-      "oid": "048cf306b4a8400615adcd0f7a3613835b5abbb5",
+      "oid": "e00aceadd910b7dd3e7b78a1e618b2c2b3fdc5b2",
       "output": "geoip-mp.mrs"
     },
     "geoip/mq.list": {
       "destination": "geoip-mq.mrs",
-      "oid": "295b428c6a20e1edc69c427f4bd2296bcc216f95",
+      "oid": "b768d9bcdf9eed1d65eb80df3799ade2704482b6",
       "output": "geoip-mq.mrs"
     },
     "geoip/mr.list": {
@@ -796,17 +796,17 @@
     },
     "geoip/mt.list": {
       "destination": "geoip-mt.mrs",
-      "oid": "846bd98c3008e11949c58a45354ec519dfe14c05",
+      "oid": "63c4b2f3c51fcc0a2c76a9956adf8c8716fc44b0",
       "output": "geoip-mt.mrs"
     },
     "geoip/mu.list": {
       "destination": "geoip-mu.mrs",
-      "oid": "196e4163a38b6400891534152d9f66962793254b",
+      "oid": "22b85d9b4fa611fd1e9082a25b8f1105719b5b45",
       "output": "geoip-mu.mrs"
     },
     "geoip/mv.list": {
       "destination": "geoip-mv.mrs",
-      "oid": "e440c972961f296b236f1b589138620e5a8cb5a9",
+      "oid": "c9a02bd536b1304bd1620cdb37d64f6d0e6def93",
       "output": "geoip-mv.mrs"
     },
     "geoip/mw.list": {
@@ -816,22 +816,22 @@
     },
     "geoip/mx.list": {
       "destination": "geoip-mx.mrs",
-      "oid": "52c95839071b3107ad8a8be533e8f2fe5395c439",
+      "oid": "3dcd9fcbc6069404e1049d6e295e78c1d63c57c0",
       "output": "geoip-mx.mrs"
     },
     "geoip/my.list": {
       "destination": "geoip-my.mrs",
-      "oid": "5c9ff320f3bc479f8c04ece25d0944a8c7255796",
+      "oid": "65124744a9de5d37d3f78ccc04dbd9f3b6ccd298",
       "output": "geoip-my.mrs"
     },
     "geoip/mz.list": {
       "destination": "geoip-mz.mrs",
-      "oid": "93d878223dada749699725002a61d179a703c774",
+      "oid": "796027d6239a41028df2e48ed70d6f6f2288ffc1",
       "output": "geoip-mz.mrs"
     },
     "geoip/na.list": {
       "destination": "geoip-na.mrs",
-      "oid": "fede48717ac09109375b73891fc5763b39c6d049",
+      "oid": "2d2d19729c7f084d52b5a24b3bab4670b315ac02",
       "output": "geoip-na.mrs"
     },
     "geoip/nc.list": {
@@ -841,7 +841,7 @@
     },
     "geoip/ne.list": {
       "destination": "geoip-ne.mrs",
-      "oid": "35c8bde4c710609bc9a77b59595818a73931ac22",
+      "oid": "1e4109dd6644194c05744c139063791b56eb1c56",
       "output": "geoip-ne.mrs"
     },
     "geoip/netflix.list": {
@@ -856,7 +856,7 @@
     },
     "geoip/ng.list": {
       "destination": "geoip-ng.mrs",
-      "oid": "4ea7cc6312c8008a613e5df43fc91c240713ceb8",
+      "oid": "b3821d69a86e06a7a64371cb0fc73e6ad968502b",
       "output": "geoip-ng.mrs"
     },
     "geoip/ni.list": {
@@ -866,17 +866,17 @@
     },
     "geoip/nl.list": {
       "destination": "geoip-nl.mrs",
-      "oid": "13ab2796f9bebf7690b463911be09a63a97d4b86",
+      "oid": "3c54e38f64ca073662ec96affcaa0592d753bf2c",
       "output": "geoip-nl.mrs"
     },
     "geoip/no.list": {
       "destination": "geoip-no.mrs",
-      "oid": "e5f54ecd870c286110756389c723f63d5f67a9f5",
+      "oid": "0d53694bcaa1771609cc0eaf91dfeff314ea8ac7",
       "output": "geoip-no.mrs"
     },
     "geoip/np.list": {
       "destination": "geoip-np.mrs",
-      "oid": "592f37cf9eda1a811301d598a009796f381c41a2",
+      "oid": "e2df1f00a6b513fc251edace9238f30e4649921c",
       "output": "geoip-np.mrs"
     },
     "geoip/nr.list": {
@@ -891,22 +891,22 @@
     },
     "geoip/nz.list": {
       "destination": "geoip-nz.mrs",
-      "oid": "050df284ee28358f88d3bc906387242cab3cfc89",
+      "oid": "607d11fb73951713d0e8a2980a10e8d2db2fb0d9",
       "output": "geoip-nz.mrs"
     },
     "geoip/om.list": {
       "destination": "geoip-om.mrs",
-      "oid": "ffbd4c29f2183f75a94ad37526af3bdcd38642da",
+      "oid": "b727f18d2f5674f9c36bf95471aceb9270622135",
       "output": "geoip-om.mrs"
     },
     "geoip/pa.list": {
       "destination": "geoip-pa.mrs",
-      "oid": "bb3c1232aff66078f7b2d79940c26c9f88c9a884",
+      "oid": "212f8d96187ed7c0aaabb3e9a4640042a8619b37",
       "output": "geoip-pa.mrs"
     },
     "geoip/pe.list": {
       "destination": "geoip-pe.mrs",
-      "oid": "d8b31357ef1230b8e7616c705a61807fdbba61f8",
+      "oid": "1a37751724d14243b828766ee8ba2b1a9f2ab9dc",
       "output": "geoip-pe.mrs"
     },
     "geoip/pf.list": {
@@ -921,17 +921,17 @@
     },
     "geoip/ph.list": {
       "destination": "geoip-ph.mrs",
-      "oid": "2d7038dc9aa661951070f989bcb12f7709b78d27",
+      "oid": "e0f30ee0dcea2718ff5ecddcff38b95a4f62ec0b",
       "output": "geoip-ph.mrs"
     },
     "geoip/pk.list": {
       "destination": "geoip-pk.mrs",
-      "oid": "c4bab407fa56ad2ec2581587476979c31a46b657",
+      "oid": "341c9655040311b5ec0b8ac6b84db6d7079d5fe0",
       "output": "geoip-pk.mrs"
     },
     "geoip/pl.list": {
       "destination": "geoip-pl.mrs",
-      "oid": "2b21c2ed1d4356705b2fe9d04fe3a46912c7d994",
+      "oid": "e67fd7ebe5abebc39bc7ac9e9ce1134410c23a38",
       "output": "geoip-pl.mrs"
     },
     "geoip/pm.list": {
@@ -946,7 +946,7 @@
     },
     "geoip/pr.list": {
       "destination": "geoip-pr.mrs",
-      "oid": "521675c1d75fe59eb96d156308a291727832626e",
+      "oid": "52ff6e825294c998d6260be2108342bd955b1a67",
       "output": "geoip-pr.mrs"
     },
     "geoip/private.list": {
@@ -956,32 +956,32 @@
     },
     "geoip/ps.list": {
       "destination": "geoip-ps.mrs",
-      "oid": "89641fbda615bfba3ced9b5967b26dd1d4a720fd",
+      "oid": "ee35793b7fec98430e56294713b9e9fffb34e736",
       "output": "geoip-ps.mrs"
     },
     "geoip/pt.list": {
       "destination": "geoip-pt.mrs",
-      "oid": "7eb9ef0bbba212f54e2f3b64a2608192c2bba9f3",
+      "oid": "dd5801595d71edafaa2b638b9d34a25c29e5decc",
       "output": "geoip-pt.mrs"
     },
     "geoip/pw.list": {
       "destination": "geoip-pw.mrs",
-      "oid": "7a5bacb89b5b07168ecf0c989cc449c05bc72104",
+      "oid": "58805ecc6413fc58c7d52f0e300f15c198041620",
       "output": "geoip-pw.mrs"
     },
     "geoip/py.list": {
       "destination": "geoip-py.mrs",
-      "oid": "91af60a066ee44fe47ba4753a8b26470a07731d9",
+      "oid": "b783722e7fc05616c5bec257a51404288be0ef1b",
       "output": "geoip-py.mrs"
     },
     "geoip/qa.list": {
       "destination": "geoip-qa.mrs",
-      "oid": "bdaf5b1bb88598a3561ea679b69ac367f2aaa49b",
+      "oid": "5bc8fae71e95ad606e8d264f6904605d6f2fdd81",
       "output": "geoip-qa.mrs"
     },
     "geoip/re.list": {
       "destination": "geoip-re.mrs",
-      "oid": "20429b4a11ba453a9cb95a4035c071132446b52f",
+      "oid": "189b4390db0729ffdfbe6c8f44e8741132541383",
       "output": "geoip-re.mrs"
     },
     "geoip/refilter-community.list": {
@@ -996,27 +996,27 @@
     },
     "geoip/ro.list": {
       "destination": "geoip-ro.mrs",
-      "oid": "603a9dfaf3f11eed70783efe63121b8259dc815d",
+      "oid": "9f16cff5a72d3a61cbb345b7aca8fce413d307c7",
       "output": "geoip-ro.mrs"
     },
     "geoip/rs.list": {
       "destination": "geoip-rs.mrs",
-      "oid": "1a31bbd1dcd3e250440381b033e194c3a254efe7",
+      "oid": "2c4047eb322c20c60a42a08c00ec29b071b7b0e7",
       "output": "geoip-rs.mrs"
     },
     "geoip/ru.list": {
       "destination": "geoip-ru.mrs",
-      "oid": "17d6b38eb91a5aee0f912a9cb83d57215de3c1d7",
+      "oid": "7e275bb4990bcd419d3727c4b7e73b0e9c2e4eb5",
       "output": "geoip-ru.mrs"
     },
     "geoip/rw.list": {
       "destination": "geoip-rw.mrs",
-      "oid": "14ecd8721500dbb6741eacbc75eeae8b9743d8cd",
+      "oid": "7b921adaeacee6aa2ff3f75688823bd90c448e41",
       "output": "geoip-rw.mrs"
     },
     "geoip/sa.list": {
       "destination": "geoip-sa.mrs",
-      "oid": "a3fbe92ddc30221aae9d951270fbe1980b4377c2",
+      "oid": "e1a50f04f4818e37046e0c8b9b62a750f0d4b34b",
       "output": "geoip-sa.mrs"
     },
     "geoip/sb.list": {
@@ -1026,7 +1026,7 @@
     },
     "geoip/sc.list": {
       "destination": "geoip-sc.mrs",
-      "oid": "cdaca3fa484d195d2cea9e86a2ef196991455991",
+      "oid": "838aeb1ce8005d66f8276afc93b48625d0d264bd",
       "output": "geoip-sc.mrs"
     },
     "geoip/sd.list": {
@@ -1036,12 +1036,12 @@
     },
     "geoip/se.list": {
       "destination": "geoip-se.mrs",
-      "oid": "68dd8e92aa8aabebc943b9d22d1c8f213e2d457a",
+      "oid": "2719b656669aef3a4c7ae1a10e0ab2c3ee3a73f5",
       "output": "geoip-se.mrs"
     },
     "geoip/sg.list": {
       "destination": "geoip-sg.mrs",
-      "oid": "47845fdb384814e055b2cedb6dc634213fd41f87",
+      "oid": "feebe1e59bcacaad2c6e69ff5249f5225326e411",
       "output": "geoip-sg.mrs"
     },
     "geoip/sh.list": {
@@ -1051,7 +1051,7 @@
     },
     "geoip/si.list": {
       "destination": "geoip-si.mrs",
-      "oid": "33bb60454a43c4287382e98bfc5c85d568689d7f",
+      "oid": "cb72307d0bc97d449ca9025365170cd84849499f",
       "output": "geoip-si.mrs"
     },
     "geoip/sj.list": {
@@ -1061,7 +1061,7 @@
     },
     "geoip/sk.list": {
       "destination": "geoip-sk.mrs",
-      "oid": "d155e4acb178b0ea67b871f08461ab93ef39988f",
+      "oid": "562a01eb9a9b05b457afd23ad5157cdf80a932be",
       "output": "geoip-sk.mrs"
     },
     "geoip/sl.list": {
@@ -1071,12 +1071,12 @@
     },
     "geoip/sm.list": {
       "destination": "geoip-sm.mrs",
-      "oid": "ce1ebeeb22ee2239707145bff911988c2bc4844e",
+      "oid": "1cbe290a1ab27f022cbab39d66e7214cb8fe2bef",
       "output": "geoip-sm.mrs"
     },
     "geoip/sn.list": {
       "destination": "geoip-sn.mrs",
-      "oid": "bf1eeab7cead8581805a8b0a914e777174149dbc",
+      "oid": "1d46de6d7dcf5286238a34c42dfa388bf5c30634",
       "output": "geoip-sn.mrs"
     },
     "geoip/so.list": {
@@ -1101,7 +1101,7 @@
     },
     "geoip/sv.list": {
       "destination": "geoip-sv.mrs",
-      "oid": "2de5e0499064575cdab0266399e48fa4d0dd8a5e",
+      "oid": "352e2a752d4395f6e4d9a6f1dec244ab8b5a0161",
       "output": "geoip-sv.mrs"
     },
     "geoip/sx.list": {
@@ -1111,7 +1111,7 @@
     },
     "geoip/sy.list": {
       "destination": "geoip-sy.mrs",
-      "oid": "f6713a9646819d5076315eede7e0c8da6d60295f",
+      "oid": "d557a5f08582204223378da0e3f4e1c4c0873a56",
       "output": "geoip-sy.mrs"
     },
     "geoip/sz.list": {
@@ -1146,12 +1146,12 @@
     },
     "geoip/th.list": {
       "destination": "geoip-th.mrs",
-      "oid": "714c4452594200ea3f083c2c09507613a23d4f3f",
+      "oid": "60caa98ad5c013582c25416e89ebf9010b45a908",
       "output": "geoip-th.mrs"
     },
     "geoip/tj.list": {
       "destination": "geoip-tj.mrs",
-      "oid": "688362a23013db3c7af50c5707a722587c9fc95a",
+      "oid": "8991602cb1fdefafdfc9a310c267d8d34a21dfd2",
       "output": "geoip-tj.mrs"
     },
     "geoip/tk.list": {
@@ -1171,7 +1171,7 @@
     },
     "geoip/tn.list": {
       "destination": "geoip-tn.mrs",
-      "oid": "a172d712b931ef619b4422a399cd0a9b8852a522",
+      "oid": "d2a7bbaaefb9990aa234c0deae4bb5d4845d2d53",
       "output": "geoip-tn.mrs"
     },
     "geoip/to.list": {
@@ -1181,12 +1181,12 @@
     },
     "geoip/tor.list": {
       "destination": "geoip-tor.mrs",
-      "oid": "c5a740c13266dd544a297d1ff583e5a488063409",
+      "oid": "dfbd136eb16f93d97d307e4c66526859703d163b",
       "output": "geoip-tor.mrs"
     },
     "geoip/tr.list": {
       "destination": "geoip-tr.mrs",
-      "oid": "ce757b938cedb0139a76f80a6970695f543f7ac4",
+      "oid": "05eb8431c283825a1f5691cbeaa9d396e15e1f8b",
       "output": "geoip-tr.mrs"
     },
     "geoip/tt.list": {
@@ -1201,7 +1201,7 @@
     },
     "geoip/tw.list": {
       "destination": "geoip-tw.mrs",
-      "oid": "21b7cdcca3e9bcfd824ba55f8f87df2608347649",
+      "oid": "284334e0c15e677377cbdc56117dbcc41484efa0",
       "output": "geoip-tw.mrs"
     },
     "geoip/twitter.list": {
@@ -1211,12 +1211,12 @@
     },
     "geoip/tz.list": {
       "destination": "geoip-tz.mrs",
-      "oid": "38bb3dc69fff04985b873f226352a1268a753d04",
+      "oid": "b3c74b07e502e697202ac6bbf8ef60315464a500",
       "output": "geoip-tz.mrs"
     },
     "geoip/ua.list": {
       "destination": "geoip-ua.mrs",
-      "oid": "688228af7113cae6cac80534e22323728a077d27",
+      "oid": "92798f1e1469a0248b5cae7af1aca0c48e35fbd9",
       "output": "geoip-ua.mrs"
     },
     "geoip/ug.list": {
@@ -1231,17 +1231,17 @@
     },
     "geoip/us.list": {
       "destination": "geoip-us.mrs",
-      "oid": "2235d0f7eb00f6cc937882c8708ed5833bb962b7",
+      "oid": "64833807a7df36bf2bfb097d787598175f93e472",
       "output": "geoip-us.mrs"
     },
     "geoip/uy.list": {
       "destination": "geoip-uy.mrs",
-      "oid": "df8eb087e46cbf7c647d97031c08b9aa7054f370",
+      "oid": "c6a6be7f75d4a2199e53ac61722c2ff3d615c2c0",
       "output": "geoip-uy.mrs"
     },
     "geoip/uz.list": {
       "destination": "geoip-uz.mrs",
-      "oid": "45a4f227a9edbfded832ec87580f499fa43e1588",
+      "oid": "4bf6c4ff16078661bd48fe7427441ea6a904f53f",
       "output": "geoip-uz.mrs"
     },
     "geoip/va.list": {
@@ -1251,27 +1251,27 @@
     },
     "geoip/vc.list": {
       "destination": "geoip-vc.mrs",
-      "oid": "d333f339f71ab8f12029c8b63bde8ed00f3a7bf5",
+      "oid": "6335cc45ca6989d430d055b4c1affb81797795bf",
       "output": "geoip-vc.mrs"
     },
     "geoip/ve.list": {
       "destination": "geoip-ve.mrs",
-      "oid": "86a3ebfd6e3edd219681cd9ba1807136d905bf61",
+      "oid": "f542092dec6195c9c68a5908415a6e9adb3ae2b4",
       "output": "geoip-ve.mrs"
     },
     "geoip/vg.list": {
       "destination": "geoip-vg.mrs",
-      "oid": "49c9da5ecab6ec56048bddbaf15610aa84ab2357",
+      "oid": "d78bd8a5e101f8f01c1c0f37d2b4eb8641dbb65a",
       "output": "geoip-vg.mrs"
     },
     "geoip/vi.list": {
       "destination": "geoip-vi.mrs",
-      "oid": "2c0943e343423fc3efef03c615f717a8dfb5dceb",
+      "oid": "7e5138c3e4f6d63ccc4a79276a09af42d8d8ca17",
       "output": "geoip-vi.mrs"
     },
     "geoip/vn.list": {
       "destination": "geoip-vn.mrs",
-      "oid": "7a001c460faf80b2320d8aacd2f5834eb796e954",
+      "oid": "fa1eff4c97b34c88abe6fa9459e39449784c7e14",
       "output": "geoip-vn.mrs"
     },
     "geoip/vu.list": {
@@ -1291,7 +1291,7 @@
     },
     "geoip/xk.list": {
       "destination": "geoip-xk.mrs",
-      "oid": "1d15abe2818d88c598d2db4302dbab8a28d6aef6",
+      "oid": "d44eedb80e12efd949fc4c0b45a152e113001d23",
       "output": "geoip-xk.mrs"
     },
     "geoip/ye.list": {
@@ -1301,22 +1301,22 @@
     },
     "geoip/yt.list": {
       "destination": "geoip-yt.mrs",
-      "oid": "f7ad766fc4c11826ca93952d54463fba8902d59e",
+      "oid": "bd2bcdd75fe26869f3fe5477db59acec237653b6",
       "output": "geoip-yt.mrs"
     },
     "geoip/za.list": {
       "destination": "geoip-za.mrs",
-      "oid": "c1690c80f8c884a4c7f210517f20d76df083557f",
+      "oid": "15862d6813bc3ed30ad5166bfd09b498f5aa81ff",
       "output": "geoip-za.mrs"
     },
     "geoip/zm.list": {
       "destination": "geoip-zm.mrs",
-      "oid": "8d68c3b8b58d8482815f3200c3c2bcce1052f59f",
+      "oid": "5e0bf835cae2e94c85e3c0178b37181e8dab21c2",
       "output": "geoip-zm.mrs"
     },
     "geoip/zw.list": {
       "destination": "geoip-zw.mrs",
-      "oid": "6bf05502b96b17af69374c35d4b955ea31e257d9",
+      "oid": "33239b3ac12a54012f730603c5cdc7cee3d0819f",
       "output": "geoip-zw.mrs"
     },
     "geosite/0x0.list": {
@@ -1456,7 +1456,7 @@
     },
     "geosite/abuse-full.list": {
       "destination": "geosite-abuse-full.mrs",
-      "oid": "6bb89c35405be8df9edb215f54797060bbb0a5d7",
+      "oid": "17a642b5fc25b89496333d013653523d1c75b47e",
       "output": "geosite-abuse-full.mrs"
     },
     "geosite/accuweather.list": {
@@ -2571,7 +2571,7 @@
     },
     "geosite/category-cryptocurrency.list": {
       "destination": "geosite-category-cryptocurrency.mrs",
-      "oid": "7f5503d5676764238cd41cf6992dd6a1e9a1f7e8",
+      "oid": "3a680dcf9f0c9a4268f60bb08d138da45ab86dea",
       "output": "geosite-category-cryptocurrency.mrs"
     },
     "geosite/category-ddns.list": {
@@ -2586,7 +2586,7 @@
     },
     "geosite/category-dev.list": {
       "destination": "geosite-category-dev.mrs",
-      "oid": "1f5876a64539986117462f63feec7f71d19ffb5c",
+      "oid": "1fb876a390e4d5a43fba94fafe3cce9e2f78f957",
       "output": "geosite-category-dev.mrs"
     },
     "geosite/category-documents-cn.list": {
@@ -2606,7 +2606,7 @@
     },
     "geosite/category-ecommerce.list": {
       "destination": "geosite-category-ecommerce.mrs",
-      "oid": "7075821f91201ce4d78961e652fe272f32dffd7c",
+      "oid": "ec3da8a2dc79a5552003c11e39548db9129d964c",
       "output": "geosite-category-ecommerce.mrs"
     },
     "geosite/category-education-cn.list": {
@@ -2656,7 +2656,7 @@
     },
     "geosite/category-entertainment.list": {
       "destination": "geosite-category-entertainment.mrs",
-      "oid": "9b4c61f8cde59214d0152dcbcbf51e825e9eeb73",
+      "oid": "941e847ce19fed7339adf3501e31bc6adffb4dab",
       "output": "geosite-category-entertainment.mrs"
     },
     "geosite/category-finance.list": {
@@ -2686,7 +2686,7 @@
     },
     "geosite/category-forums.list": {
       "destination": "geosite-category-forums.mrs",
-      "oid": "81934aacab24bcaa64cc7af4ba554919966c3fd4",
+      "oid": "59bfe8118f74911bd3af224556f545cbd1118e49",
       "output": "geosite-category-forums.mrs"
     },
     "geosite/category-game-accelerator-cn.list": {
@@ -2701,7 +2701,7 @@
     },
     "geosite/category-games-!cn.list": {
       "destination": "geosite-category-games-!cn.mrs",
-      "oid": "8a26b6701ebb139001657e8b8bc4b095f5e96428",
+      "oid": "8e8fdf095e769bbabb48c58a09f289768a7c461a",
       "output": "geosite-category-games-!cn.mrs"
     },
     "geosite/category-games-cn.list": {
@@ -2711,7 +2711,7 @@
     },
     "geosite/category-games.list": {
       "destination": "geosite-category-games.mrs",
-      "oid": "a6226e2198b0f057566faa78b8c1c791f5655a79",
+      "oid": "88fc59db6b73d8faf59065220e2645d329eae6d5",
       "output": "geosite-category-games.mrs"
     },
     "geosite/category-gov-ir.list": {
@@ -2771,7 +2771,7 @@
     },
     "geosite/category-media-ru-blocked.list": {
       "destination": "geosite-category-media-ru-blocked.mrs",
-      "oid": "e4ae63ddfabde79bc99b49d31f961a44518174ef",
+      "oid": "35287e29eb9327109ff32b7e854e948a32306f70",
       "output": "geosite-category-media-ru-blocked.mrs"
     },
     "geosite/category-media-ru.list": {
@@ -2901,7 +2901,7 @@
     },
     "geosite/category-ru.list": {
       "destination": "geosite-category-ru.mrs",
-      "oid": "8f201ede4a6a5e942e3dbf0712817bdf66e19605",
+      "oid": "d956eb585faffe1fb808fcb58696f1b5cf1ec4f2",
       "output": "geosite-category-ru.mrs"
     },
     "geosite/category-scholar-!cn.list": {
@@ -3774,6 +3774,11 @@
       "oid": "21c4cdbdbbdfb31abe0d04e815f4f12c650a17db",
       "output": "geosite-dslreports.mrs"
     },
+    "geosite/dsn-host.list": {
+      "destination": "geosite-dsn-host.mrs",
+      "oid": "11936c0141f908e14dea66d881e13e36a544a82a",
+      "output": "geosite-dsn-host.mrs"
+    },
     "geosite/duckduckgo.list": {
       "destination": "geosite-duckduckgo.mrs",
       "oid": "c925b852f98106664ceaccb09a58dc448c94b577",
@@ -4043,6 +4048,11 @@
       "destination": "geosite-fandom.mrs",
       "oid": "456e733902f76e1a12fd6203baa6800ab9a301b2",
       "output": "geosite-fandom.mrs"
+    },
+    "geosite/fanfiction.list": {
+      "destination": "geosite-fanfiction.mrs",
+      "oid": "c1910b48f9d4a025a746bd475368631757d24aa6",
+      "output": "geosite-fanfiction.mrs"
     },
     "geosite/fans66.list": {
       "destination": "geosite-fans66.mrs",
@@ -4346,7 +4356,7 @@
     },
     "geosite/geolocation-!cn.list": {
       "destination": "geosite-geolocation-!cn.mrs",
-      "oid": "87b2d8bb87a2357faa009a9c60be4f2db2c69320",
+      "oid": "b426b098c33fef17dec161cba38b8fe2b3db1558",
       "output": "geosite-geolocation-!cn.mrs"
     },
     "geosite/geolocation-cn.list": {
@@ -6446,12 +6456,12 @@
     },
     "geosite/oisd-big.list": {
       "destination": "geosite-oisd-big.mrs",
-      "oid": "d3905b766469a81908b2badee4fb98b88721d3df",
+      "oid": "adb5e45a12c6f0eb95ff7cae9326021eac92f58d",
       "output": "geosite-oisd-big.mrs"
     },
     "geosite/oisd-small.list": {
       "destination": "geosite-oisd-small.mrs",
-      "oid": "d7763a0a0aade8ff9223c165bce679ef7f9f177a",
+      "oid": "089244c801c3cdfba72121a2905ce1a9e2f20b78",
       "output": "geosite-oisd-small.mrs"
     },
     "geosite/ok.list": {
@@ -7736,7 +7746,7 @@
     },
     "geosite/steam.list": {
       "destination": "geosite-steam.mrs",
-      "oid": "7832721789c070729d7ac9cc26105776e0d76e36",
+      "oid": "5d72cf75dab4051c3b75437161927c801e037503",
       "output": "geosite-steam.mrs"
     },
     "geosite/steaminventoryhelper.list": {
@@ -8116,7 +8126,7 @@
     },
     "geosite/tif-full.list": {
       "destination": "geosite-tif-full.mrs",
-      "oid": "01737137dd1f7233576771ad3c1f8999e10cc1cb",
+      "oid": "499fb3e8667da961add62218f0fdc37b05bfdd9c",
       "output": "geosite-tif-full.mrs"
     },
     "geosite/tiktok.list": {
@@ -8626,7 +8636,7 @@
     },
     "geosite/wargaming.list": {
       "destination": "geosite-wargaming.mrs",
-      "oid": "8392187e717f144b4bb5cfa0bf26a0e01a172482",
+      "oid": "8c9d882805c984d3776d7c346228f5b7cb0c3b43",
       "output": "geosite-wargaming.mrs"
     },
     "geosite/wasu.list": {
