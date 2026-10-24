@@ -6,7 +6,7 @@
   "entries": {
     "geoip/abuse.list": {
       "destination": "geoip-abuse.mrs",
-      "oid": "b891aabf5a462efa99b0c604580d4af5ae7647b3",
+      "oid": "ceadc0402847e28a6f2964fff32e8d3c68bdf4ed",
       "output": "geoip-abuse.mrs"
     },
     "geoip/ad.list": {
@@ -951,7 +951,7 @@
     },
     "geoip/private.list": {
       "destination": "geoip-private.mrs",
-      "oid": "8968a05635d81a2f9e106631f2c910bed588ba1c",
+      "oid": "f64bdacab3e40bfacd39eedce8920f94ca6adeea",
       "output": "geoip-private.mrs"
     },
     "geoip/ps.list": {
@@ -1181,7 +1181,7 @@
     },
     "geoip/tor.list": {
       "destination": "geoip-tor.mrs",
-      "oid": "cad4ba2633e4185f53b0d226c6a3b99a1edaab41",
+      "oid": "ec8467e64f65525f0adf3c32d6713660f2526c16",
       "output": "geoip-tor.mrs"
     },
     "geoip/tr.list": {
@@ -1456,7 +1456,7 @@
     },
     "geosite/abuse-full.list": {
       "destination": "geosite-abuse-full.mrs",
-      "oid": "9826856e3904229e2ea53212e74b5eaf3445e5ad",
+      "oid": "b560924cc2d306c145e924564574d16c67a07128",
       "output": "geosite-abuse-full.mrs"
     },
     "geosite/accuweather.list": {
@@ -1551,7 +1551,7 @@
     },
     "geosite/agilebits.list": {
       "destination": "geosite-agilebits.mrs",
-      "oid": "941f51e9a4c6bab23ab0bd99461c9db114bf8455",
+      "oid": "1b3c167f2c44b113442342f843225fd4ab99799f",
       "output": "geosite-agilebits.mrs"
     },
     "geosite/agora.list": {
@@ -2426,12 +2426,12 @@
     },
     "geosite/category-ads-all.list": {
       "destination": "geosite-category-ads-all.mrs",
-      "oid": "23adf54ed3eeba04643c0b89bd5af18f07ab4d61",
+      "oid": "00da16e3ec0dbce9237f8b3d191aaecbddab42ea",
       "output": "geosite-category-ads-all.mrs"
     },
     "geosite/category-ads-and-telemetry.list": {
       "destination": "geosite-category-ads-and-telemetry.mrs",
-      "oid": "21f858db51198252fead993a6eb2ee2b5b2b1909",
+      "oid": "197f63b232d4dcd675bd4e67fca8d1977f47f544",
       "output": "geosite-category-ads-and-telemetry.mrs"
     },
     "geosite/category-ads-ir.list": {
@@ -2441,7 +2441,7 @@
     },
     "geosite/category-ads.list": {
       "destination": "geosite-category-ads.mrs",
-      "oid": "21f858db51198252fead993a6eb2ee2b5b2b1909",
+      "oid": "197f63b232d4dcd675bd4e67fca8d1977f47f544",
       "output": "geosite-category-ads.mrs"
     },
     "geosite/category-ai-!cn.list": {
@@ -2861,7 +2861,7 @@
     },
     "geosite/category-password-management.list": {
       "destination": "geosite-category-password-management.mrs",
-      "oid": "f305f397557d1355379c4ef81a315d523c5e0031",
+      "oid": "0f7eb852f0da11b8b94f31d1fb6f863f57cbd599",
       "output": "geosite-category-password-management.mrs"
     },
     "geosite/category-payment-ir.list": {
@@ -2956,7 +2956,7 @@
     },
     "geosite/category-speedtest.list": {
       "destination": "geosite-category-speedtest.mrs",
-      "oid": "4e953db7b071ff07914e801ec888e2bab60dc36e",
+      "oid": "e305ca329bc890cf1a038f80ce7a6d79a5a2639f",
       "output": "geosite-category-speedtest.mrs"
     },
     "geosite/category-stun.list": {
@@ -4356,7 +4356,7 @@
     },
     "geosite/geolocation-!cn.list": {
       "destination": "geosite-geolocation-!cn.mrs",
-      "oid": "b426b098c33fef17dec161cba38b8fe2b3db1558",
+      "oid": "d5832bf8a63cd7034a5b85fb0b98f2001567c214",
       "output": "geosite-geolocation-!cn.mrs"
     },
     "geosite/geolocation-cn.list": {
@@ -6456,12 +6456,12 @@
     },
     "geosite/oisd-big.list": {
       "destination": "geosite-oisd-big.mrs",
-      "oid": "cf3430820779de7b758a3dad33c98980e102951a",
+      "oid": "08ef1b3c0508706366d4f75c99491078f371a3a0",
       "output": "geosite-oisd-big.mrs"
     },
     "geosite/oisd-small.list": {
       "destination": "geosite-oisd-small.mrs",
-      "oid": "1e479f6bbdc3eebcf1d0d265153eda71b5c01f11",
+      "oid": "07175dc6b8ae8ff2478926fe094d1478541e54ea",
       "output": "geosite-oisd-small.mrs"
     },
     "geosite/ok.list": {
@@ -6511,7 +6511,7 @@
     },
     "geosite/ookla-speedtest.list": {
       "destination": "geosite-ookla-speedtest.mrs",
-      "oid": "76cc8a8ba628403bfacacf3713c3358ae6fb3598",
+      "oid": "283971586d29f9b93dfae5c3a363e26cdedb7547",
       "output": "geosite-ookla-speedtest.mrs"
     },
     "geosite/op.list": {
@@ -6546,7 +6546,7 @@
     },
     "geosite/openspeedtest.list": {
       "destination": "geosite-openspeedtest.mrs",
-      "oid": "aa6f0a917518ca7c1e89e69c3294eb83f089bac1",
+      "oid": "338096da16a210443f9ac431c8e27ba2377bed2a",
       "output": "geosite-openspeedtest.mrs"
     },
     "geosite/openstreetmap.list": {
@@ -7126,7 +7126,7 @@
     },
     "geosite/refilter-community.list": {
       "destination": "geosite-refilter-community.mrs",
-      "oid": "266967e8a44e245d7418922a3e59f1c8eb77ffef",
+      "oid": "85aeff41bc65bda7719019d2a720b7ee39c5458f",
       "output": "geosite-refilter-community.mrs"
     },
     "geosite/refilter.list": {
@@ -7651,7 +7651,7 @@
     },
     "geosite/speedtest.list": {
       "destination": "geosite-speedtest.mrs",
-      "oid": "76cc8a8ba628403bfacacf3713c3358ae6fb3598",
+      "oid": "283971586d29f9b93dfae5c3a363e26cdedb7547",
       "output": "geosite-speedtest.mrs"
     },
     "geosite/spiceworks.list": {
@@ -8126,7 +8126,7 @@
     },
     "geosite/tif-full.list": {
       "destination": "geosite-tif-full.mrs",
-      "oid": "e8ed5709e5eae5bee6e63077713aa5f9a0482121",
+      "oid": "77fec2cfc065b4d16cf97bbd0f602c446cb3445a",
       "output": "geosite-tif-full.mrs"
     },
     "geosite/tiktok.list": {
