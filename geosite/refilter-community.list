@@ -192,6 +192,9 @@ domain:memohrc.org
 domain:metacritic.com
 domain:miitomo.com
 domain:miiverse.com
+domain:miro-apps.com
+domain:miro.com
+domain:mirostatic.com
 domain:modartt.com
 domain:modrinth.com
 domain:monster.ie
@@ -255,6 +258,7 @@ domain:omtrdc.net
 domain:omv-extras.org
 domain:onlineradiobox.com
 domain:onlinesim.ru
+domain:onlinewhiteboard.com
 domain:openai.com
 domain:pandasecurity.com
 domain:patreon.com
@@ -305,6 +309,7 @@ domain:pump.fun
 domain:pushbr.com
 domain:quora.com
 domain:rbxcdn.com
+domain:realtimeboard.com
 domain:redis.com
 domain:redtube.com
 domain:refactoring.guru
@@ -423,6 +428,7 @@ domain:wariowarediy.com
 domain:warnerbrosgames.com
 domain:watchguard.com
 domain:weather.com
+domain:webwhiteboard.com
 domain:welt.de
 domain:wetransfer.com
 domain:whatsapp-plus.info
