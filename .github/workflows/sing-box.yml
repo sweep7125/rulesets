@@ -1,0 +1,284 @@
+name: Generate sing-box rulesets from sources
+
+on:
+  workflow_run:
+    workflows: ['Generate sources (flattened xray \+ cidr)']
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: singbox-from-sources
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  # Keep the latest stable 1.13.x; 1.14 is intentionally excluded.
+  SING_BOX_VERSION: "1.13.21"
+  # linux-amd64 release asset digest, pinned together with the version.
+  SING_BOX_SHA256: 24f9ef8e7234e13e71e74c3598a4164c5fe07b7b67ccc6e96cf68b54789f72cd
+  COMMIT_USER_NAME: github-actions[bot]
+  COMMIT_USER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+
+jobs:
+  build:
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Checkout main helpers
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: .ci
+
+      - name: Inspect source and destination metadata
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cp .ci/publish.py "$RUNNER_TEMP/publish.py"
+          git fetch --no-tags --depth=1 --filter=blob:none origin \
+            '+refs/heads/sources:refs/remotes/origin/sources'
+          if git fetch --no-tags --depth=3 --filter=blob:none origin \
+            '+refs/heads/sing-box-rulesets:refs/remotes/origin/sing-box-rulesets'; then
+            echo "SRS_HEAD=$(git rev-parse origin/sing-box-rulesets)" >> "$GITHUB_ENV"
+          else
+            status=0
+            git ls-remote --exit-code --heads origin refs/heads/sing-box-rulesets >/dev/null || status=$?
+            (( status == 2 )) || { echo 'Cannot fetch sing-box-rulesets' >&2; exit 1; }
+            echo 'SRS_HEAD=' >> "$GITHUB_ENV"
+          fi
+
+      - name: Decide build from all sources and converter revisions
+        id: plan
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import re
+          import subprocess
+          from pathlib import Path
+
+          def git(*args):
+              return subprocess.check_output(['git', *args], stderr=subprocess.DEVNULL)
+
+          def old_file(name):
+              if not os.environ['SRS_HEAD']:
+                  return b''
+              try:
+                  return git('show', f'origin/sing-box-rulesets:{name}')
+              except subprocess.CalledProcessError:
+                  return b''
+
+          def valid_entry(source, entry):
+              if not isinstance(source, str) or '/' not in source or any(c in source for c in ('\n', '\r', '\t', '\\')):
+                  return False
+              kind, name = source.split('/', 1)
+              if kind not in ('geosite', 'geoip') or not name.endswith('.list'):
+                  return False
+              destination = f"{kind}-{name[:-5].replace('/', '-')}.srs"
+              return (isinstance(entry, dict) and set(entry) == {'oid', 'destination'}
+                      and isinstance(entry['oid'], str) and re.fullmatch(r'[0-9a-f]{40}', entry['oid']) is not None
+                      and entry['destination'] == destination)
+
+          compiler_inputs = [git('rev-parse', f'HEAD:{path}').strip() for path in (
+              '.github/workflows/sing-box.yml', '.ci/build_srs.py', '.ci/optimize.py')]
+          compiler_inputs.append(os.environ['SING_BOX_VERSION'].encode())
+          compiler = hashlib.sha256(b'\n'.join(compiler_inputs)).hexdigest()
+          inventory = []
+          expected = {'srs.hash', 'srs.manifest.json'}
+          for kind in ('geosite', 'geoip'):
+              for raw in git('ls-tree', '-r', '-z', f'origin/sources:{kind}').split(b'\0'):
+                  if not raw:
+                      continue
+                  header, path = raw.split(b'\t', 1)
+                  mode, typ, oid = header.decode('ascii').split()
+                  if not path.endswith(b'.list'):
+                      continue
+                  if typ != 'blob' or mode not in ('100644', '100755'):
+                      raise ValueError(f'Nonregular source list: {path!r}')
+                  name = path.decode('utf-8')
+                  if any(c in name for c in ('\n', '\r', '\t', '\\')):
+                      raise ValueError(f'Unsupported source path: {name!r}')
+                  output = f"{kind}-{name[:-5].replace('/', '-')}.srs"
+                  if output in expected:
+                      raise ValueError(f'Output name collision: {output}')
+                  expected.add(output)
+                  inventory.append({'source': f'{kind}/{name}', 'oid': oid, 'destination': output})
+          inventory.sort(key=lambda item: item['source'])
+          if not inventory:
+              raise SystemExit('No source lists found')
+          payload = json.dumps({'compiler': compiler, 'inventory': inventory},
+                               sort_keys=True, separators=(',', ':')).encode()
+          build_hash = hashlib.sha256(payload).hexdigest()
+          try:
+              previous = json.loads(old_file('srs.manifest.json'))
+          except (ValueError, TypeError):
+              previous = {}
+          compatible = (isinstance(previous, dict) and type(previous.get('schema')) is int
+                        and previous['schema'] == 1
+                        and previous.get('compiler') == compiler
+                        and isinstance(previous.get('entries'), dict)
+                        and all(valid_entry(source, entry) for source, entry in previous['entries'].items()))
+          old_entries = previous['entries'] if compatible else {}
+          available = {}
+          all_paths = set()
+          if os.environ['SRS_HEAD']:
+              empty = git('hash-object', '--stdin').decode().strip()
+              for raw in git('ls-tree', '-r', '-z', 'origin/sing-box-rulesets').split(b'\0'):
+                  if not raw:
+                      continue
+                  header, path = raw.split(b'\t', 1)
+                  mode, typ, oid = header.decode('ascii').split()
+                  name = path.decode('utf-8')
+                  all_paths.add(name)
+                  if mode == '100644' and typ == 'blob' and oid != empty:
+                      available[name] = oid
+          convert = []
+          retained = {}
+          for item in inventory:
+              old = old_entries.get(item['source'])
+              output = item['destination']
+              if (isinstance(old, dict) and old.get('oid') == item['oid']
+                  and old.get('destination') == output and output in available):
+                  retained[output] = available[output]
+              else:
+                  convert.append(item)
+          obsolete = sorted(all_paths - expected)
+          old_hash = old_file('srs.hash').decode('ascii', errors='replace').strip()
+          needs_build = bool(convert or obsolete or old_hash != build_hash
+                             or not compatible or not expected.issubset(available))
+          work = Path(os.environ['RUNNER_TEMP'])
+          (work / 'srs-plan.json').write_text(json.dumps({
+              'compiler': compiler, 'hash': build_hash, 'inventory': inventory,
+              'convert': convert, 'retained': retained, 'obsolete': obsolete,
+              'previous': available,
+          }, sort_keys=True), encoding='utf-8')
+          (work / 'srs-inventory.tsv').write_text(''.join(
+              f"{item['source']}\t{item['destination']}\n" for item in convert), encoding='utf-8')
+          (work / 'srs-inputs.paths').write_bytes(b''.join(
+              b':(literal)' + item['source'].encode('utf-8') + b'\0' for item in convert))
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write(f'SRS_BUILD_HASH={build_hash}\nSRS_COMPILER_HASH={compiler}\n')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f"needs_build={'true' if needs_build else 'false'}\n")
+              output.write(f"needs_compile={'true' if convert else 'false'}\n")
+          print(f'Categories: {len(inventory)}; compile: {len(convert)}; obsolete: {len(obsolete)}')
+          PY
+
+      - name: Download checksummed pinned sing-box without root access
+        if: steps.plan.outputs.needs_compile == 'true'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          asset="sing-box-${SING_BOX_VERSION}-linux-amd64.tar.gz"
+          base="https://github.com/SagerNet/sing-box/releases/download/v${SING_BOX_VERSION}"
+          curl -fsSL --retry 3 --connect-timeout 10 --max-time 180 "$base/$asset" -o "$RUNNER_TEMP/$asset"
+          printf '%s  %s\n' "$SING_BOX_SHA256" "$asset" > "$RUNNER_TEMP/sing-box-selected-checksums.txt"
+          (cd "$RUNNER_TEMP" && sha256sum --check sing-box-selected-checksums.txt)
+          tar -xzf "$RUNNER_TEMP/$asset" -C "$RUNNER_TEMP" --strip-components=1 \
+            "sing-box-${SING_BOX_VERSION}-linux-amd64/sing-box"
+          "$RUNNER_TEMP/sing-box" version
+
+      - name: Restore and compile only selected source lists
+        if: steps.plan.outputs.needs_compile == 'true'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          # One batch fetches only selected blobs; literal pathspecs preserve unusual names.
+          git worktree add --detach --no-checkout "$RUNNER_TEMP/srs-sources" origin/sources
+          git -C "$RUNNER_TEMP/srs-sources" restore --source=HEAD --worktree \
+            --pathspec-from-file="$RUNNER_TEMP/srs-inputs.paths" --pathspec-file-nul
+          mkdir -p "$RUNNER_TEMP/srs-output"
+          while IFS=$'\t' read -r source output; do
+            kind="${source%%/*}"
+            options=()
+            [[ "$source" != geoip/private.list ]] || options+=(--keep-ipv6)
+            python3 .ci/build_srs.py "$kind" "$RUNNER_TEMP/srs-sources/$source" \
+              "$RUNNER_TEMP/srs-input.json" "${options[@]}"
+            "$RUNNER_TEMP/sing-box" rule-set compile --output "$RUNNER_TEMP/srs-output/$output" \
+              "$RUNNER_TEMP/srs-input.json"
+          done < "$RUNNER_TEMP/srs-inventory.tsv"
+
+      - name: Prepare SRS publication tree
+        if: steps.plan.outputs.needs_build == 'true'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          def git(*args, data=None, env=None):
+              return subprocess.check_output(['git', *args], input=data, env=env)
+
+          work = Path(os.environ['RUNNER_TEMP'])
+          plan = json.loads((work / 'srs-plan.json').read_text(encoding='utf-8'))
+          blobs = dict(plan['retained'])
+          for item in plan['convert']:
+              path = work / 'srs-output' / item['destination']
+              if not path.is_file() or not 0 < path.stat().st_size < 100000000:
+                  raise ValueError(f'Missing, empty or oversized SRS output: {path.name}')
+              blobs[item['destination']] = git('hash-object', '-w', str(path)).decode().strip()
+          manifest = {'schema': 1, 'compiler': plan['compiler'], 'entries': {
+              item['source']: {'oid': item['oid'], 'destination': item['destination']}
+              for item in plan['inventory']}}
+          metadata = {
+              'srs.hash': (plan['hash'] + '\n').encode(),
+              'srs.manifest.json': (json.dumps(manifest, sort_keys=True, indent=2) + '\n').encode(),
+          }
+          for name, contents in metadata.items():
+              blobs[name] = git('hash-object', '-w', '--stdin', data=contents).decode().strip()
+          index = work / 'srs-publish.index'
+          index.unlink(missing_ok=True)
+          env = dict(os.environ, GIT_INDEX_FILE=str(index))
+          git('read-tree', '--empty', env=env)
+          records = b''.join(f'100644 {oid}\t{name}\0'.encode('utf-8')
+                             for name, oid in sorted(blobs.items()))
+          git('update-index', '-z', '--index-info', data=records, env=env)
+          # Retained IDs come from the remote tree; their promised blobs need not be downloaded.
+          tree = git('write-tree', '--missing-ok', env=env).decode().strip()
+          (work / 'srs-publish.tree').write_text(tree, encoding='ascii')
+          changed = set(plan['obsolete']) | {name for name, oid in blobs.items()
+                                             if plan['previous'].get(name) != oid}
+          (work / 'srs-changed.txt').write_text(''.join(name + '\n' for name in sorted(changed)), encoding='utf-8')
+          print(f'Prepared {len(plan["convert"])} compiled categories; retained {len(plan["retained"])}')
+          PY
+
+      - name: Publish SRS outputs and bound unchanged history
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config --local user.name "$COMMIT_USER_NAME"
+          git config --local user.email "$COMMIT_USER_EMAIL"
+          if [[ '${{ steps.plan.outputs.needs_build }}' == true ]]; then
+            tree="$(< "$RUNNER_TEMP/srs-publish.tree")"
+          else
+            : > "$RUNNER_TEMP/srs-changed.txt"
+            tree="$(git rev-parse 'origin/sing-box-rulesets^{tree}')"
+          fi
+          python3 "$RUNNER_TEMP/publish.py" --branch sing-box-rulesets --tree "$tree" \
+            --expected "$SRS_HEAD" --message "Update sing-box rulesets $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+
+      - name: Purge changed jsDelivr files
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import os
+          import subprocess
+          from pathlib import Path
+          from urllib.parse import quote
+
+          base = f"https://purge.jsdelivr.net/gh/{os.environ['GITHUB_REPOSITORY']}@sing-box-rulesets/"
+          for name in (Path(os.environ['RUNNER_TEMP']) / 'srs-changed.txt').read_text(encoding='utf-8').splitlines():
+              subprocess.run(['curl', '-fsS', '--retry', '3', '--connect-timeout', '10', '--max-time', '30',
+                              base + quote(name, safe='/')], check=True)
+          PY

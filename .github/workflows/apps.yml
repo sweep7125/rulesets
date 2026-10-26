@@ -1,0 +1,81 @@
+name: Update INCY Android apps
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apps.yml'
+      - '.ci/build_apps.py'
+  schedule:
+    - cron: '15 0 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: apps-main
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Checkout main builder
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+          sparse-checkout: |
+            .ci
+
+      - name: Checkout both upstream lists at one revision
+        uses: actions/checkout@v7
+        with:
+          repository: legiz-ru/mihomo-rule-sets
+          ref: main
+          path: _upstream
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: |
+            other/torrent-clients.yaml
+            other/ru-app-list.yaml
+          sparse-checkout-cone-mode: false
+
+      - name: Build sorted unique Android packages
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "Upstream revision: $(git -C _upstream rev-parse HEAD)"
+          python3 .ci/build_apps.py \
+            _upstream/other/torrent-clients.yaml \
+            _upstream/other/ru-app-list.yaml \
+            "$RUNNER_TEMP/apps.txt"
+
+      - name: Publish only apps.txt when changed
+        id: publish
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -s "$RUNNER_TEMP/apps.txt"
+          cp "$RUNNER_TEMP/apps.txt" apps.txt
+          git add -- apps.txt
+          if git diff --cached --quiet -- apps.txt; then
+            echo 'apps.txt unchanged; skip commit'
+            exit 0
+          fi
+          git config --local user.name 'github-actions[bot]'
+          git config --local user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit --only -m 'chore: update INCY Android apps' -- apps.txt
+          git push origin HEAD:refs/heads/main
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
+
+      - name: Purge changed jsDelivr file
+        if: steps.publish.outputs.changed == 'true'
+        shell: bash
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -Eeuo pipefail
+          curl -fsS --retry 3 --connect-timeout 10 --max-time 30 \
+            "https://purge.jsdelivr.net/gh/${REPOSITORY}@main/apps.txt"

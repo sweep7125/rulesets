@@ -1,0 +1,22 @@
+# Local agent memory and generated planning documents
+/AGENTS.md
+/CLAUDE.md
+/project-map.md
+/state.md
+/session-log.md
+/known-issues.md
+/context-snapshot.json
+/docs/plans/
+/docs/specs/
+/.agents/
+/.claude/
+/.pi/
+
+# Local-only regression suite
+/tests/
+
+# Local configuration exports and Python caches
+*.local.*
+__pycache__/
+*.py[cod]
+.DS_Store

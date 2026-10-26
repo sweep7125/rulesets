@@ -1,0 +1,467 @@
+name: Generate sources (flattened xray + cidr)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+      - '.ci/**'
+      - 'data/**'
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: sources-builder-${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  DEBIAN_FRONTEND: noninteractive
+  COMMIT_USER_NAME: github-actions[bot]
+  COMMIT_USER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+
+jobs:
+  build:
+    runs-on: ubuntu-26.04
+
+    steps:
+      - name: Checkout main helpers and custom data
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            .ci
+            data
+
+      - name: Inspect sources without checking out old generated blobs
+        run: |
+          set -Eeuo pipefail
+          cp .ci/publish.py "$RUNNER_TEMP/publish.py"
+          git config --local user.name "$COMMIT_USER_NAME"
+          git config --local user.email "$COMMIT_USER_EMAIL"
+          if git fetch --no-tags --depth=3 --filter=blob:none origin \
+            '+refs/heads/sources:refs/remotes/origin/sources'; then
+            echo "SOURCES_HEAD=$(git rev-parse origin/sources)" >> "$GITHUB_ENV"
+          else
+            status=0
+            git ls-remote --exit-code --heads origin refs/heads/sources >/dev/null || status=$?
+            (( status == 2 )) || { echo 'Cannot fetch sources branch' >&2; exit 1; }
+            echo 'SOURCES_HEAD=' >> "$GITHUB_ENV"
+          fi
+
+      - name: Prepare helpers and inputs from main
+        run: |
+          set -Eeuo pipefail
+          mkdir -p _inputs
+          cat > .ci/helpers.sh <<'SH'
+          set -Eeuo pipefail
+
+          OPT_PY="${GITHUB_WORKSPACE}/.ci/optimize.py"
+
+          dom_xray_preserve() {
+            python3 "$OPT_PY" domains "$1" "$2" \
+              --input-type xray \
+              --target preserve
+          }
+
+          dom_from_clean_to_xray_suffix() {
+            python3 "$OPT_PY" domains "$1" "$2" \
+              --input-type clean \
+              --target suffix
+          }
+
+          ip_opt() {
+            python3 "$OPT_PY" ips "$1" "$2"
+          }
+
+          ip_opt_geoip() {
+            local src="$1"
+            local out="$2"
+
+            # geoip/private keeps IPv4 + IPv6, without a redundant copy.
+            if [[ "$out" == "geoip/private" ]]; then
+              ip_opt "$src" "$out"
+              return
+            fi
+
+            local tmp status=0
+            tmp="$(mktemp)"
+
+            # A single grep pass instead of two, with errors distinguishable
+            # from an empty result (exit code 1).
+            LC_ALL=C grep -Ev '^[[:space:]]*($|#)|:' "$src" > "$tmp" || status=$?
+            if (( status > 1 )); then
+              rm -f "$tmp"
+              return "$status"
+            fi
+
+            if ip_opt "$tmp" "$out"; then
+              rm -f "$tmp"
+            else
+              status=$?
+              rm -f "$tmp"
+              return "$status"
+            fi
+          }
+
+          get() {
+            curl -fsSL --compressed \
+              --connect-timeout 10 \
+              --max-time 120 \
+              --retry 5 \
+              --retry-delay 2 \
+              --retry-connrefused \
+              "$1" -o "$2"
+          }
+
+          # GNU xargs starts the next download as soon as a slot becomes free.
+          # Unlike fixed groups, one slow URL does not delay the next group.
+          get_parallel() {
+            (( $# % 2 == 0 )) || { echo "get_parallel requires URL/path pairs" >&2; return 2; }
+            (( $# > 0 )) || return 0
+
+            printf '%s\0' "$@" | xargs -0 -n 2 -P 4 \
+              bash -c 'source .ci/helpers.sh; get "$1" "$2"' _
+          }
+          SH
+
+      - name: Checkout v2fly/domain-list-community (data only)
+        uses: actions/checkout@v7
+        with:
+          repository: v2fly/domain-list-community
+          path: community
+          fetch-depth: 1
+          sparse-checkout: |
+            data
+          sparse-checkout-cone-mode: true
+          filter: blob:none
+
+      - name: Checkout Loyalsoldier/geoip release text files
+        uses: actions/checkout@v7
+        with:
+          repository: Loyalsoldier/geoip
+          ref: release
+          path: loyalsoldier-geoip
+          fetch-depth: 1
+          sparse-checkout: |
+            text
+          sparse-checkout-cone-mode: true
+          filter: blob:none
+
+      - name: Checkout Vadim geosite categories at one revision
+        uses: actions/checkout@v7
+        with:
+          repository: vahellame/russia-whitelist-geosite
+          path: vadim-geosite
+          fetch-depth: 1
+          sparse-checkout: data
+          filter: blob:none
+
+      - name: Checkout Vadim GeoIP categories at one revision
+        uses: actions/checkout@v7
+        with:
+          repository: vahellame/russia-whitelist-geoip
+          path: vadim-geoip
+          fetch-depth: 1
+          sparse-checkout: data
+          filter: blob:none
+
+      - name: Clean output folders in workspace (root geosite/geoip)
+        run: |
+          set -Eeuo pipefail
+          rm -rf geosite geoip
+          mkdir -p geosite geoip
+
+      - name: Build ALL v2fly/domain-list-community lists → flat geosite/
+        run: |
+          set -Eeuo pipefail
+          source .ci/helpers.sh
+
+          DATA_DIR="community/data"
+
+          [[ -d "$DATA_DIR" ]] || {
+            echo "Missing $DATA_DIR"
+            exit 1
+          }
+
+          # Preflight collision check before launching parallel workers.
+          # Most community files are small: 2 workers reduce Python startup
+          # overhead without risking concurrent multi-million-domain inputs.
+          mapfile -d '' -t files < <(find "$DATA_DIR" -type f -print0 | LC_ALL=C sort -z)
+          (( ${#files[@]} > 0 )) || { echo "No community lists found" >&2; exit 1; }
+          declare -A seen=()
+
+          for src in "${files[@]}"; do
+            base="${src##*/}"
+            out="geosite/${base}"
+
+            if [[ -n "${seen[$base]:-}" ]]; then
+              echo "Name collision after flattening:"
+              echo "  ${seen[$base]}"
+              echo "  ${src}"
+              echo "Both would become: ${out}"
+              exit 1
+            fi
+            seen["$base"]="$src"
+          done
+
+          # Worker Bash, not this shell, expands the positional parameters.
+          # shellcheck disable=SC2016
+          printf '%s\0' "${files[@]}" | xargs -0 -n 1 -P 2 \
+            bash -c 'source .ci/helpers.sh; dom_xray_preserve "$1" "geosite/${1##*/}"' _
+
+          rm -rf community
+
+      - name: Download external one-file DOMAIN sources (.src)
+        run: |
+          set -Eeuo pipefail
+          source .ci/helpers.sh
+
+          # One queue for all inputs: at most 4 active downloads, no batches.
+          downloads=(
+            # Re-filter + Russia inside
+            "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community.lst" "_inputs/refilter-community-domains.src"
+            "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/domains_all.lst" "_inputs/refilter-domains.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Russia/inside-raw.lst" "_inputs/russia-inside.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/google_ai.lst" "_inputs/google-ai.src"
+
+            # allow-domains categories
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/anime.lst" "_inputs/allow-anime.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/block.lst" "_inputs/allow-block.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/geoblock.lst" "_inputs/allow-geoblock.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/news.lst" "_inputs/allow-news.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Categories/porn.lst" "_inputs/allow-porn.src"
+
+            # allow-domains services
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/discord.lst" "_inputs/allow-discord.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/hdrezka.lst" "_inputs/allow-hdrezka.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/meta.lst" "_inputs/allow-meta.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/tiktok.lst" "_inputs/allow-tiktok.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/twitter.lst" "_inputs/allow-twitter.src"
+            "https://raw.githubusercontent.com/itdoginfo/allow-domains/main/Services/youtube.lst" "_inputs/allow-youtube.src"
+
+            # Keep Davoyan names separate from the existing community categories.
+            "https://raw.githubusercontent.com/Davoyan/xray-routing/main/domains/banned.txt" "_inputs/davoyan-banned.src"
+            "https://raw.githubusercontent.com/Davoyan/xray-routing/main/domains/category-ru.txt" "_inputs/davoyan-category-ru.src"
+
+            # OISD and TIF (shared by standalone and combined outputs)
+            "https://raw.githubusercontent.com/sjhgvr/oisd/main/domainswild2_big.txt" "_inputs/oisd-big.src"
+            "https://raw.githubusercontent.com/sjhgvr/oisd/main/domainswild2_small.txt" "_inputs/oisd-small.src"
+            "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif-onlydomains.txt" "_inputs/tif-full.src"
+          )
+          get_parallel "${downloads[@]}"
+
+          for name in oisd-big tif-full davoyan-banned davoyan-category-ru; do
+            test -s "_inputs/${name}.src"
+          done
+
+      - name: Normalize external DOMAIN sources → XRAY lists in geosite/
+        run: |
+          set -Eeuo pipefail
+          source .ci/helpers.sh
+
+          dom_from_clean_to_xray_suffix _inputs/refilter-community-domains.src geosite/refilter-community
+          dom_from_clean_to_xray_suffix _inputs/refilter-domains.src            geosite/refilter
+          dom_from_clean_to_xray_suffix _inputs/russia-inside.src               geosite/russia-inside
+          dom_from_clean_to_xray_suffix _inputs/google-ai.src                   geosite/google-ai
+
+          # allow-domains separate components
+          dom_from_clean_to_xray_suffix _inputs/allow-anime.src                 geosite/allow-anime
+          dom_from_clean_to_xray_suffix _inputs/allow-block.src                 geosite/allow-block
+          dom_from_clean_to_xray_suffix _inputs/allow-geoblock.src              geosite/allow-geoblock
+          dom_from_clean_to_xray_suffix _inputs/allow-news.src                  geosite/allow-news
+          dom_from_clean_to_xray_suffix _inputs/allow-porn.src                  geosite/allow-porn
+
+          dom_from_clean_to_xray_suffix _inputs/allow-discord.src               geosite/allow-discord
+          dom_from_clean_to_xray_suffix _inputs/allow-hdrezka.src               geosite/allow-hdrezka
+          dom_from_clean_to_xray_suffix _inputs/allow-meta.src                  geosite/allow-meta
+          dom_from_clean_to_xray_suffix _inputs/allow-tiktok.src                geosite/allow-tiktok
+          dom_from_clean_to_xray_suffix _inputs/allow-twitter.src               geosite/allow-twitter
+          dom_from_clean_to_xray_suffix _inputs/allow-youtube.src               geosite/allow-youtube
+
+          # Davoyan rules are already Xray text: preserve explicit full/domain types.
+          dom_xray_preserve _inputs/davoyan-banned.src geosite/davoyan-banned
+          dom_xray_preserve _inputs/davoyan-category-ru.src geosite/davoyan-category-ru
+          test -s geosite/davoyan-banned.list
+          test -s geosite/davoyan-category-ru.list
+
+          # Match ansible/xray-route-template: whitelist recursively includes Vadim categories.
+          test -s vadim-geosite/data/whitelist
+          dom_xray_preserve vadim-geosite/data/whitelist geosite/wl
+          test -s geosite/wl.list
+          rm -rf vadim-geosite
+
+          # OISD
+          dom_from_clean_to_xray_suffix _inputs/oisd-big.src                    geosite/oisd-big
+          dom_from_clean_to_xray_suffix _inputs/oisd-small.src                  geosite/oisd-small
+
+          # Preserve OISD Small, but build only the full TIF tier.
+          # Heavy source optimization runs one Python process at a time.
+          if [[ -x /usr/bin/time ]]; then
+            /usr/bin/time -f 'tif-full: elapsed=%es peak_rss=%MKiB' \
+              python3 "$OPT_PY" domains _inputs/tif-full.src geosite/tif-full \
+                --input-type clean --target suffix
+          else
+            dom_from_clean_to_xray_suffix _inputs/tif-full.src geosite/tif-full
+          fi
+          test -s geosite/tif-full.list
+
+          # ABUSE Full = OISD Big + TIF Full. Work on previously optimized
+          # lists; avoid re-reading and sorting the large raw sources.
+          # The include paths are relative to the input manifest directory.
+          cat > geosite/.abuse-full-includes <<'EOF'
+          include:oisd-big.list
+          include:tif-full.list
+          EOF
+          if [[ -x /usr/bin/time ]]; then
+            /usr/bin/time -f 'abuse-full: elapsed=%es peak_rss=%MKiB' \
+              python3 "$OPT_PY" domains geosite/.abuse-full-includes geosite/abuse-full \
+                --input-type xray --target preserve
+          else
+            dom_xray_preserve geosite/.abuse-full-includes geosite/abuse-full
+          fi
+          rm -f geosite/.abuse-full-includes
+          test -s geosite/abuse-full.list
+
+      - name: Normalize custom DOMAIN sources from data/geosite → geosite/
+        run: |
+          set -Eeuo pipefail
+          source .ci/helpers.sh
+
+          [[ -d data/geosite ]] || exit 0
+
+          while IFS= read -r -d '' src; do
+            rel="${src#data/geosite/}"
+            out="geosite/${rel}"
+
+            mkdir -p "$(dirname "$out")"
+            dom_from_clean_to_xray_suffix "$src" "$out"
+          done < <(find data/geosite -type f -print0 | LC_ALL=C sort -z)
+
+      - name: Build ALL Loyalsoldier geoip text lists → geoip/
+        run: |
+          set -Eeuo pipefail
+          source .ci/helpers.sh
+
+          SRC_DIR="loyalsoldier-geoip/text"
+
+          [[ -d "$SRC_DIR" ]] || {
+            echo "Missing $SRC_DIR"
+            exit 1
+          }
+
+          while IFS= read -r -d '' src; do
+            file="$(basename "$src")"
+            name="${file%.txt}"
+            out="geoip/${name}"
+
+            ip_opt_geoip "$src" "$out"
+          done < <(find "$SRC_DIR" -type f -name '*.txt' -print0 | LC_ALL=C sort -z)
+
+          rm -rf loyalsoldier-geoip
+
+      - name: Download external one-file IP sources (.src)
+        run: |
+          set -Eeuo pipefail
+          source .ci/helpers.sh
+
+          get_parallel \
+            "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/ipsum.lst" "_inputs/refilter-ips.src" \
+            "https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/community_ips.lst" "_inputs/refilter-community-ips.src" \
+            "https://www.spamhaus.org/drop/drop_v4.json" "_inputs/spamhaus-drop-v4.json" \
+            "https://raw.githubusercontent.com/Davoyan/xray-routing/main/ips/ru.txt" "_inputs/davoyan-ru.src" \
+            "https://raw.githubusercontent.com/v2fly/geoip/release/text/private.txt" "_inputs/v2fly-private.src"
+
+          for name in spamhaus-drop-v4.json davoyan-ru.src v2fly-private.src; do
+            test -s "_inputs/${name}"
+          done
+
+      - name: Prepare mandatory Vadim IPv4 components
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import ipaddress
+          from pathlib import Path
+
+          combined = []
+          for category in ("vk", "yandex", "other"):
+              source = Path('vadim-geoip/data') / category
+              networks = []
+              for lineno, raw in enumerate(source.read_text(encoding='utf-8-sig').splitlines(), 1):
+                  line = raw.split('#', 1)[0].strip()
+                  if not line:
+                      continue
+                  try:
+                      network = ipaddress.ip_network(line, strict=False)
+                  except ValueError as error:
+                      raise SystemExit(f'{source}:{lineno}: invalid WL network: {line!r}') from error
+                  if network.version == 4:
+                      networks.append(str(network))
+              if not networks:
+                  raise SystemExit(f'{source}: mandatory WL component has no IPv4 networks')
+              combined.extend(networks)
+          Path('_inputs/wl-ips.src').write_text('\n'.join(combined) + '\n', encoding='utf-8')
+          PY
+
+      - name: Normalize external IP sources → CIDR lists in geoip/
+        run: |
+          set -Eeuo pipefail
+          source .ci/helpers.sh
+
+          ip_opt_geoip _inputs/refilter-ips.src           geoip/refilter
+          ip_opt_geoip _inputs/refilter-community-ips.src geoip/refilter-community
+          ip_opt_geoip _inputs/davoyan-ru.src geoip/davoyan-ru
+          ip_opt_geoip _inputs/v2fly-private.src geoip/private
+          test -s geoip/davoyan-ru.list
+          test -s geoip/private.list
+
+          # The preceding step validates each mandatory component before union.
+          ip_opt_geoip _inputs/wl-ips.src geoip/wl
+          test -s geoip/wl.list
+          rm -rf vadim-geoip
+
+          # Spamhaus DROP is JSON Lines. Extract only IPv4 CIDRs.
+          jq -r 'select(.cidr? != null) | .cidr' \
+            _inputs/spamhaus-drop-v4.json \
+            > _inputs/spamhaus-drop-v4.src
+          test -s _inputs/spamhaus-drop-v4.src
+
+          # Keep geoip/abuse category name; only Spamhaus DROP IPv4 is included.
+          ip_opt_geoip _inputs/spamhaus-drop-v4.src geoip/abuse
+          test -s geoip/abuse.list
+
+      - name: Normalize custom IP sources from data/geoip → geoip/
+        run: |
+          set -Eeuo pipefail
+          source .ci/helpers.sh
+
+          [[ -d data/geoip ]] || exit 0
+
+          while IFS= read -r -d '' src; do
+            rel="${src#data/geoip/}"
+            out="geoip/${rel}"
+
+            mkdir -p "$(dirname "$out")"
+            ip_opt_geoip "$src" "$out"
+          done < <(find data/geoip -type f -print0 | LC_ALL=C sort -z)
+
+      - name: Commit ONLY geosite/ and geoip/ to sources branch
+        run: |
+          set -Eeuo pipefail
+
+          git config --local user.email "${COMMIT_USER_EMAIL}"
+          git config --local user.name  "${COMMIT_USER_NAME}"
+
+          export GIT_INDEX_FILE="$RUNNER_TEMP/sources-publish.index"
+          git read-tree --empty
+          git add --sparse -f -- geosite geoip
+
+          python3 "$RUNNER_TEMP/publish.py" --branch sources \
+            --tree "$(git write-tree)" --expected "$SOURCES_HEAD" \
+            --message "Update sources (geosite + geoip only) $(date -u +'%Y-%m-%dT%H:%M:%SZ')"

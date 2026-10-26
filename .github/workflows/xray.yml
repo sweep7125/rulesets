@@ -1,0 +1,247 @@
+name: Generate xray (geosite + geoip) from sources
+
+on:
+  workflow_run:
+    workflows: ['Generate sources (flattened xray \+ cidr)']
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: xray-from-sources
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  GOFLAGS: -buildvcs=false
+  COMMIT_USER_NAME: github-actions[bot]
+  COMMIT_USER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+  # Stable release commits; data-only upstream releases must not invalidate our builds.
+  DLC_SHA: fa3cb96fbc210b8d6466251a1d71b4a6e63a9c85
+  V2GEOIP_SHA: fd96fbac6cffc06ab9a10d6ee8fad61afe9b771c
+  GEOSITE_SOURCES: |
+    wl:geosite/wl.list
+    category-ru:geosite/davoyan-category-ru.list
+    banned:geosite/davoyan-banned.list
+    private:geosite/private.list
+    youtube:geosite/youtube.list
+  GEOIP_SOURCES: |
+    wl:geoip/wl.list
+    ru:geoip/davoyan-ru.list
+    private:geoip/private.list
+
+jobs:
+  build:
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Checkout main helpers
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: .ci
+
+      - name: Fetch selected source and destination metadata
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cp .ci/publish.py "$RUNNER_TEMP/publish.py"
+          cp .ci/optimize.py "$RUNNER_TEMP/optimize.py"
+          git fetch --no-tags --depth=1 --filter=blob:none origin \
+            '+refs/heads/sources:refs/remotes/origin/sources'
+          if git fetch --no-tags --depth=3 --filter=blob:none origin \
+            '+refs/heads/xray-rulesets:refs/remotes/origin/xray-rulesets'; then
+            echo "XRAY_HEAD=$(git rev-parse origin/xray-rulesets)" >> "$GITHUB_ENV"
+          else
+            status=0
+            git ls-remote --exit-code --heads origin refs/heads/xray-rulesets >/dev/null || status=$?
+            (( status == 2 )) || { echo 'Cannot fetch xray-rulesets' >&2; exit 1; }
+            echo 'XRAY_HEAD=' >> "$GITHUB_ENV"
+          fi
+
+      - name: Decide independent builds from selected blobs
+        id: plan
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          optimizer_blob="$(git rev-parse HEAD:.ci/optimize.py)"
+          workflow_blob="$(git rev-parse HEAD:.github/workflows/xray.yml)"
+          empty_blob="$(git hash-object --stdin </dev/null)"
+          for kind in geosite geoip; do
+            if [[ "$kind" == geosite ]]; then
+              inputs="$GEOSITE_SOURCES"
+              builder="$DLC_SHA"
+            else
+              inputs="$GEOIP_SOURCES"
+              builder="$V2GEOIP_SHA"
+            fi
+            blobs=()
+            while IFS=: read -r category path; do
+              [[ -n "$category" ]] || continue
+              read -r _mode type oid _source_path <<< "$(git ls-tree -r origin/sources -- "$path")"
+              [[ "$type" == blob && -n "$oid" && "$oid" != "$empty_blob" ]] || {
+                echo "Missing, empty or invalid required source: $path" >&2; exit 1;
+              }
+              blobs+=("$category" "$path" "$oid")
+            done <<< "$inputs"
+            hash="$(printf '%s\n' "${blobs[@]}" "$optimizer_blob" "$workflow_blob" "$builder" | sha256sum | cut -d ' ' -f 1)"
+            echo "${kind^^}_BUILD_HASH=$hash" >> "$GITHUB_ENV"
+            old_hash=''
+            old_oid=''
+            if [[ -n "$XRAY_HEAD" ]]; then
+              old_hash="$(git show "origin/xray-rulesets:${kind}.hash" 2>/dev/null || true)"
+              old_oid="$(git rev-parse --verify -q "origin/xray-rulesets:${kind}.dat" 2>/dev/null || true)"
+            fi
+            if [[ -z "$old_oid" || "$old_oid" == "$empty_blob" || "$old_hash" != "$hash" ]]; then
+              echo "${kind}_needs_build=1" >> "$GITHUB_OUTPUT"
+              echo "$kind: rebuild required"
+            else
+              echo "${kind}_needs_build=0" >> "$GITHUB_OUTPUT"
+              echo "$kind: unchanged, skip compilation"
+            fi
+          done
+
+      - name: Checkout destination only when outputs change
+        if: steps.plan.outputs.geosite_needs_build == '1' || steps.plan.outputs.geoip_needs_build == '1'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config --local user.name "$COMMIT_USER_NAME"
+          git config --local user.email "$COMMIT_USER_EMAIL"
+          # Sparse checkout was only for main helpers; destination has root DAT files.
+          git sparse-checkout disable
+          if [[ -n "$XRAY_HEAD" ]]; then
+            git switch -C xray-rulesets origin/xray-rulesets
+          else
+            git switch --orphan xray-rulesets
+            git rm -r --ignore-unmatch . >/dev/null
+          fi
+          mkdir -p "$RUNNER_TEMP/xray-inputs/geosite" "$RUNNER_TEMP/xray-output"
+
+      - name: Prepare and optimize selected geosite inputs
+        if: steps.plan.outputs.geosite_needs_build == '1'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          while IFS=: read -r category path; do
+            [[ -n "$category" ]] || continue
+            src="$RUNNER_TEMP/xray-inputs/${category}.src"
+            git show "origin/sources:${path}" > "$src"
+            python3 "$RUNNER_TEMP/optimize.py" domains "$src" \
+              "$RUNNER_TEMP/xray-inputs/geosite/${category}" \
+              --input-type xray --target xray-optimized
+            test -s "$RUNNER_TEMP/xray-inputs/geosite/${category}.list"
+          done <<< "$GEOSITE_SOURCES"
+
+      - name: Prepare selected GeoIP inputs and configuration
+        if: steps.plan.outputs.geoip_needs_build == '1'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          config="$RUNNER_TEMP/xray-inputs/geoip.inputs.jsonl"
+          : > "$config"
+          while IFS=: read -r category path; do
+            [[ -n "$category" ]] || continue
+            src="$RUNNER_TEMP/xray-inputs/${category}.list"
+            git show "origin/sources:${path}" > "$src"
+            test -s "$src"
+            jq -nc --arg name "$category" --arg uri "$src" \
+              '{type:"text",action:"add",args:({name:$name,uri:$uri} +
+                (if $name == "private" then {} else {onlyIPType:"ipv4"} end))}' >> "$config"
+          done <<< "$GEOIP_SOURCES"
+          jq -s --arg dir "$RUNNER_TEMP/xray-output" \
+            '{input:.,output:[{type:"v2rayGeoIPDat",action:"output",args:{outputDir:$dir,outputName:"geoip.dat"}}]}' \
+            "$config" > "$RUNNER_TEMP/xray-inputs/geoip.config.json"
+
+      - name: Checkout domain-list-community builder
+        if: steps.plan.outputs.geosite_needs_build == '1'
+        uses: actions/checkout@v7
+        with:
+          repository: v2fly/domain-list-community
+          ref: ${{ env.DLC_SHA }}
+          path: dlc
+          fetch-depth: 1
+          sparse-checkout: internal
+
+      - name: Checkout GeoIP builder
+        if: steps.plan.outputs.geoip_needs_build == '1'
+        uses: actions/checkout@v7
+        with:
+          repository: v2fly/geoip
+          ref: ${{ env.V2GEOIP_SHA }}
+          path: v2geoip
+          fetch-depth: 1
+          sparse-checkout: |
+            lib
+            plugin
+
+      - name: Setup Go only for required builds
+        if: steps.plan.outputs.geosite_needs_build == '1' || steps.plan.outputs.geoip_needs_build == '1'
+        uses: actions/setup-go@v7
+        with:
+          go-version: "1.27.3"
+          cache: true
+          cache-dependency-path: |
+            dlc/go.sum
+            v2geoip/go.sum
+
+      - name: Build geosite.dat with exact category names
+        if: steps.plan.outputs.geosite_needs_build == '1'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p dlc/data
+          while IFS=: read -r category _path; do
+            [[ -n "$category" ]] || continue
+            cp "$RUNNER_TEMP/xray-inputs/geosite/${category}.list" "dlc/data/${category}"
+          done <<< "$GEOSITE_SOURCES"
+          (cd dlc && go run . -outputdir="$RUNNER_TEMP/xray-output")
+          test -s "$RUNNER_TEMP/xray-output/dlc.dat"
+          mv "$RUNNER_TEMP/xray-output/dlc.dat" geosite.dat
+          printf '%s' "$GEOSITE_BUILD_HASH" > geosite.hash
+
+      - name: Build geoip.dat
+        if: steps.plan.outputs.geoip_needs_build == '1'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          (cd v2geoip && go build -o "$RUNNER_TEMP/xray-output/geoip-builder" .)
+          "$RUNNER_TEMP/xray-output/geoip-builder" -c "$RUNNER_TEMP/xray-inputs/geoip.config.json"
+          test -s "$RUNNER_TEMP/xray-output/geoip.dat"
+          mv "$RUNNER_TEMP/xray-output/geoip.dat" geoip.dat
+          printf '%s' "$GEOIP_BUILD_HASH" > geoip.hash
+
+      - name: Publish outputs and bound history even without a rebuild
+        id: publish
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          changed="$RUNNER_TEMP/xray-changed.txt"
+          : > "$changed"
+          if [[ '${{ steps.plan.outputs.geosite_needs_build }}' == 1 || '${{ steps.plan.outputs.geoip_needs_build }}' == 1 ]]; then
+            for file in geosite.dat geoip.dat; do
+              bytes="$(stat -c '%s' "$file")"
+              (( bytes > 0 && bytes < 100000000 )) || { echo "$file exceeds GitHub size limit or is empty" >&2; exit 1; }
+            done
+            git add -- geosite.dat geosite.hash geoip.dat geoip.hash
+            git diff --cached --name-only -- geosite.dat geosite.hash geoip.dat geoip.hash > "$changed"
+            tree="$(git write-tree)"
+          else
+            tree="$(git rev-parse 'origin/xray-rulesets^{tree}')"
+          fi
+          python3 "$RUNNER_TEMP/publish.py" --branch xray-rulesets --tree "$tree" \
+            --expected "$XRAY_HEAD" --message "Update Xray geofiles $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          if [[ -s "$changed" ]]; then echo 'changed=true' >> "$GITHUB_OUTPUT"; fi
+
+      - name: Purge changed jsDelivr files
+        if: steps.publish.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          while IFS= read -r file; do
+            curl -fsS --retry 3 --connect-timeout 10 --max-time 30 \
+              "https://purge.jsdelivr.net/gh/${{ github.repository }}@xray-rulesets/${file}"
+          done < "$RUNNER_TEMP/xray-changed.txt"
