@@ -1,0 +1,8 @@
+full:certs.apple.com
+full:crl.apple.com
+full:ocsp.apple.com
+full:ocsp2.apple.com
+full:valid.apple.com
+full:certs-lb.apple.com.akadns.net
+full:crl-lb.apple.com.akadns.net
+full:valid.origin-apple.com.akadns.net
