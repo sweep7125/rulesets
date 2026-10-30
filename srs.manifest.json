@@ -3,7 +3,7 @@
   "entries": {
     "geoip/abuse.list": {
       "destination": "geoip-abuse.srs",
-      "oid": "d49aabdde355b8c792bcc9833f879e0fcdfd263f"
+      "oid": "3c888e8c4b8aa87da2b19491731e8fdcfb790534"
     },
     "geoip/ad.list": {
       "destination": "geoip-ad.srs",
@@ -239,7 +239,7 @@
     },
     "geoip/davoyan-ru.list": {
       "destination": "geoip-davoyan-ru.srs",
-      "oid": "39ed23ec8b136fbcc18b06d0c6d8ebc6ef027100"
+      "oid": "97a3ee9021f79b22f312814bda2e73b68b3937ec"
     },
     "geoip/de.list": {
       "destination": "geoip-de.srs",
@@ -1171,7 +1171,7 @@
     },
     "geosite/abuse-full.list": {
       "destination": "geosite-abuse-full.srs",
-      "oid": "442df7125c35485f6d7dd15ff9e3748bb1a17d7a"
+      "oid": "60a59a44cb313523e6dcf8f5b1fe9bf263d25bf3"
     },
     "geosite/accuweather.list": {
       "destination": "geosite-accuweather.srs",
@@ -2835,7 +2835,7 @@
     },
     "geosite/davoyan-category-ru.list": {
       "destination": "geosite-davoyan-category-ru.srs",
-      "oid": "f4ac64afd98c24329010188163f4bfdeafff65b8"
+      "oid": "f732edd6da01a7d9487a8a5ecc8f14746ac522e1"
     },
     "geosite/dazn.list": {
       "destination": "geosite-dazn.srs",
@@ -5187,11 +5187,11 @@
     },
     "geosite/oisd-big.list": {
       "destination": "geosite-oisd-big.srs",
-      "oid": "2e70b68db27f8f543222e4ac5fd91dbb7bbf4823"
+      "oid": "22d1635f4b3639b903ef7e6fd8ee9dba0620d2f1"
     },
     "geosite/oisd-small.list": {
       "destination": "geosite-oisd-small.srs",
-      "oid": "96c31a312708da67d15b09b254c39c97f4278576"
+      "oid": "750e70ea23b44ca7444e8a7bcd7973373e59d28b"
     },
     "geosite/ok.list": {
       "destination": "geosite-ok.srs",
@@ -6523,7 +6523,7 @@
     },
     "geosite/tif-full.list": {
       "destination": "geosite-tif-full.srs",
-      "oid": "f682404bb82c9bf3fce069d64fcd06bcadfa5b62"
+      "oid": "39a70e6150d991541175227c81777e2b0a716978"
     },
     "geosite/tiktok.list": {
       "destination": "geosite-tiktok.srs",
