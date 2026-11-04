@@ -1,6 +1,6 @@
 # Rulesets
 
-Автоматически обновляемые доменные и IP-списки для Xray/V2Ray, Mihomo и sing-box, а также список Android-пакетов для INCY. Исходники нормализуются один раз; отдельные сборщики выпускают нужные форматы из ветки `sources`.
+Автоматически обновляемые доменные и IP-списки для Xray/V2Ray (включая роутеры) и Mihomo, а также список Android-пакетов для INCY. Исходники нормализуются один раз; отдельные сборщики выпускают нужные форматы из ветки `sources`.
 
 ## Где что находится
 
@@ -11,18 +11,17 @@
 | `xray-rulesets` | `geosite.dat`, `geoip.dat`, `*.hash` | Выбранные клиентские категории для Xray/V2Ray |
 | `server` | `geosite.dat`, `geoip.dat`, `*.hash` | Отдельный серверный набор блокировок |
 | `mihomo-rulesets` | `geosite-*.mrs`, `geoip-*.mrs`, `mrs.hash`, `mrs.manifest.json` | Все поддерживаемые категории в формате Mihomo |
-| `sing-box-rulesets` | `geosite-*.srs`, `geoip-*.srs`, `srs.hash`, `srs.manifest.json` | Все категории в формате sing-box |
+| `xray-router-rulesets` | `geosite.dat`, `geosite.hash` | Компактный набор для Xray на роутере (OpenWrt) |
 
 Ветки с результатами отделены от кода, чтобы клиенты скачивали только данные. В каждой из пяти выходных веток сохраняется не больше трёх последних снимков; публикация защищена `--force-with-lease` от перезаписи чужого обновления.
 
 ### Код
 
 - [`.github/workflows/sources.yml`](.github/workflows/sources.yml) — загрузка исходников, разворачивание включений, нормализация и публикация текстовых списков.
-- [`.github/workflows/xray.yml`](.github/workflows/xray.yml), [`server.yml`](.github/workflows/server.yml) — сборка выбранных категорий в DAT.
-- [`.github/workflows/mihomo.yml`](.github/workflows/mihomo.yml), [`sing-box.yml`](.github/workflows/sing-box.yml) — инкрементальная сборка MRS/SRS.
+- [`.github/workflows/xray.yml`](.github/workflows/xray.yml), [`server.yml`](.github/workflows/server.yml), [`xray-router.yml`](.github/workflows/xray-router.yml) — сборка выбранных категорий в DAT.
+- [`.github/workflows/mihomo.yml`](.github/workflows/mihomo.yml) — инкрементальная сборка MRS.
 - [`.github/workflows/apps.yml`](.github/workflows/apps.yml) — независимое обновление `apps.txt`.
 - [`.ci/optimize.py`](.ci/optimize.py) — нормализация доменов, рекурсивные `include:` с атрибутами, удаление доказуемых перекрытий и агрегация CIDR.
-- [`.ci/build_srs.py`](.ci/build_srs.py) — преобразование текстовой категории в исходный JSON sing-box.
 - [`.ci/build_apps.py`](.ci/build_apps.py) — извлечение Android-пакетов, сортировка и удаление повторов без изменения регистра.
 - [`.ci/publish.py`](.ci/publish.py) — атомарная публикация дерева и ограничение истории выходных веток.
 - [`data/`](data/README.md) — точка расширения локальными доменными и IP-списками. Сейчас локальных переопределений нет.
@@ -53,26 +52,26 @@
 |---|---|---|
 | Клиентский `xray-rulesets` | `wl`, `category-ru`, `banned`, `private`, `youtube` | `wl`, `ru`, `private` |
 | Серверный `server` | `oisd-big`, `tif-full` | `abuse` |
+| Роутерный `xray-router-rulesets` | `refilter`, `refilter-community`, `ai`, `porn`, `russia-inside`, `telegram` | пока не собирается |
 
-Клиентские `category-ru`, `banned`, `ru` берутся из соответствующих `davoyan-*` списков, а `youtube` — из категории v2fly. Объединённый `abuse-full` остаётся текстовой категорией и доступен конвертерам, но в серверный DAT не включается: OISD и TIF там разделены.
+Клиентские `category-ru`, `banned`, `ru` берутся из соответствующих `davoyan-*` списков, а `youtube` — из категории v2fly. В роутерном наборе `ai` = `category-ai-!cn`, `porn` = `category-porn`, `telegram` — категория v2fly; остальные имена совпадают с `sources`. Объединённый `abuse-full` остаётся текстовой категорией и доступен конвертерам, но в серверный DAT не включается: OISD и TIF там разделены.
 
 ## Почему преобразования разделены
 
 - В `sources` сохраняются типы `domain:`, `full:`, `keyword:`, `regexp:`. Повторы и доменные перекрытия внутри категории сокращаются; одинаковые категории с разными именами автоматически не удаляются — имена могут использовать внешние клиенты.
 - Сведение перекрытий между разными типами правил применяется отдельно при сборке Xray DAT. Иначе правило `keyword:` могло бы удалить домен, который нужен конвертеру Mihomo.
-- MRS `domain` не представляет `keyword:` и `regexp:`: такие правила пропускаются, а для категории без поддерживаемых правил файл MRS не создаётся. Для полноты таких правил используйте Xray или SRS.
-- SRS сохраняет доменные суффиксы, точные домены, ключевые слова и регулярные выражения. Исходный JSON использует версию формата `3`.
+- MRS `domain` не представляет `keyword:` и `regexp:`: такие правила пропускаются, а для категории без поддерживаемых правил файл MRS не создаётся. Для полноты таких правил используйте Xray.
 - IPv6 сохраняется в GeoIP `private`; из остальных IP-категорий удаляется намеренно.
-- DAT пересобирается только при изменении выбранных входов, сборщика или workflow. MRS/SRS компилируют только изменившиеся категории; обновление компилятора вызывает полную пересборку.
+- DAT пересобирается только при изменении выбранных входов, сборщика или workflow. MRS компилирует только изменившиеся категории; обновление компилятора вызывает полную пересборку.
 - Повреждённый или отсутствующий обязательный вход останавливает публикацию вместо выпуска неполного набора. Обработчики `workflow_run` запускаются и после неуспешной сборки `sources`, используя последний доступный снимок.
 
 ## Обновление
 
-`Generate sources (flattened xray + cidr)` запускается ежедневно в **00:00 UTC**, вручную и при изменении workflow, `.ci/` или `data/` в `main`. После завершения запускаются четыре сборщика форматов.
+`Generate sources (flattened xray + cidr)` запускается ежедневно в **00:00 UTC**, вручную и при изменении workflow, `.ci/` или `data/` в `main`. После завершения запускаются четыре сборщика форматов: `xray`, `xray-router`, `server`, `mihomo`.
 
 `Update INCY Android apps` работает отдельно, ежедневно в **00:15 UTC**, вручную и при изменении своих входных скриптов. Обновляет только `apps.txt` обычным коммитом в `main`; в список попадают уникальные Android-пакеты, а не Windows-процессы.
 
-В workflow используются Mihomo `1.19.33`, sing-box **`1.13.21`**, Go `1.27.3` и Ubuntu `26.04`. Actions checkout и setup-go следуют плавающей major-метке **`@v7`** и получают обновления внутри неё автоматически. sing-box намеренно остаётся на ветке `1.13`, без перехода на `1.14`. Архивы Mihomo и sing-box проверяются по SHA-256; сборщики v2fly закреплены полными SHA коммитов релизов. Данные upstream остаются обновляемыми.
+В workflow используются Mihomo `1.19.33`, Go `1.27.3` и Ubuntu `26.04`. Actions checkout и setup-go следуют плавающей major-метке **`@v7`** и получают обновления внутри неё автоматически. Архив Mihomo проверяется по SHA-256; сборщики v2fly закреплены полными SHA коммитов релизов. Данные upstream остаются обновляемыми.
 
 ## Скачивание
 
@@ -86,17 +85,19 @@ https://raw.githubusercontent.com/sweep7125/rulesets/xray-rulesets/geoip.dat
 # Отдельная категория
 https://raw.githubusercontent.com/sweep7125/rulesets/sources/geosite/wl.list
 https://cdn.jsdelivr.net/gh/sweep7125/rulesets@mihomo-rulesets/geosite-wl.mrs
-https://cdn.jsdelivr.net/gh/sweep7125/rulesets@sing-box-rulesets/geosite-wl.srs
 
 # Список Android-пакетов INCY
 https://cdn.jsdelivr.net/gh/sweep7125/rulesets@main/apps.txt
+
+# Роутерный geosite.dat
+https://raw.githubusercontent.com/sweep7125/rulesets/xray-router-rulesets/geosite.dat
 
 # Серверные DAT
 https://raw.githubusercontent.com/sweep7125/rulesets/server/geosite.dat
 https://raw.githubusercontent.com/sweep7125/rulesets/server/geoip.dat
 ```
 
-Большой серверный `geosite.dat` превышает лимит jsDelivr **20 MB**: для него используйте GitHub Raw. После изменения файлов Xray/SRS/server/apps workflow запрашивают очистку соответствующего CDN-кеша; у Mihomo отдельного шага purge сейчас нет.
+Большой серверный `geosite.dat` превышает лимит jsDelivr **20 MB**: для него используйте GitHub Raw. После изменения файлов Xray/router/server/apps workflow запрашивают очистку соответствующего CDN-кеша; у Mihomo отдельного шага purge сейчас нет.
 
 ## Локальные инструменты
 
@@ -105,10 +106,6 @@ https://raw.githubusercontent.com/sweep7125/rulesets/server/geoip.dat
 ```sh
 # Преобразовать простой список доменов в Xray-текст
 python3 .ci/optimize.py domains input.txt output.list --input-type clean --target suffix
-
-# Подготовить категорию к компиляции sing-box
-python3 .ci/build_srs.py geosite output.list rules.json
-sing-box rule-set compile --output rules.srs rules.json
 ```
 
 Полную сетевую сборку и публикацию выполняют GitHub Actions. Тесты, локальные конфигурации и рабочие заметки в репозитории не публикуются.

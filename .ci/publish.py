@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 
-BRANCHES = {"sources", "server", "xray-rulesets", "mihomo-rulesets", "sing-box-rulesets"}
+BRANCHES = {"sources", "server", "xray-rulesets", "mihomo-rulesets", "xray-router-rulesets"}
 
 
 def git(*args, data=None):

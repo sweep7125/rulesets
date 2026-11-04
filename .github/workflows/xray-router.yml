@@ -1,0 +1,188 @@
+name: Generate router xray geosite from sources
+
+on:
+  workflow_run:
+    workflows: ['Generate sources (flattened xray \+ cidr)']
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: xray-router-from-sources
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  GOFLAGS: -buildvcs=false
+  COMMIT_USER_NAME: github-actions[bot]
+  COMMIT_USER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+  # Stable release commit; data-only upstream releases must not invalidate our builds.
+  DLC_SHA: fa3cb96fbc210b8d6466251a1d71b4a6e63a9c85
+  # Compact router set; geoip.dat is intentionally not built yet.
+  GEOSITE_SOURCES: |
+    refilter:geosite/refilter.list
+    refilter-community:geosite/refilter-community.list
+    ai:geosite/category-ai-!cn.list
+    porn:geosite/category-porn.list
+    russia-inside:geosite/russia-inside.list
+    telegram:geosite/telegram.list
+
+jobs:
+  build:
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Checkout main helpers
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: .ci
+
+      - name: Fetch selected source and destination metadata
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cp .ci/publish.py "$RUNNER_TEMP/publish.py"
+          cp .ci/optimize.py "$RUNNER_TEMP/optimize.py"
+          git fetch --no-tags --depth=1 --filter=blob:none origin \
+            '+refs/heads/sources:refs/remotes/origin/sources'
+          if git fetch --no-tags --depth=3 --filter=blob:none origin \
+            '+refs/heads/xray-router-rulesets:refs/remotes/origin/xray-router-rulesets'; then
+            echo "ROUTER_HEAD=$(git rev-parse origin/xray-router-rulesets)" >> "$GITHUB_ENV"
+          else
+            status=0
+            git ls-remote --exit-code --heads origin refs/heads/xray-router-rulesets >/dev/null || status=$?
+            (( status == 2 )) || { echo 'Cannot fetch xray-router-rulesets' >&2; exit 1; }
+            echo 'ROUTER_HEAD=' >> "$GITHUB_ENV"
+          fi
+
+      - name: Decide build from selected blobs
+        id: plan
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          optimizer_blob="$(git rev-parse HEAD:.ci/optimize.py)"
+          workflow_blob="$(git rev-parse HEAD:.github/workflows/xray-router.yml)"
+          empty_blob="$(git hash-object --stdin </dev/null)"
+          blobs=()
+          while IFS=: read -r category path; do
+            [[ -n "$category" ]] || continue
+            read -r _mode type oid _source_path <<< "$(git ls-tree -r origin/sources -- "$path")"
+            [[ "$type" == blob && -n "$oid" && "$oid" != "$empty_blob" ]] || {
+              echo "Missing, empty or invalid required source: $path" >&2; exit 1;
+            }
+            blobs+=("$category" "$path" "$oid")
+          done <<< "$GEOSITE_SOURCES"
+          hash="$(printf '%s\n' "${blobs[@]}" "$optimizer_blob" "$workflow_blob" "$DLC_SHA" | sha256sum | cut -d ' ' -f 1)"
+          echo "GEOSITE_BUILD_HASH=$hash" >> "$GITHUB_ENV"
+          old_hash=''
+          old_oid=''
+          if [[ -n "$ROUTER_HEAD" ]]; then
+            old_hash="$(git show origin/xray-router-rulesets:geosite.hash 2>/dev/null || true)"
+            old_oid="$(git rev-parse --verify -q origin/xray-router-rulesets:geosite.dat 2>/dev/null || true)"
+          fi
+          if [[ -z "$old_oid" || "$old_oid" == "$empty_blob" || "$old_hash" != "$hash" ]]; then
+            echo 'needs_build=1' >> "$GITHUB_OUTPUT"
+            echo 'geosite: rebuild required'
+          else
+            echo 'needs_build=0' >> "$GITHUB_OUTPUT"
+            echo 'geosite: unchanged, skip compilation'
+          fi
+
+      - name: Checkout destination only when outputs change
+        if: steps.plan.outputs.needs_build == '1'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config --local user.name "$COMMIT_USER_NAME"
+          git config --local user.email "$COMMIT_USER_EMAIL"
+          # Sparse checkout was only for main helpers; destination has root DAT files.
+          git sparse-checkout disable
+          if [[ -n "$ROUTER_HEAD" ]]; then
+            git switch -C xray-router-rulesets origin/xray-router-rulesets
+          else
+            git switch --orphan xray-router-rulesets
+            git rm -r --ignore-unmatch . >/dev/null
+          fi
+          mkdir -p "$RUNNER_TEMP/router-inputs/geosite" "$RUNNER_TEMP/router-output"
+
+      - name: Prepare and optimize selected geosite inputs
+        if: steps.plan.outputs.needs_build == '1'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          while IFS=: read -r category path; do
+            [[ -n "$category" ]] || continue
+            src="$RUNNER_TEMP/router-inputs/${category}.src"
+            git show "origin/sources:${path}" > "$src"
+            python3 "$RUNNER_TEMP/optimize.py" domains "$src" \
+              "$RUNNER_TEMP/router-inputs/geosite/${category}" \
+              --input-type xray --target xray-optimized
+            test -s "$RUNNER_TEMP/router-inputs/geosite/${category}.list"
+          done <<< "$GEOSITE_SOURCES"
+
+      - name: Checkout domain-list-community builder
+        if: steps.plan.outputs.needs_build == '1'
+        uses: actions/checkout@v7
+        with:
+          repository: v2fly/domain-list-community
+          ref: ${{ env.DLC_SHA }}
+          path: dlc
+          fetch-depth: 1
+          sparse-checkout: internal
+
+      - name: Setup Go only for required builds
+        if: steps.plan.outputs.needs_build == '1'
+        uses: actions/setup-go@v7
+        with:
+          go-version: "1.27.3"
+          cache: true
+          cache-dependency-path: dlc/go.sum
+
+      - name: Build geosite.dat with exact category names
+        if: steps.plan.outputs.needs_build == '1'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p dlc/data
+          while IFS=: read -r category _path; do
+            [[ -n "$category" ]] || continue
+            cp "$RUNNER_TEMP/router-inputs/geosite/${category}.list" "dlc/data/${category}"
+          done <<< "$GEOSITE_SOURCES"
+          (cd dlc && go run . -outputdir="$RUNNER_TEMP/router-output")
+          test -s "$RUNNER_TEMP/router-output/dlc.dat"
+          mv "$RUNNER_TEMP/router-output/dlc.dat" geosite.dat
+          printf '%s' "$GEOSITE_BUILD_HASH" > geosite.hash
+
+      - name: Publish outputs and bound history even without a rebuild
+        id: publish
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          changed="$RUNNER_TEMP/router-changed.txt"
+          : > "$changed"
+          if [[ '${{ steps.plan.outputs.needs_build }}' == 1 ]]; then
+            bytes="$(stat -c '%s' geosite.dat)"
+            (( bytes > 0 && bytes < 100000000 )) || { echo 'geosite.dat exceeds GitHub size limit or is empty' >&2; exit 1; }
+            git add -- geosite.dat geosite.hash
+            git diff --cached --name-only -- geosite.dat geosite.hash > "$changed"
+            tree="$(git write-tree)"
+          else
+            tree="$(git rev-parse 'origin/xray-router-rulesets^{tree}')"
+          fi
+          python3 "$RUNNER_TEMP/publish.py" --branch xray-router-rulesets --tree "$tree" \
+            --expected "$ROUTER_HEAD" --message "Update router Xray geosite $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          if [[ -s "$changed" ]]; then echo 'changed=true' >> "$GITHUB_OUTPUT"; fi
+
+      - name: Purge changed jsDelivr files
+        if: steps.publish.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          while IFS= read -r file; do
+            curl -fsS --retry 3 --connect-timeout 10 --max-time 30 \
+              "https://purge.jsdelivr.net/gh/${{ github.repository }}@xray-router-rulesets/${file}"
+          done < "$RUNNER_TEMP/router-changed.txt"
