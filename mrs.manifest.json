@@ -302,7 +302,7 @@
     },
     "geoip/davoyan-ru.list": {
       "destination": "geoip-davoyan-ru.mrs",
-      "oid": "afdf73d5c2c60493917d6ed8ddf218dd658d852b",
+      "oid": "efe5e03f2b98193c1b8eb4c1ba60def0707e5eb7",
       "output": "geoip-davoyan-ru.mrs"
     },
     "geoip/de.list": {
@@ -1467,7 +1467,7 @@
     },
     "geosite/abuse-full.list": {
       "destination": "geosite-abuse-full.mrs",
-      "oid": "0a4f5bd466ebeb89c1bc68250ed64cfa4edf6c30",
+      "oid": "4ab1f2534d45d047cf0565db073b02611d4ed0c7",
       "output": "geosite-abuse-full.mrs"
     },
     "geosite/accuweather.list": {
@@ -3282,7 +3282,7 @@
     },
     "geosite/cn.list": {
       "destination": "geosite-cn.mrs",
-      "oid": "253b69300f8ba708b63c28fe39a665def1e21ba5",
+      "oid": "3b6bc6d0100bee0758d1233d5ee1381bc3961b1e",
       "output": "geosite-cn.mrs"
     },
     "geosite/cnb.list": {
@@ -4387,7 +4387,7 @@
     },
     "geosite/geolocation-cn.list": {
       "destination": "geosite-geolocation-cn.mrs",
-      "oid": "d741c46c8ae5b5d91a6ef23ce8b98452ee9cbf1c",
+      "oid": "4797f34912910051b0b38cdb5dbf5fe9842bf9b3",
       "output": "geosite-geolocation-cn.mrs"
     },
     "geosite/gettyimages.list": {
@@ -6487,12 +6487,12 @@
     },
     "geosite/oisd-big.list": {
       "destination": "geosite-oisd-big.mrs",
-      "oid": "1c47ad83b27deb75a218641329e51a94427e2dbf",
+      "oid": "ee0a1ab0cd07ba809c287564753366122fac6bd8",
       "output": "geosite-oisd-big.mrs"
     },
     "geosite/oisd-small.list": {
       "destination": "geosite-oisd-small.mrs",
-      "oid": "c9c9702c276b9dedbc2ed45fd77c6e7e13d656ba",
+      "oid": "12de6f5b31fe742509cc29ab108f8008926e7e8f",
       "output": "geosite-oisd-small.mrs"
     },
     "geosite/ok.list": {
@@ -6602,7 +6602,7 @@
     },
     "geosite/oppo.list": {
       "destination": "geosite-oppo.mrs",
-      "oid": "11e49650aa10033cd7df37506720333b50b14354",
+      "oid": "549fb2fc13026501ad16d4b9aa92e56eabd7077f",
       "output": "geosite-oppo.mrs"
     },
     "geosite/oracle.list": {
@@ -8162,7 +8162,7 @@
     },
     "geosite/tif-full.list": {
       "destination": "geosite-tif-full.mrs",
-      "oid": "e66fddbc0d774fb0a9cb016acee74b837af5b6cd",
+      "oid": "7a9e43e504d7e28fa94933bc9c8d09e3262968da",
       "output": "geosite-tif-full.mrs"
     },
     "geosite/tiktok.list": {
