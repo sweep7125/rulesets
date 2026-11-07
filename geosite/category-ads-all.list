@@ -421,6 +421,7 @@ domain:admob.xiaomi.com
 domain:adnet.qq.com
 domain:adnet.sohu.com
 domain:adping.qq.com
+domain:ads-api-t.my7v.com
 domain:ads-api.duolingo.com
 domain:ads-union.jd.com
 domain:ads.huan.tv
@@ -778,6 +779,8 @@ domain:adimg.mobile.sina.cn
 domain:adimg.uve.weibo.com
 domain:admusicpic.music.126.net
 domain:adpm.app.qq.com
+domain:ads-api-o.api.leiniao.com
+domain:ads-o.res.leiniao.com
 domain:ads-uo.api.leiniao.com
 domain:ads-ut.api.leiniao.com
 domain:ads.api.my7v.com
@@ -822,6 +825,7 @@ domain:iadmatapk.nosdn.127.net
 domain:iadmusicmat.music.126.net
 domain:iadmusicmatvideo.music.126.net
 domain:imp.go.sohu.com
+domain:isms-o.api.my7v.com
 domain:lab.eu.amplitude.com
 domain:log.tbs.qq.com
 domain:log.v2.hunantv.com

@@ -180,11 +180,18 @@ domain:api-secure.eu.amplitude.com
 domain:api-sr.eu.amplitude.com
 domain:api.eu.amplitude.com
 domain:assistant-api.eu.amplitude.com
+domain:base.api.my7v.com
 domain:beacon.cdn.qq.com
 domain:beacon.sina.com.cn
 domain:c-adash.m.taobao.com
 domain:cdn.eu.amplitude.com
 domain:data.mistat.xiaomi.com
+domain:dc-conf-o.api.leiniao.com
+domain:dc-conf-t.api.leiniao.com
+domain:dc-o.api.leiniao.com
+domain:dc-t.api.leiniao.com
+domain:dc-uo.api.leiniao.com
+domain:dc-ut.api.leiniao.com
 domain:e.stat.ykimg.com
 domain:engagement-static.eu.amplitude.com
 domain:gs.eu.amplitude.com
@@ -201,6 +208,8 @@ domain:monitor.music.qq.com
 domain:monitor.uu.qq.com
 domain:perf-events.cloud.unity3d.com
 domain:perf.cloud.unity3d.com
+domain:qms-report-o.api.leiniao.com
+domain:qms-report-t.api.leiniao.com
 domain:regionconfig.eu.amplitude.com
 domain:report.qqweb.qq.com
 domain:s-adashx.ut.youku.com

@@ -1,5 +1,6 @@
 full:ai.zhaomi.cn
 full:cueme-api.quark.cn
+domain:ai-indeed.com
 domain:aispeech.com
 domain:antafu.com
 domain:antaq.com
@@ -89,6 +90,12 @@ domain:qwenlm.ai
 domain:rwkv.cn
 domain:rwkv.com
 domain:safeskill.cn
+domain:senseaudio.cn
+domain:senseavatar.com
+domain:sensecore.cn
+domain:sensefoundry.cn
+domain:sensenova.cn
+domain:sensetime.com
 domain:shunjing.xin
 domain:skillhub.cn
 domain:sleeplesshorizon.cn
@@ -100,6 +107,7 @@ domain:trae.cn
 domain:trae.guru
 domain:workbuddy.cn
 domain:xiaoaiassist.com
+domain:xiaohuanxiong.com
 domain:xiaomimimo.com
 domain:xiezuocat.com
 domain:xingyeai.com
