@@ -7,7 +7,7 @@
   "entries": {
     "geoip/abuse.list": {
       "destination": "geoip-abuse.mrs",
-      "oid": "3bb7173010b28b5588f42cd12e40a9e3b748edce",
+      "oid": "cbcf7e1b3fcf94f1f3bcc7ebe422eda2a2d87be3",
       "output": "geoip-abuse.mrs"
     },
     "geoip/ad.list": {
@@ -302,7 +302,7 @@
     },
     "geoip/davoyan-ru.list": {
       "destination": "geoip-davoyan-ru.mrs",
-      "oid": "1760c9c5a0f55515646de43cbc8a4f31da37241f",
+      "oid": "922cf838f18cff5b5c2515e2a9a455f028b3accc",
       "output": "geoip-davoyan-ru.mrs"
     },
     "geoip/de.list": {
@@ -1467,7 +1467,7 @@
     },
     "geosite/abuse-full.list": {
       "destination": "geosite-abuse-full.mrs",
-      "oid": "48661face3c0015bd13113a747b35189964c3dbb",
+      "oid": "725e82244259cf69bdb3d2ae9d79f482a7e398c9",
       "output": "geosite-abuse-full.mrs"
     },
     "geosite/accuweather.list": {
@@ -3542,7 +3542,7 @@
     },
     "geosite/davoyan-banned.list": {
       "destination": "geosite-davoyan-banned.mrs",
-      "oid": "b8525073f426efbc71bf4c8d0bcf1811647a091d",
+      "oid": "dd1425287c651516969efd392eca8d5ad67ebcd8",
       "output": "geosite-davoyan-banned.mrs"
     },
     "geosite/davoyan-category-ru.list": {
@@ -6492,12 +6492,12 @@
     },
     "geosite/oisd-big.list": {
       "destination": "geosite-oisd-big.mrs",
-      "oid": "70c2f38aca65ef1066ab72934ee6a29c2d985d7c",
+      "oid": "f7489ce64d902d3b0e8377cf5ee946ded32e76f8",
       "output": "geosite-oisd-big.mrs"
     },
     "geosite/oisd-small.list": {
       "destination": "geosite-oisd-small.mrs",
-      "oid": "afd6e27946e392332f95206bce96e7f40db88b92",
+      "oid": "98f632c8302f52bf05d9e922decd71e9dbf5439c",
       "output": "geosite-oisd-small.mrs"
     },
     "geosite/ok.list": {
@@ -8167,7 +8167,7 @@
     },
     "geosite/tif-full.list": {
       "destination": "geosite-tif-full.mrs",
-      "oid": "e863ef9a8d78dab7c3010ce6c251156f7e8163b2",
+      "oid": "9c9d6ef396c9aaf6c61127a4bfede2fe5b6c4183",
       "output": "geosite-tif-full.mrs"
     },
     "geosite/tiktok.list": {
