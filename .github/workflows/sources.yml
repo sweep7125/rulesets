@@ -370,8 +370,9 @@ jobs:
             "https://www.spamhaus.org/drop/drop_v4.json" "_inputs/spamhaus-drop-v4.json" \
             "https://raw.githubusercontent.com/Davoyan/xray-routing/main/ips/ru.txt" "_inputs/davoyan-ru.src" \
             "https://raw.githubusercontent.com/v2fly/geoip/release/text/private.txt" "_inputs/v2fly-private.src" \
+            "https://raw.githubusercontent.com/legiz-ru/sb-rule-sets/main/discord-voice-ip-list.json" "_inputs/discord-voice.json" \
             "https://raw.githubusercontent.com/Davoyan/mihomo-rule-sets/main/domains/additional-telegram-ips.yaml" "_inputs/additional-telegram-ips.yaml"
-          for name in spamhaus-drop-v4.json davoyan-ru.src v2fly-private.src additional-telegram-ips.yaml; do
+          for name in spamhaus-drop-v4.json davoyan-ru.src v2fly-private.src additional-telegram-ips.yaml discord-voice.json; do
             test -s "_inputs/${name}"
           done
 
@@ -418,6 +419,11 @@ jobs:
           test -s _inputs/additional-telegram-ips.src
           ip_opt_geoip _inputs/additional-telegram-ips.src geoip/additional-telegram-ips
           test -s geoip/additional-telegram-ips.list
+          # Discord voice CIDRs from the same legiz-ru source used by Mihomo.
+          jq -er '[.rules[]?.ip_cidr[]?] | if length > 0 then .[] else error("Empty Discord voice IP list") end' \
+            _inputs/discord-voice.json > _inputs/discord-voice.src
+          ip_opt_geoip _inputs/discord-voice.src geoip/discord-voice
+          test -s geoip/discord-voice.list
           # The preceding step validates each mandatory component before union.
           ip_opt_geoip _inputs/wl-ips.src geoip/wl
           test -s geoip/wl.list
