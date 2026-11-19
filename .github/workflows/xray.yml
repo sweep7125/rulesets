@@ -35,7 +35,6 @@ env:
     discord:geosite/discord.list
     telegram:geosite/telegram.list
     additional-telegram-domains:geosite/additional-telegram-domains.list
-    oisd-big:geosite/oisd-big.list
   GEOIP_SOURCES: |
     wl:geoip/wl.list
     ru:geoip/davoyan-ru.list
