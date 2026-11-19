@@ -28,6 +28,10 @@ env:
     porn:geosite/category-porn.list
     russia-inside:geosite/russia-inside.list
     telegram:geosite/telegram.list
+    youtube:geosite/youtube.list
+    discord:geosite/discord.list
+    additional-telegram-domains:geosite/additional-telegram-domains.list
+    banned:geosite/davoyan-banned.list
 
 jobs:
   build:
