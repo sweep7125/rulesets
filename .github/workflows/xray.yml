@@ -13,7 +13,6 @@ concurrency:
 
 permissions:
   contents: write
-
 env:
   GOFLAGS: -buildvcs=false
   COMMIT_USER_NAME: github-actions[bot]
@@ -27,11 +26,24 @@ env:
     banned:geosite/davoyan-banned.list
     private:geosite/private.list
     youtube:geosite/youtube.list
+    torrent-trackers:geosite/torrent-trackers.list
+    refilter:geosite/refilter.list
+    russia-inside:geosite/russia-inside.list
+    category-ai-!cn:geosite/category-ai-!cn.list
+    category-porn:geosite/category-porn.list
+    speedtest:geosite/speedtest.list
+    discord:geosite/discord.list
+    telegram:geosite/telegram.list
+    additional-telegram-domains:geosite/additional-telegram-domains.list
+    oisd-big:geosite/oisd-big.list
   GEOIP_SOURCES: |
     wl:geoip/wl.list
     ru:geoip/davoyan-ru.list
     private:geoip/private.list
-
+    discord-voice:geoip/discord-voice.list
+    cloudflare:geoip/cloudflare.list
+    telegram:geoip/telegram.list
+    additional-telegram-ips:geoip/additional-telegram-ips.list
 jobs:
   build:
     runs-on: ubuntu-26.04
@@ -43,7 +55,6 @@ jobs:
           fetch-depth: 1
           filter: blob:none
           sparse-checkout: .ci
-
       - name: Fetch selected source and destination metadata
         shell: bash
         run: |
@@ -61,7 +72,6 @@ jobs:
             (( status == 2 )) || { echo 'Cannot fetch xray-rulesets' >&2; exit 1; }
             echo 'XRAY_HEAD=' >> "$GITHUB_ENV"
           fi
-
       - name: Decide independent builds from selected blobs
         id: plan
         shell: bash
@@ -103,7 +113,6 @@ jobs:
               echo "$kind: unchanged, skip compilation"
             fi
           done
-
       - name: Checkout destination only when outputs change
         if: steps.plan.outputs.geosite_needs_build == '1' || steps.plan.outputs.geoip_needs_build == '1'
         shell: bash
@@ -120,7 +129,6 @@ jobs:
             git rm -r --ignore-unmatch . >/dev/null
           fi
           mkdir -p "$RUNNER_TEMP/xray-inputs/geosite" "$RUNNER_TEMP/xray-output"
-
       - name: Prepare and optimize selected geosite inputs
         if: steps.plan.outputs.geosite_needs_build == '1'
         shell: bash
@@ -135,7 +143,6 @@ jobs:
               --input-type xray --target xray-optimized
             test -s "$RUNNER_TEMP/xray-inputs/geosite/${category}.list"
           done <<< "$GEOSITE_SOURCES"
-
       - name: Prepare selected GeoIP inputs and configuration
         if: steps.plan.outputs.geoip_needs_build == '1'
         shell: bash
@@ -155,7 +162,6 @@ jobs:
           jq -s --arg dir "$RUNNER_TEMP/xray-output" \
             '{input:.,output:[{type:"v2rayGeoIPDat",action:"output",args:{outputDir:$dir,outputName:"geoip.dat"}}]}' \
             "$config" > "$RUNNER_TEMP/xray-inputs/geoip.config.json"
-
       - name: Checkout domain-list-community builder
         if: steps.plan.outputs.geosite_needs_build == '1'
         uses: actions/checkout@v7
@@ -165,7 +171,6 @@ jobs:
           path: dlc
           fetch-depth: 1
           sparse-checkout: internal
-
       - name: Checkout GeoIP builder
         if: steps.plan.outputs.geoip_needs_build == '1'
         uses: actions/checkout@v7
@@ -177,7 +182,6 @@ jobs:
           sparse-checkout: |
             lib
             plugin
-
       - name: Setup Go only for required builds
         if: steps.plan.outputs.geosite_needs_build == '1' || steps.plan.outputs.geoip_needs_build == '1'
         uses: actions/setup-go@v7
@@ -187,7 +191,6 @@ jobs:
           cache-dependency-path: |
             dlc/go.sum
             v2geoip/go.sum
-
       - name: Build geosite.dat with exact category names
         if: steps.plan.outputs.geosite_needs_build == '1'
         shell: bash
@@ -202,7 +205,6 @@ jobs:
           test -s "$RUNNER_TEMP/xray-output/dlc.dat"
           mv "$RUNNER_TEMP/xray-output/dlc.dat" geosite.dat
           printf '%s' "$GEOSITE_BUILD_HASH" > geosite.hash
-
       - name: Build geoip.dat
         if: steps.plan.outputs.geoip_needs_build == '1'
         shell: bash
@@ -213,7 +215,6 @@ jobs:
           test -s "$RUNNER_TEMP/xray-output/geoip.dat"
           mv "$RUNNER_TEMP/xray-output/geoip.dat" geoip.dat
           printf '%s' "$GEOIP_BUILD_HASH" > geoip.hash
-
       - name: Publish outputs and bound history even without a rebuild
         id: publish
         shell: bash
@@ -235,7 +236,6 @@ jobs:
           python3 "$RUNNER_TEMP/publish.py" --branch xray-rulesets --tree "$tree" \
             --expected "$XRAY_HEAD" --message "Update Xray geofiles $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           if [[ -s "$changed" ]]; then echo 'changed=true' >> "$GITHUB_OUTPUT"; fi
-
       - name: Purge changed jsDelivr files
         if: steps.publish.outputs.changed == 'true'
         shell: bash
