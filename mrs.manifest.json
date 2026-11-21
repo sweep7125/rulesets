@@ -7,7 +7,7 @@
   "entries": {
     "geoip/abuse.list": {
       "destination": "geoip-abuse.mrs",
-      "oid": "3c36d3b15d819634d1644a1a4754596163fd5d4f",
+      "oid": "aae9ad40236565cf879aaa17dd44831f4f50acdc",
       "output": "geoip-abuse.mrs"
     },
     "geoip/ad.list": {
@@ -17,7 +17,7 @@
     },
     "geoip/additional-telegram-ips.list": {
       "destination": "geoip-additional-telegram-ips.mrs",
-      "oid": "fa129ffead4c994ebbe5947d07008d5edfedce56",
+      "oid": "00d3fbd4f1bdbca7e64d60be6d9976359dd271f4",
       "output": "geoip-additional-telegram-ips.mrs"
     },
     "geoip/ae.list": {
@@ -307,7 +307,7 @@
     },
     "geoip/davoyan-ru.list": {
       "destination": "geoip-davoyan-ru.mrs",
-      "oid": "c961109ed029ea2c0eb64cad30ccd4e618af1a55",
+      "oid": "3109e6a3f6086d9f3cc42bafff72df0dfd7dc865",
       "output": "geoip-davoyan-ru.mrs"
     },
     "geoip/de.list": {
@@ -1477,7 +1477,7 @@
     },
     "geosite/abuse-full.list": {
       "destination": "geosite-abuse-full.mrs",
-      "oid": "b3c5f21672fd343e6afb3ea2b8cf014a6a3f68b4",
+      "oid": "700959b191013212b6e3e8434bb6c747503deb12",
       "output": "geosite-abuse-full.mrs"
     },
     "geosite/accuweather.list": {
@@ -1872,7 +1872,7 @@
     },
     "geosite/apple.list": {
       "destination": "geosite-apple.mrs",
-      "oid": "c24e8ff6c3134858b0504ee6900f2ec29cf14497",
+      "oid": "d47c02b85863bab2e9b1152aee6bf93f6c8b0292",
       "output": "geosite-apple.mrs"
     },
     "geosite/appledaily.list": {
@@ -2077,7 +2077,7 @@
     },
     "geosite/beats.list": {
       "destination": "geosite-beats.mrs",
-      "oid": "4d4254347fb546c04ca765eff5d56d4f932f2fce",
+      "oid": "48714a778f1d5dd3364fac5cbe92637666ded2bf",
       "output": "geosite-beats.mrs"
     },
     "geosite/beget.list": {
@@ -2507,7 +2507,7 @@
     },
     "geosite/category-automobile-cn.list": {
       "destination": "geosite-category-automobile-cn.mrs",
-      "oid": "1e89747d174ebf126cf22e0a11473e668c6b0b85",
+      "oid": "ee9360e1f7e84f668cf2d19f06e0812fc370768f",
       "output": "geosite-category-automobile-cn.mrs"
     },
     "geosite/category-bank-cn.list": {
@@ -2582,7 +2582,7 @@
     },
     "geosite/category-companies.list": {
       "destination": "geosite-category-companies.mrs",
-      "oid": "72838778244f6e354429cadb734e19bf121abb55",
+      "oid": "54f1e35a58b4f2cc6c0e96322bd3c53656d83a3c",
       "output": "geosite-category-companies.mrs"
     },
     "geosite/category-consent-management.list": {
@@ -3297,7 +3297,7 @@
     },
     "geosite/cn.list": {
       "destination": "geosite-cn.mrs",
-      "oid": "46c4862d5c6681cfb23cbfb97eaed02fb2d745d3",
+      "oid": "b6058b0c043ae2e71956ea9c9f095e24ccb0ba3f",
       "output": "geosite-cn.mrs"
     },
     "geosite/cnb.list": {
@@ -4397,12 +4397,12 @@
     },
     "geosite/geolocation-!cn.list": {
       "destination": "geosite-geolocation-!cn.mrs",
-      "oid": "564aa028d89f057d156ceed2a6670858be562756",
+      "oid": "4eb4d4cad363ad92a190bf89126c6784052e4e40",
       "output": "geosite-geolocation-!cn.mrs"
     },
     "geosite/geolocation-cn.list": {
       "destination": "geosite-geolocation-cn.mrs",
-      "oid": "eb298873003a66caa24066b75c8eacc90a8edcb1",
+      "oid": "b9ad1e627ff9dadf99bbd73888cbc135803e41a3",
       "output": "geosite-geolocation-cn.mrs"
     },
     "geosite/gettyimages.list": {
@@ -6512,12 +6512,12 @@
     },
     "geosite/oisd-big.list": {
       "destination": "geosite-oisd-big.mrs",
-      "oid": "1a7f0b71b5756705196122dac1272e3c64edfa7d",
+      "oid": "0ace721fe1e4d970ebac85925d940963c86443ce",
       "output": "geosite-oisd-big.mrs"
     },
     "geosite/oisd-small.list": {
       "destination": "geosite-oisd-small.mrs",
-      "oid": "8c0e556b94d6770f3386fcb8481c368d3ad891ff",
+      "oid": "109526efd8ab33c9acb3cdb4f6bf7616b2546a44",
       "output": "geosite-oisd-small.mrs"
     },
     "geosite/ok.list": {
@@ -8187,7 +8187,7 @@
     },
     "geosite/tif-full.list": {
       "destination": "geosite-tif-full.mrs",
-      "oid": "5cd9bfa4ada10188ecee187746ce7323f3efcbc6",
+      "oid": "29e129b11e1ac2c3574a0965668ed26e735794d1",
       "output": "geosite-tif-full.mrs"
     },
     "geosite/tiktok.list": {
