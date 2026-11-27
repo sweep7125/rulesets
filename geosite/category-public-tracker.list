@@ -45,7 +45,6 @@ full:odd-hd.fr
 full:openbittorrent.com
 full:opentor.org
 full:opentracker.io
-full:opentrackr.org
 full:potuk.com
 full:pow7.com
 full:proaudiotorrents.org
@@ -305,7 +304,6 @@ full:tracker.netmap.top
 full:tracker.nighthawk.pw
 full:tracker.open-internet.nl
 full:tracker.openbittorrent.com
-full:tracker.opentrackr.org
 full:tracker.picotorrent.one
 full:tracker.pirateparty.gr
 full:tracker.plx.im
@@ -412,6 +410,8 @@ domain:megatorrents.kg
 domain:mvgroup.org
 domain:nnm-club.cc
 domain:nnm-club.info
+domain:opentracker.xyz
+domain:opentrackr.org
 domain:peckservers.com
 domain:searchtor.to
 domain:shnflac.net
@@ -427,5 +427,6 @@ domain:tvnihon.com
 domain:worldboxingvideoarchive.com
 domain:xwt-classics.net
 domain:yuwabits.net
+domain:zer0day.ch
 domain:zone-torrent.net
 domain:torrent.eu.org
